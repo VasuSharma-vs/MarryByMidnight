@@ -1,0 +1,28 @@
+# Unreal Engine .gitignore
+
+# Binaries and temporary build files
+Binaries/*
+DerivedDataCache/*
+Intermediate/*
+Saved/*
+
+# IDE and solution files
+.vs/
+*.sln
+*.slnx
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+UE5.vcxproj*
+
+# Antigravity and AI tool caches
+.gemini/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Autosaves and Crash Reports
+Saved/Autosaves/*
+Saved/Crashes/*
+Saved/Logs/*
