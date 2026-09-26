@@ -19,7 +19,7 @@
 
 UTexturePaintComponent::UTexturePaintComponent()
 	: bAutoInitializeOnBeginPlay(true)
-	, bEnableScreenLogging(false)
+	, bEnableScreenLogging(true)
 	, BrushRotation(0.0f)
 	, MinOrientSpeed(0.01f)
 	, MinRotationInterpSpeed(3.0f)
@@ -27,6 +27,8 @@ UTexturePaintComponent::UTexturePaintComponent()
 	, MaxSpeedThreshold(1.5f)
 	, BrushMaterial(nullptr)
 	, BrushMaskTexture(nullptr)
+	, CanvasModifierMaterial(nullptr)
+	, BrushModifierMaterial(nullptr)
 	, TextureParameterName(FName("PaintTexture"))
 	, MaterialSlotIndex(0)
 	, DefaultRenderTargetResolution(1024)
@@ -36,8 +38,11 @@ UTexturePaintComponent::UTexturePaintComponent()
 	, LastPaintedUV(FVector2D::ZeroVector)
 	, bHasLastPaintedUV(false)
 	, RenderTarget(nullptr)
+	, PingPongRenderTarget(nullptr)
 	, DynamicMaterial(nullptr)
 	, BrushMID(nullptr)
+	, CanvasModifierMID(nullptr)
+	, BrushModifierMID(nullptr)
 	, CachedBaseTexture(nullptr)
 	, TargetMesh(nullptr)
 {
@@ -48,8 +53,11 @@ void UTexturePaintComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Explicitly ensure debug logging is disabled on BeginPlay
-	bEnableScreenLogging = false;
+	// Enable debug logging for diagnostic debugging
+	bEnableScreenLogging = true;
+	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] BeginPlay on '%s' (AutoInit=%s, DefaultRes=%d, Param='%s')"),
+		*GetNameSafe(GetOwner()), bAutoInitializeOnBeginPlay ? TEXT("true") : TEXT("false"),
+		DefaultRenderTargetResolution, *TextureParameterName.ToString());
 
 	if (bAutoInitializeOnBeginPlay && !RenderTarget)
 	{
@@ -82,10 +90,10 @@ bool UTexturePaintComponent::ToggleScreenLogging()
 	bEnableScreenLogging = !bEnableScreenLogging;
 	const FString StatusStr = bEnableScreenLogging ? TEXT("ENABLED") : TEXT("DISABLED");
 	const FColor StatusColor = bEnableScreenLogging ? FColor::Green : FColor::Red;
-	UE_LOG(LogTemp, Log, TEXT("[TexturePaintComponent] Debug logging %s."), *StatusStr);
+	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] Debug logging %s."), *StatusStr);
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaintComponent] Debug Logging: %s"), *StatusStr));
+		GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaint] Debug Logging: %s"), *StatusStr));
 	}
 	return bEnableScreenLogging;
 }
@@ -95,40 +103,34 @@ void UTexturePaintComponent::SetEnableScreenLogging(bool bEnable)
 	bEnableScreenLogging = bEnable;
 	const FString StatusStr = bEnableScreenLogging ? TEXT("ENABLED") : TEXT("DISABLED");
 	const FColor StatusColor = bEnableScreenLogging ? FColor::Green : FColor::Red;
-	UE_LOG(LogTemp, Log, TEXT("[TexturePaintComponent] Debug logging set to %s."), *StatusStr);
+	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] Debug logging set to %s."), *StatusStr);
 	if (GEngine && bEnableScreenLogging)
 	{
-		GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaintComponent] Debug Logging: %s"), *StatusStr));
+		GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaint] Debug Logging: %s"), *StatusStr));
 	}
 }
 
 void UTexturePaintComponent::PrintScreenLog(const FString& Message, FColor Color, float Duration, uint64 Key)
 {
-	if (bEnableScreenLogging)
+	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] %s"), *Message);
+	if (bEnableScreenLogging && GEngine)
 	{
-		UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(Key, Duration, Color, Message);
-		}
+		GEngine->AddOnScreenDebugMessage(Key, Duration, Color, FString::Printf(TEXT("[Paint] %s"), *Message));
 	}
 }
 
 void UTexturePaintComponent::PrintScreenWarning(const FString& Message, float Duration, uint64 Key)
 {
-	if (bEnableScreenLogging)
+	UE_LOG(LogTemp, Warning, TEXT("[TexturePaint][WARNING] %s"), *Message);
+	if (bEnableScreenLogging && GEngine)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *Message);
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Yellow, FString::Printf(TEXT("[Warning] %s"), *Message));
-		}
+		GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Yellow, FString::Printf(TEXT("[Warning] %s"), *Message));
 	}
 }
 
 void UTexturePaintComponent::PrintScreenError(const FString& Message, float Duration, uint64 Key)
 {
-	UE_LOG(LogTemp, Error, TEXT("%s"), *Message);
+	UE_LOG(LogTemp, Error, TEXT("[TexturePaint][ERROR] %s"), *Message);
 	if (bEnableScreenLogging && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Red, FString::Printf(TEXT("[Error] %s"), *Message));
@@ -140,9 +142,11 @@ bool UTexturePaintComponent::AutoInitialize()
 	AActor* Owner = GetOwner();
 	if (!Owner)
 	{
-		PrintScreenWarning(TEXT("AutoInitialize failed: Component has no Owner actor!"), 5.0f, 987650);
+		PrintScreenWarning(TEXT("[AutoInit] FAILED: Component has no Owner actor!"));
 		return false;
 	}
+
+	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 1/4: Owner actor '%s' found. Searching for StaticMeshComponent..."), *Owner->GetName()), FColor::Cyan, 6.0f);
 
 	UStaticMeshComponent* FoundMesh = TargetMesh;
 	if (!FoundMesh)
@@ -152,13 +156,17 @@ bool UTexturePaintComponent::AutoInitialize()
 
 	if (!FoundMesh)
 	{
-		PrintScreenWarning(FString::Printf(TEXT("AutoInitialize on '%s': No StaticMeshComponent found!"), *Owner->GetName()), 5.0f, 987651);
+		PrintScreenWarning(FString::Printf(TEXT("[AutoInit] FAILED: Owner '%s' has NO StaticMeshComponent!"), *Owner->GetName()), 6.0f);
 		return false;
 	}
+
+	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 2/4: StaticMeshComponent '%s' found (NumMaterials=%d)."),
+		*FoundMesh->GetName(), FoundMesh->GetNumMaterials()), FColor::Cyan, 6.0f);
 
 	UMaterialInterface* BaseMat = FoundMesh->GetMaterial(MaterialSlotIndex);
 	if (!BaseMat)
 	{
+		PrintScreenWarning(FString::Printf(TEXT("[AutoInit] No material at slot %d, trying slot 0..."), MaterialSlotIndex), 5.0f);
 		BaseMat = FoundMesh->GetMaterial(0);
 		if (BaseMat)
 		{
@@ -168,13 +176,16 @@ bool UTexturePaintComponent::AutoInitialize()
 
 	if (!BaseMat)
 	{
-		PrintScreenWarning(FString::Printf(TEXT("AutoInitialize on '%s': StaticMesh '%s' has no material at slot %d!"),
-			*Owner->GetName(), *FoundMesh->GetName(), MaterialSlotIndex), 5.0f, 987652);
+		PrintScreenWarning(FString::Printf(TEXT("[AutoInit] FAILED: Mesh '%s' has NO material assigned at any slot!"),
+			*FoundMesh->GetName()), 6.0f);
 		return false;
 	}
 
-	PrintScreenLog(FString::Printf(TEXT("TexturePaintComponent: Auto-initializing on '%s' (Mesh: '%s', Material: '%s')..."),
-		*Owner->GetName(), *FoundMesh->GetName(), *BaseMat->GetName()), FColor::Cyan, 4.0f);
+	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 3/4: Material '%s' (%s) selected at slot %d."),
+		*BaseMat->GetName(), *BaseMat->GetClass()->GetName(), MaterialSlotIndex), FColor::Cyan, 6.0f);
+
+	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 4/4: Calling SetupPainting(Mesh='%s', Mat='%s', Param='%s', Slot=%d)..."),
+		*FoundMesh->GetName(), *BaseMat->GetName(), *TextureParameterName.ToString(), MaterialSlotIndex), FColor::Cyan, 6.0f);
 
 	SetupPainting(FoundMesh, BaseMat, TextureParameterName, MaterialSlotIndex);
 	return RenderTarget != nullptr;
@@ -184,8 +195,12 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 {
 	if (!InMaterial)
 	{
+		PrintScreenWarning(TEXT("[ExtractBaseTexture] InMaterial is null!"));
 		return nullptr;
 	}
+
+	PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Scanning material '%s' for base texture (TargetParam='%s')..."),
+		*InMaterial->GetName(), *InParamName.ToString()), FColor::White, 5.0f);
 
 	UTexture* ExtractedTexture = nullptr;
 
@@ -195,8 +210,14 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 		InMaterial->GetTextureParameterValue(InParamName, ExtractedTexture);
 		if (ExtractedTexture)
 		{
-			PrintScreenLog(FString::Printf(TEXT("ExtractBaseTexture: Found '%s' using param '%s'"), *ExtractedTexture->GetName(), *InParamName.ToString()), FColor::White, 3.0f);
+			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] FOUND MATCH via specified param '%s' -> Texture '%s' (%s)"),
+				*InParamName.ToString(), *ExtractedTexture->GetName(), *ExtractedTexture->GetClass()->GetName()), FColor::Green, 5.0f);
 			return ExtractedTexture;
+		}
+		else
+		{
+			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Specified param '%s' has no assigned texture. Scanning fallbacks..."),
+				*InParamName.ToString()), FColor::Yellow, 4.0f);
 		}
 	}
 
@@ -212,10 +233,15 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 
 	for (const FName& ParamName : CommonParamNames)
 	{
+		if (ParamName == InParamName)
+		{
+			continue;
+		}
 		InMaterial->GetTextureParameterValue(ParamName, ExtractedTexture);
 		if (ExtractedTexture)
 		{
-			PrintScreenLog(FString::Printf(TEXT("ExtractBaseTexture: Found '%s' using common param '%s'"), *ExtractedTexture->GetName(), *ParamName.ToString()), FColor::White, 3.0f);
+			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] FOUND MATCH via common param '%s' -> Texture '%s'"),
+				*ParamName.ToString(), *ExtractedTexture->GetName()), FColor::Green, 5.0f);
 			return ExtractedTexture;
 		}
 	}
@@ -224,25 +250,39 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 	TArray<FMaterialParameterInfo> OutParameterInfo;
 	TArray<FGuid> OutParameterGuids;
 	InMaterial->GetAllTextureParameterInfo(OutParameterInfo, OutParameterGuids);
+	PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Material '%s' defines %d texture parameter(s):"),
+		*InMaterial->GetName(), OutParameterInfo.Num()), FColor::White, 5.0f);
+
 	for (const FMaterialParameterInfo& ParamInfo : OutParameterInfo)
 	{
-		InMaterial->GetTextureParameterValue(ParamInfo, ExtractedTexture);
-		if (ExtractedTexture)
+		UTexture* CandidateTex = nullptr;
+		InMaterial->GetTextureParameterValue(ParamInfo, CandidateTex);
+		PrintScreenLog(FString::Printf(TEXT("   - Param '%s' = '%s'"),
+			*ParamInfo.Name.ToString(), CandidateTex ? *CandidateTex->GetName() : TEXT("None")), FColor::White, 4.0f);
+
+		if (!ExtractedTexture && CandidateTex)
 		{
-			PrintScreenLog(FString::Printf(TEXT("ExtractBaseTexture: Found '%s' from param info '%s'"), *ExtractedTexture->GetName(), *ParamInfo.Name.ToString()), FColor::White, 3.0f);
-			return ExtractedTexture;
+			ExtractedTexture = CandidateTex;
 		}
 	}
 
-	PrintScreenWarning(FString::Printf(TEXT("ExtractBaseTexture: No texture parameter found in material '%s'."), *InMaterial->GetName()), 4.0f);
+	if (ExtractedTexture)
+	{
+		PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Selected candidate texture '%s' from parameters."),
+			*ExtractedTexture->GetName()), FColor::Green, 5.0f);
+		return ExtractedTexture;
+	}
+
+	PrintScreenWarning(FString::Printf(TEXT("[ExtractBaseTexture] No texture parameter found in material '%s'. Canvas will initialize with solid color."),
+		*InMaterial->GetName()), 5.0f);
 	return nullptr;
 }
 
-void UTexturePaintComponent::CopyTextureToRenderTarget(UTexture* InTexture)
+void UTexturePaintComponent::CopyTextureToTarget(UTexture* InTexture, UTextureRenderTarget2D* TargetRT)
 {
-	if (!RenderTarget)
+	if (!TargetRT)
 	{
-		PrintScreenWarning(TEXT("CopyTextureToRenderTarget: RenderTarget is null!"), 4.0f);
+		PrintScreenWarning(TEXT("[CopyTextureToTarget] TargetRT is null!"));
 		return;
 	}
 
@@ -251,7 +291,7 @@ void UTexturePaintComponent::CopyTextureToRenderTarget(UTexture* InTexture)
 		UCanvas* Canvas = nullptr;
 		FVector2D CanvasSize;
 		FDrawToRenderTargetContext DrawContext;
-		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(this, RenderTarget, Canvas, CanvasSize, DrawContext);
+		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(this, TargetRT, Canvas, CanvasSize, DrawContext);
 		if (Canvas)
 		{
 			Canvas->K2_DrawTexture(
@@ -265,14 +305,35 @@ void UTexturePaintComponent::CopyTextureToRenderTarget(UTexture* InTexture)
 			);
 		}
 		UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, DrawContext);
-
-		PrintScreenLog(FString::Printf(TEXT("Copied base texture '%s' to Render Target (%0.0fx%0.0f)."),
-			*InTexture->GetName(), CanvasSize.X, CanvasSize.Y), FColor::Green, 4.0f);
+		PrintScreenLog(FString::Printf(TEXT("[CopyTextureToTarget] Drawn texture '%s' onto RT (%0.0fx%0.0f)."),
+			*InTexture->GetName(), (float)TargetRT->SizeX, (float)TargetRT->SizeY), FColor::White, 3.0f);
 	}
 	else
 	{
-		UKismetRenderingLibrary::ClearRenderTarget2D(this, RenderTarget, FLinearColor::White);
-		PrintScreenLog(TEXT("No base texture found; cleared Render Target to white."), FColor::Yellow, 4.0f);
+		UKismetRenderingLibrary::ClearRenderTarget2D(this, TargetRT, CanvasBaseColor);
+		PrintScreenLog(FString::Printf(TEXT("[CopyTextureToTarget] Cleared RT (%0.0fx%0.0f) with color (R=%0.2f, G=%0.2f, B=%0.2f, A=%0.2f)."),
+			(float)TargetRT->SizeX, (float)TargetRT->SizeY, CanvasBaseColor.R, CanvasBaseColor.G, CanvasBaseColor.B, CanvasBaseColor.A), FColor::White, 3.0f);
+	}
+}
+
+void UTexturePaintComponent::CopyTextureToRenderTarget(UTexture* InTexture)
+{
+	if (!RenderTarget)
+	{
+		PrintScreenWarning(TEXT("[CopyTextureToRenderTarget] RenderTarget is null!"), 4.0f);
+		return;
+	}
+
+	CopyTextureToTarget(InTexture, RenderTarget);
+
+	if (InTexture)
+	{
+		PrintScreenLog(FString::Printf(TEXT("[CopyTextureToRenderTarget] Copied base texture '%s' to Render Target (%0.0fx%0.0f)."),
+			*InTexture->GetName(), (float)RenderTarget->SizeX, (float)RenderTarget->SizeY), FColor::Green, 4.0f);
+	}
+	else
+	{
+		PrintScreenLog(TEXT("[CopyTextureToRenderTarget] No base texture; cleared Render Target."), FColor::Yellow, 4.0f);
 	}
 }
 
@@ -283,24 +344,66 @@ void UTexturePaintComponent::SetupPainting(
 	int32 InMaterialSlotIndex,
 	UTexture* InOverrideBaseTexture)
 {
-	if (!InMeshComponent || !InBaseMaterial)
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 1: Validating Inputs ==="), FColor::Cyan, 6.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InMeshComponent: %s"), InMeshComponent ? *InMeshComponent->GetName() : TEXT("NULL")), FColor::White, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InBaseMaterial: %s"), InBaseMaterial ? *InBaseMaterial->GetName() : TEXT("NULL (will auto-fallback)")), FColor::White, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InTextureParameterName: '%s'"), *InTextureParameterName.ToString()), FColor::White, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InMaterialSlotIndex: %d"), InMaterialSlotIndex), FColor::White, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InOverrideBaseTexture: %s"), InOverrideBaseTexture ? *InOverrideBaseTexture->GetName() : TEXT("None")), FColor::White, 5.0f);
+
+	if (!InMeshComponent)
 	{
-		PrintScreenError(TEXT("SetupPainting aborted: MeshComponent or BaseMaterial is null!"), 6.0f);
+		PrintScreenError(TEXT("[SetupPainting] ABORTED: InMeshComponent is null! Please pass a valid StaticMeshComponent."), 8.0f);
 		return;
 	}
 
 	TargetMesh = InMeshComponent;
 	MaterialSlotIndex = InMaterialSlotIndex;
 
+	// Auto-fallback: If InBaseMaterial was left unconnected, grab it directly from the mesh component
+	if (!InBaseMaterial)
+	{
+		PrintScreenLog(FString::Printf(TEXT("[SetupPainting] InBaseMaterial not provided; querying mesh '%s' slot %d..."), *TargetMesh->GetName(), MaterialSlotIndex), FColor::Yellow, 5.0f);
+		InBaseMaterial = TargetMesh->GetMaterial(MaterialSlotIndex);
+		if (!InBaseMaterial)
+		{
+			InBaseMaterial = TargetMesh->GetMaterial(0);
+			if (InBaseMaterial)
+			{
+				MaterialSlotIndex = 0;
+			}
+		}
+	}
+
+	if (!InBaseMaterial)
+	{
+		PrintScreenError(FString::Printf(TEXT("[SetupPainting] ABORTED: Mesh '%s' has NO material assigned at slot %d or slot 0!"),
+			*TargetMesh->GetName(), MaterialSlotIndex), 8.0f);
+		return;
+	}
+
+	PrintScreenLog(FString::Printf(TEXT("[SetupPainting] Base material confirmed: '%s' (%s)"),
+		*InBaseMaterial->GetName(), *InBaseMaterial->GetClass()->GetName()), FColor::Cyan, 5.0f);
+
 	if (!InTextureParameterName.IsNone())
 	{
 		TextureParameterName = InTextureParameterName;
 	}
 
-	// 1. Resolve base texture
+	// 2. Resolve base texture
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 2: Resolving Base Texture ==="), FColor::Cyan, 5.0f);
 	CachedBaseTexture = InOverrideBaseTexture ? InOverrideBaseTexture : ExtractBaseTexture(InBaseMaterial, TextureParameterName);
+	if (CachedBaseTexture)
+	{
+		PrintScreenLog(FString::Printf(TEXT("   -> Base Texture: '%s' (%s)"), *CachedBaseTexture->GetName(), *CachedBaseTexture->GetClass()->GetName()), FColor::Green, 5.0f);
+	}
+	else
+	{
+		PrintScreenLog(TEXT("   -> Base Texture: NONE (canvas will start with CanvasBaseColor)"), FColor::Yellow, 5.0f);
+	}
 
-	// 2. Determine Render Target resolution
+	// 3. Determine Render Target resolution
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 3: Determining Canvas Resolution ==="), FColor::Cyan, 5.0f);
 	int32 TargetWidth = DefaultRenderTargetResolution > 0 ? DefaultRenderTargetResolution : 1024;
 	int32 TargetHeight = TargetWidth;
 
@@ -314,40 +417,76 @@ void UTexturePaintComponent::SetupPainting(
 			{
 				TargetWidth = FMath::Clamp(TexWidth, 128, 4096);
 				TargetHeight = FMath::Clamp(TexHeight, 128, 4096);
+				PrintScreenLog(FString::Printf(TEXT("   -> Matched resolution to base texture: %dx%d"), TargetWidth, TargetHeight), FColor::Cyan, 5.0f);
 			}
 		}
 	}
-
-	// 3. Create or reallocate Render Target (Use RTF_RGBA8 for 8-bit RGBA and direct PF_B8G8R8A8 memory layout)
-	RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
-	if (!RenderTarget)
+	else
 	{
-		PrintScreenError(FString::Printf(TEXT("SetupPainting: Failed to create %dx%d Render Target!"), TargetWidth, TargetHeight), 6.0f);
-		return;
+		PrintScreenLog(FString::Printf(TEXT("   -> Using default resolution: %dx%d"), TargetWidth, TargetHeight), FColor::Cyan, 5.0f);
 	}
 
-	PrintScreenLog(FString::Printf(TEXT("SetupPainting: Created %dx%d Render Target. Base texture: '%s'"),
-		TargetWidth, TargetHeight, CachedBaseTexture ? *CachedBaseTexture->GetName() : TEXT("None (Cleared to white)")),
-		FColor::Green, 5.0f);
+	// 4. Create or reallocate Render Targets (Use RTF_RGBA8 for 8-bit RGBA and direct PF_B8G8R8A8 memory layout)
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 4: Creating Render Targets (RTF_RGBA8) ==="), FColor::Cyan, 5.0f);
+	RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
+	PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
+	if (!RenderTarget || !PingPongRenderTarget)
+	{
+		PrintScreenError(FString::Printf(TEXT("[SetupPainting] FAILED to allocate %dx%d RenderTarget(s)!"), TargetWidth, TargetHeight), 8.0f);
+		return;
+	}
+	PrintScreenLog(FString::Printf(TEXT("   -> RenderTarget: %dx%d (Addr: %p)"), TargetWidth, TargetHeight, (void*)RenderTarget), FColor::Green, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   -> PingPongRenderTarget: %dx%d (Addr: %p)"), TargetWidth, TargetHeight, (void*)PingPongRenderTarget), FColor::Green, 5.0f);
 
-	// 4. Copy the base texture onto the Render Target
-	CopyTextureToRenderTarget(CachedBaseTexture);
+	// 5. Copy base texture onto Render Targets
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 5: Initializing Canvas Contents ==="), FColor::Cyan, 5.0f);
+	CopyTextureToTarget(CachedBaseTexture, RenderTarget);
+	CopyTextureToTarget(CachedBaseTexture, PingPongRenderTarget);
 
-	// 5. Create Dynamic Material Instance from base material
+	// 6. Create Dynamic Material Instance from base material
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 6: Creating Dynamic Material Instance ==="), FColor::Cyan, 5.0f);
 	DynamicMaterial = UMaterialInstanceDynamic::Create(InBaseMaterial, this);
 	if (!DynamicMaterial)
 	{
-		PrintScreenError(FString::Printf(TEXT("SetupPainting: Failed to create Dynamic Material Instance from '%s'!"), *InBaseMaterial->GetName()), 6.0f);
+		PrintScreenError(FString::Printf(TEXT("[SetupPainting] FAILED to create Dynamic Material Instance from '%s'!"), *InBaseMaterial->GetName()), 8.0f);
 		return;
 	}
 
 	// Bind the Render Target to the designated texture parameter
 	DynamicMaterial->SetTextureParameterValue(TextureParameterName, RenderTarget);
 
-	// 6. Apply to mesh component at designated slot
+	// Verify parameter binding
+	UTexture* BoundTexture = nullptr;
+	DynamicMaterial->GetTextureParameterValue(TextureParameterName, BoundTexture);
+	const bool bParamBound = (BoundTexture == RenderTarget);
+	PrintScreenLog(FString::Printf(TEXT("   -> DynamicMaterial '%s' created."), *DynamicMaterial->GetName()), FColor::Cyan, 5.0f);
+	PrintScreenLog(FString::Printf(TEXT("   -> Parameter '%s' bound to RenderTarget? %s (Bound: '%s')"),
+		*TextureParameterName.ToString(), bParamBound ? TEXT("YES [OK]") : TEXT("NO [WARNING]"),
+		BoundTexture ? *BoundTexture->GetName() : TEXT("None")),
+		bParamBound ? FColor::Green : FColor::Yellow, 5.0f);
+
+	if (!bParamBound)
+	{
+		PrintScreenWarning(FString::Printf(TEXT("[SetupPainting] WARNING: Material '%s' does NOT have a texture parameter named '%s'! Ensure the material has a Texture Sample Parameter named '%s'!"),
+			*InBaseMaterial->GetName(), *TextureParameterName.ToString(), *TextureParameterName.ToString()), 7.0f);
+	}
+
+	// 7. Apply to mesh component at designated slot
+	PrintScreenLog(TEXT("[SetupPainting] === STEP 7: Applying Dynamic Material to Mesh ==="), FColor::Cyan, 5.0f);
 	TargetMesh->SetMaterial(MaterialSlotIndex, DynamicMaterial);
-	PrintScreenLog(FString::Printf(TEXT("SetupPainting: Dynamic Material applied to %s (Slot %d, Param: '%s'). Ready to paint!"),
-		*TargetMesh->GetName(), MaterialSlotIndex, *TextureParameterName.ToString()), FColor::Green, 5.0f);
+
+	// Verify material on mesh slot
+	UMaterialInterface* AppliedMat = TargetMesh->GetMaterial(MaterialSlotIndex);
+	const bool bMeshMatMatches = (AppliedMat == DynamicMaterial);
+	PrintScreenLog(FString::Printf(TEXT("   -> Mesh '%s' Slot %d material verified? %s (Applied: '%s')"),
+		*TargetMesh->GetName(), MaterialSlotIndex,
+		bMeshMatMatches ? TEXT("YES [OK]") : TEXT("NO [ERROR]"),
+		AppliedMat ? *AppliedMat->GetName() : TEXT("None")),
+		bMeshMatMatches ? FColor::Green : FColor::Red, 6.0f);
+
+	PrintScreenLog(FString::Printf(TEXT("[SetupPainting] *** COMPLETE *** Ready to paint on '%s' (Slot %d, Res %dx%d, Param '%s')!"),
+		*TargetMesh->GetName(), MaterialSlotIndex, TargetWidth, TargetHeight, *TextureParameterName.ToString()),
+		FColor::Emerald, 7.0f);
 }
 
 void UTexturePaintComponent::SetTextureParameterName(FName InParameterName)
@@ -365,24 +504,35 @@ void UTexturePaintComponent::SetTextureParameterName(FName InParameterName)
 
 void UTexturePaintComponent::PaintAtUV(FVector2D UVCoordinate, float BrushSize, FLinearColor PaintColor, float InRotationDegrees)
 {
+	PrintScreenLog(FString::Printf(TEXT("[PaintAtUV] === START STROKE ===")), FColor::Cyan, 2.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - Target UV: (%0.4f, %0.4f)"), UVCoordinate.X, UVCoordinate.Y), FColor::White, 2.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - BrushSize: %0.1f px"), BrushSize), FColor::White, 2.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - PaintColor: (R=%0.2f, G=%0.2f, B=%0.2f, A=%0.2f)"), PaintColor.R, PaintColor.G, PaintColor.B, PaintColor.A), FColor::White, 2.0f);
+	PrintScreenLog(FString::Printf(TEXT("   - InRotationDegrees: %0.1f"), InRotationDegrees), FColor::White, 2.0f);
+
 	if (!RenderTarget)
 	{
-		// Attempt on-demand auto initialization
+		PrintScreenWarning(TEXT("[PaintAtUV] RenderTarget is null! Attempting AutoInitialize..."), 4.0f);
 		if (!AutoInitialize())
 		{
-			PrintScreenWarning(TEXT("PaintAtUV aborted: RenderTarget is null! Ensure SetupPainting is called or actor has a StaticMeshComponent with a material."), 4.0f, 987654);
+			PrintScreenError(TEXT("[PaintAtUV] ABORTED: RenderTarget is null and AutoInitialize failed! Ensure mesh has material assigned."), 6.0f);
 			return;
 		}
 	}
 
 	if (UVCoordinate.IsNearlyZero())
 	{
-		PrintScreenWarning(TEXT("PaintAtUV: UV is near (0,0). Ensure 'Find Collision UV' is enabled on your Line Trace node!"), 4.0f, 987655);
+		PrintScreenWarning(TEXT("[PaintAtUV] WARNING: UV is (0,0)! If using Line Trace, verify 'Find Collision UV' is enabled on Line Trace node and complex collision is enabled on the mesh."), 5.0f);
+	}
+	if (UVCoordinate.X < 0.0f || UVCoordinate.X > 1.0f || UVCoordinate.Y < 0.0f || UVCoordinate.Y > 1.0f)
+	{
+		PrintScreenWarning(FString::Printf(TEXT("[PaintAtUV] WARNING: UV (%0.3f, %0.3f) is outside [0.0, 1.0]!"), UVCoordinate.X, UVCoordinate.Y), 5.0f);
 	}
 
 	// Invalidate BrushMID if BrushMaterial was changed externally or does not match
 	if (BrushMID && BrushMaterial && BrushMID->Parent != BrushMaterial)
 	{
+		PrintScreenLog(TEXT("   - Invalidation: BrushMaterial changed; resetting BrushMID."), FColor::Yellow, 2.0f);
 		BrushMID = nullptr;
 	}
 
@@ -393,16 +543,19 @@ void UTexturePaintComponent::PaintAtUV(FVector2D UVCoordinate, float BrushSize, 
 		if (!BaseBrushMat)
 		{
 			BaseBrushMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_Brush.M_Brush")));
+			PrintScreenLog(FString::Printf(TEXT("   - Loaded default brush material: '%s'"), BaseBrushMat ? *BaseBrushMat->GetName() : TEXT("FAILED TO LOAD")),
+				BaseBrushMat ? FColor::White : FColor::Red, 3.0f);
 		}
 
 		if (BaseBrushMat)
 		{
 			BrushMID = UMaterialInstanceDynamic::Create(BaseBrushMat, this);
+			PrintScreenLog(FString::Printf(TEXT("   - Created BrushMID from '%s'."), *BaseBrushMat->GetName()), FColor::Cyan, 3.0f);
 		}
 
 		if (!BrushMID)
 		{
-			PrintScreenWarning(TEXT("PaintAtUV: Could not create BrushMID from BrushMaterial; falling back to direct texture draw."), 4.0f);
+			PrintScreenWarning(TEXT("[PaintAtUV] Could not create BrushMID from BrushMaterial; falling back to direct texture draw."), 4.0f);
 		}
 	}
 
@@ -410,8 +563,16 @@ void UTexturePaintComponent::PaintAtUV(FVector2D UVCoordinate, float BrushSize, 
 	UTexture* ActiveBrushTexture = BrushMaskTexture;
 	if (!ActiveBrushTexture)
 	{
+		ActiveBrushTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/BrushMask/Bake_Mask_Image.Bake_Mask_Image")));
+	}
+	if (!ActiveBrushTexture)
+	{
 		ActiveBrushTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/Bake_Mask_Image.Bake_Mask_Image")));
 	}
+
+	PrintScreenLog(FString::Printf(TEXT("   - ActiveBrushTexture: '%s' (%s)"),
+		ActiveBrushTexture ? *ActiveBrushTexture->GetName() : TEXT("NONE"),
+		ActiveBrushTexture ? *ActiveBrushTexture->GetClass()->GetName() : TEXT("")), FColor::White, 2.0f);
 
 	// Determine rotation angle (Override parameter if specified, otherwise component's BrushRotation)
 	const float EffectiveRotation = (InRotationDegrees > -900.0f) ? InRotationDegrees : BrushRotation;
@@ -437,7 +598,6 @@ void UTexturePaintComponent::PaintAtUV(FVector2D UVCoordinate, float BrushSize, 
 		BrushMID->SetVectorParameterValue(FName("Tint"), PaintColor);
 		BrushMID->SetVectorParameterValue(FName("BrushColor"), PaintColor);
 
-		// Also pass rotation to material in case it has a CustomRotator node
 		BrushMID->SetScalarParameterValue(FName("BrushRotation"), EffectiveRotation);
 		BrushMID->SetScalarParameterValue(FName("Rotation"), EffectiveRotation);
 		BrushMID->SetScalarParameterValue(FName("Angle"), EffectiveRotation);
@@ -453,30 +613,56 @@ void UTexturePaintComponent::PaintAtUV(FVector2D UVCoordinate, float BrushSize, 
 		const FVector2D ScreenPos = (UVCoordinate * CanvasSize) - FVector2D(BrushSize * 0.5f, BrushSize * 0.5f);
 		const FVector2D ScreenSize(BrushSize, BrushSize);
 
+		const float CoveragePercent = (CanvasSize.X > 0 && CanvasSize.Y > 0) ? ((BrushSize * BrushSize) / (CanvasSize.X * CanvasSize.Y)) * 100.0f : 0.0f;
+		PrintScreenLog(FString::Printf(TEXT("   - Stamping: ScreenPos=(%0.1f, %0.1f), Size=(%0.1f, %0.1f) on Canvas (%0.0fx%0.0f) [%0.3f%% coverage]"),
+			ScreenPos.X, ScreenPos.Y, ScreenSize.X, ScreenSize.Y, CanvasSize.X, CanvasSize.Y, CoveragePercent), FColor::White, 2.0f);
+
 		if (BrushMID)
 		{
 			Canvas->K2_DrawMaterial(BrushMID, ScreenPos, ScreenSize, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), EffectiveRotation, FVector2D(0.5f, 0.5f));
+			PrintScreenLog(TEXT("   - Canvas->K2_DrawMaterial executed with BrushMID."), FColor::Emerald, 2.0f);
 		}
 		else if (ActiveBrushTexture)
 		{
-			// Fallback: draw mask texture directly tinted by PaintColor with translucent blending and rotation
 			Canvas->K2_DrawTexture(ActiveBrushTexture, ScreenPos, ScreenSize, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), PaintColor, BLEND_Translucent, EffectiveRotation, FVector2D(0.5f, 0.5f));
+			PrintScreenLog(TEXT("   - Canvas->K2_DrawTexture executed with fallback texture."), FColor::Emerald, 2.0f);
 		}
-
-		// Live single-line status on viewport with color and rotation info
-		PrintScreenLog(FString::Printf(TEXT("Painting at UV (%0.2f, %0.2f) | Rot: %0.0f deg | Color: (R=%0.1f, G=%0.1f, B=%0.1f) | Size: %0.0f"),
-			UVCoordinate.X, UVCoordinate.Y, EffectiveRotation, PaintColor.R, PaintColor.G, PaintColor.B, BrushSize), FColor::Cyan, 1.0f, 987656);
 	}
 	else
 	{
-		PrintScreenError(TEXT("PaintAtUV: Canvas is null after BeginDrawCanvasToRenderTarget!"), 4.0f);
+		PrintScreenError(TEXT("[PaintAtUV] Canvas is null after BeginDrawCanvasToRenderTarget!"), 5.0f);
 	}
 
 	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, DrawContext);
 
+	// Re-verify that TargetMesh still has DynamicMaterial assigned with parameter pointing to RenderTarget
+	if (TargetMesh)
+	{
+		UMaterialInterface* CurrentSlotMat = TargetMesh->GetMaterial(MaterialSlotIndex);
+		if (CurrentSlotMat != DynamicMaterial)
+		{
+			PrintScreenWarning(FString::Printf(TEXT("[PaintAtUV] CAUTION: Mesh slot %d material is '%s', NOT DynamicMaterial! Re-applying DynamicMaterial..."),
+				MaterialSlotIndex, CurrentSlotMat ? *CurrentSlotMat->GetName() : TEXT("None")), 5.0f);
+			TargetMesh->SetMaterial(MaterialSlotIndex, DynamicMaterial);
+		}
+
+		if (DynamicMaterial)
+		{
+			UTexture* VerifiedTex = nullptr;
+			DynamicMaterial->GetTextureParameterValue(TextureParameterName, VerifiedTex);
+			if (VerifiedTex != RenderTarget)
+			{
+				PrintScreenWarning(FString::Printf(TEXT("[PaintAtUV] CAUTION: Parameter '%s' on DynamicMaterial points to '%s', NOT RenderTarget! Re-binding..."),
+					*TextureParameterName.ToString(), VerifiedTex ? *VerifiedTex->GetName() : TEXT("None")), 5.0f);
+				DynamicMaterial->SetTextureParameterValue(TextureParameterName, RenderTarget);
+			}
+		}
+	}
+
 	// Update last painted UV coordinate for automatic direction tracking
 	LastPaintedUV = UVCoordinate;
 	bHasLastPaintedUV = true;
+	PrintScreenLog(FString::Printf(TEXT("[PaintAtUV] === STROKE COMPLETE at UV (%0.3f, %0.3f) ==="), UVCoordinate.X, UVCoordinate.Y), FColor::Green, 2.0f);
 }
 
 void UTexturePaintComponent::ResetCanvas(FLinearColor ClearColor, bool bRestoreBaseTexture)
@@ -494,7 +680,11 @@ void UTexturePaintComponent::ResetCanvas(FLinearColor ClearColor, bool bRestoreB
 
 	if (bRestoreBaseTexture && CachedBaseTexture)
 	{
-		CopyTextureToRenderTarget(CachedBaseTexture);
+		CopyTextureToTarget(CachedBaseTexture, RenderTarget);
+		if (PingPongRenderTarget)
+		{
+			CopyTextureToTarget(CachedBaseTexture, PingPongRenderTarget);
+		}
 		CanvasBaseColor = (ClearColor != FLinearColor::White) ? ClearColor : FLinearColor::Black;
 		PrintScreenLog(TEXT("ResetCanvas: Restored canvas to original base texture."), FColor::Green, 3.0f);
 	}
@@ -502,6 +692,10 @@ void UTexturePaintComponent::ResetCanvas(FLinearColor ClearColor, bool bRestoreB
 	{
 		CanvasBaseColor = ClearColor;
 		UKismetRenderingLibrary::ClearRenderTarget2D(this, RenderTarget, ClearColor);
+		if (PingPongRenderTarget)
+		{
+			UKismetRenderingLibrary::ClearRenderTarget2D(this, PingPongRenderTarget, ClearColor);
+		}
 		PrintScreenLog(TEXT("ResetCanvas: Cleared canvas color."), FColor::Yellow, 3.0f);
 	}
 }
@@ -597,7 +791,15 @@ void UTexturePaintComponent::SetBrushMaterial(UMaterialInterface* InBrushMateria
 		BrushMID = UMaterialInstanceDynamic::Create(BrushMaterial, this);
 		if (BrushMID)
 		{
-			UTexture* MaskTex = BrushMaskTexture ? BrushMaskTexture : Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/Bake_Mask_Image.Bake_Mask_Image")));
+			UTexture* MaskTex = BrushMaskTexture;
+			if (!MaskTex)
+			{
+				MaskTex = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/BrushMask/Bake_Mask_Image.Bake_Mask_Image")));
+			}
+			if (!MaskTex)
+			{
+				MaskTex = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/Bake_Mask_Image.Bake_Mask_Image")));
+			}
 			if (MaskTex)
 			{
 				BrushMID->SetTextureParameterValue(FName("BrushTexture"), MaskTex);
@@ -605,31 +807,487 @@ void UTexturePaintComponent::SetBrushMaterial(UMaterialInterface* InBrushMateria
 				BrushMID->SetTextureParameterValue(FName("Mask"), MaskTex);
 				BrushMID->SetTextureParameterValue(FName("Texture"), MaskTex);
 			}
-			PrintScreenLog(FString::Printf(TEXT("SetBrushMaterial: Switched brush material to '%s'."), *BrushMaterial->GetName()), FColor::Green, 3.0f);
+			PrintScreenLog(FString::Printf(TEXT("[SetBrushMaterial] Switched brush material to '%s'."), *BrushMaterial->GetName()), FColor::Green, 3.0f);
 		}
 	}
 	else
 	{
-		PrintScreenLog(TEXT("SetBrushMaterial: Reset to default brush material."), FColor::Yellow, 3.0f);
+		PrintScreenLog(TEXT("[SetBrushMaterial] Reset to default brush material (M_Brush)."), FColor::Yellow, 3.0f);
 	}
 }
 
 void UTexturePaintComponent::SetBrushTexture(UTexture* InBrushTexture)
 {
 	BrushMaskTexture = InBrushTexture;
+	PrintScreenLog(FString::Printf(TEXT("[SetBrushTexture] Updated BrushMaskTexture to: '%s' (%s)"),
+		InBrushTexture ? *InBrushTexture->GetName() : TEXT("NULL"),
+		InBrushTexture ? *InBrushTexture->GetClass()->GetName() : TEXT("")), FColor::Cyan, 4.0f);
+
 	if (BrushMID && BrushMaskTexture)
 	{
 		BrushMID->SetTextureParameterValue(FName("BrushTexture"), BrushMaskTexture);
 		BrushMID->SetTextureParameterValue(FName("BrushMask"), BrushMaskTexture);
 		BrushMID->SetTextureParameterValue(FName("Mask"), BrushMaskTexture);
 		BrushMID->SetTextureParameterValue(FName("Texture"), BrushMaskTexture);
-		PrintScreenLog(FString::Printf(TEXT("SetBrushTexture: Updated brush texture to '%s'."), *BrushMaskTexture->GetName()), FColor::Green, 3.0f);
+	}
+	if (BrushModifierMID && BrushMaskTexture)
+	{
+		BrushModifierMID->SetTextureParameterValue(FName("BrushMask"), BrushMaskTexture);
+		BrushModifierMID->SetTextureParameterValue(FName("BrushTexture"), BrushMaskTexture);
+		BrushModifierMID->SetTextureParameterValue(FName("Mask"), BrushMaskTexture);
 	}
 }
 
 void UTexturePaintComponent::SetBrushMaskTexture(UTexture* InBrushMaskTexture)
 {
 	SetBrushTexture(InBrushMaskTexture);
+}
+
+void UTexturePaintComponent::SetCanvasModifierMaterial(UMaterialInterface* InMaterial)
+{
+	CanvasModifierMaterial = InMaterial;
+	CanvasModifierMID = nullptr;
+	PrintScreenLog(FString::Printf(TEXT("[SetCanvasModifierMaterial] Assigned '%s'."), InMaterial ? *InMaterial->GetName() : TEXT("NULL")), FColor::Cyan, 3.0f);
+}
+
+void UTexturePaintComponent::SetBrushModifierMaterial(UMaterialInterface* InMaterial)
+{
+	BrushModifierMaterial = InMaterial;
+	BrushModifierMID = nullptr;
+	PrintScreenLog(FString::Printf(TEXT("[SetBrushModifierMaterial] Assigned '%s'."), InMaterial ? *InMaterial->GetName() : TEXT("NULL")), FColor::Cyan, 3.0f);
+}
+
+void UTexturePaintComponent::SwapRenderTargets()
+{
+	Swap(RenderTarget, PingPongRenderTarget);
+	if (DynamicMaterial && RenderTarget)
+	{
+		DynamicMaterial->SetTextureParameterValue(TextureParameterName, RenderTarget);
+	}
+	PrintScreenLog(FString::Printf(TEXT("[SwapRenderTargets] Swapped RTs. Active RenderTarget: %p, PingPong: %p"),
+		(void*)RenderTarget, (void*)PingPongRenderTarget), FColor::White, 1.0f);
+}
+
+UMaterialInstanceDynamic* UTexturePaintComponent::GetOrCreateCanvasModifierMID()
+{
+	if (CanvasModifierMID && CanvasModifierMaterial && CanvasModifierMID->Parent != CanvasModifierMaterial)
+	{
+		CanvasModifierMID = nullptr;
+	}
+
+	if (!CanvasModifierMID)
+	{
+		UMaterialInterface* BaseMat = CanvasModifierMaterial;
+		if (!BaseMat)
+		{
+			BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_TextureCanvas.M_TextureCanvas")));
+		}
+		if (!BaseMat)
+		{
+			BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_Brush_calculate.M_Brush_calculate")));
+		}
+
+		if (BaseMat)
+		{
+			CanvasModifierMID = UMaterialInstanceDynamic::Create(BaseMat, this);
+		}
+	}
+
+	return CanvasModifierMID;
+}
+
+UMaterialInstanceDynamic* UTexturePaintComponent::GetOrCreateBrushModifierMID()
+{
+	if (BrushModifierMID && BrushModifierMaterial && BrushModifierMID->Parent != BrushModifierMaterial)
+	{
+		BrushModifierMID = nullptr;
+	}
+
+	if (!BrushModifierMID)
+	{
+		UMaterialInterface* BaseMat = BrushModifierMaterial;
+		if (!BaseMat)
+		{
+			BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_EraseBrush.M_EraseBrush")));
+		}
+		if (!BaseMat)
+		{
+			BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_Brush_calculate.M_Brush_calculate")));
+		}
+		if (!BaseMat)
+		{
+			BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_Brush_samlie.M_Brush_samlie")));
+		}
+		if (BaseMat)
+		{
+			BrushModifierMaterial = BaseMat;
+			BrushModifierMID = UMaterialInstanceDynamic::Create(BaseMat, this);
+			PrintScreenLog(FString::Printf(TEXT("[GetOrCreateBrushModifierMID] Auto-loaded BrushModifierMaterial: '%s'"), *BaseMat->GetName()), FColor::Green, 3.0f);
+		}
+	}
+
+	return BrushModifierMID;
+}
+
+void UTexturePaintComponent::ApplyParametersToMID(
+	UMaterialInstanceDynamic* MID,
+	UTexture* InCanvasTexture,
+	UTexture* InBrushMask,
+	const FLinearColor& InDeltas,
+	const FVector2D& InUV,
+	float InBrushSize,
+	float InRotation,
+	bool bIsGlobal)
+{
+	if (!MID)
+	{
+		return;
+	}
+
+	// 1. Canvas Texture (Source)
+	if (InCanvasTexture)
+	{
+		static const FName CanvasNames[] = {
+			FName("CanvasTexture"),
+			FName("RenderTarget"),
+			FName("RenderTraget"),
+			FName("SourceTexture"),
+			FName("BaseTexture"),
+			FName("Texture"),
+			FName("PaintTexture")
+		};
+		for (const FName& Name : CanvasNames)
+		{
+			MID->SetTextureParameterValue(Name, InCanvasTexture);
+		}
+	}
+
+	// 2. Brush Mask Texture
+	if (InBrushMask)
+	{
+		static const FName MaskNames[] = {
+			FName("BrushMask"),
+			FName("BrushTexture"),
+			FName("Mask"),
+			FName("Brush"),
+			FName("Erase target"),
+			FName("EraseTarget")
+		};
+		for (const FName& Name : MaskNames)
+		{
+			MID->SetTextureParameterValue(Name, InBrushMask);
+		}
+	}
+
+	// 3. Channel Deltas / Color
+	static const FName DeltaNames[] = {
+		FName("ChannelDeltas"),
+		FName("Deltas"),
+		FName("Delta"),
+		FName("PaintColor"),
+		FName("Color"),
+		FName("Erase"),
+		FName("EraseColor"),
+		FName("Tint"),
+		FName("BrushColor")
+	};
+	for (const FName& Name : DeltaNames)
+	{
+		MID->SetVectorParameterValue(Name, InDeltas);
+	}
+
+	// 4. Transforms and dimensions
+	MID->SetScalarParameterValue(FName("BrushRotation"), InRotation);
+	MID->SetScalarParameterValue(FName("Rotation"), InRotation);
+	MID->SetScalarParameterValue(FName("Angle"), InRotation);
+
+	MID->SetScalarParameterValue(FName("BrushSize"), InBrushSize);
+	MID->SetScalarParameterValue(FName("Size"), InBrushSize);
+	MID->SetScalarParameterValue(FName("Radius"), InBrushSize * 0.5f);
+
+	MID->SetScalarParameterValue(FName("bIsGlobal"), bIsGlobal ? 1.0f : 0.0f);
+	MID->SetScalarParameterValue(FName("IsGlobal"), bIsGlobal ? 1.0f : 0.0f);
+
+	const FLinearColor UVVec(InUV.X, InUV.Y, 0.f, 0.f);
+	MID->SetVectorParameterValue(FName("BrushCenter"), UVVec);
+	MID->SetVectorParameterValue(FName("BrushPosition"), UVVec);
+	MID->SetVectorParameterValue(FName("UVCoordinate"), UVVec);
+}
+
+void UTexturePaintComponent::ModifyCanvasChannels(FLinearColor ChannelDeltas)
+{
+	PrintScreenLog(FString::Printf(TEXT("[ModifyCanvasChannels] Global mod: Deltas=(R=%0.3f, G=%0.3f, B=%0.3f, A=%0.3f)"),
+		ChannelDeltas.R, ChannelDeltas.G, ChannelDeltas.B, ChannelDeltas.A), FColor::Cyan, 3.0f);
+
+	if (!RenderTarget)
+	{
+		if (!AutoInitialize())
+		{
+			PrintScreenWarning(TEXT("[ModifyCanvasChannels] ABORTED: RenderTarget is null!"), 4.0f);
+			return;
+		}
+	}
+
+	if (ChannelDeltas.R == 0.f && ChannelDeltas.G == 0.f && ChannelDeltas.B == 0.f && ChannelDeltas.A == 0.f)
+	{
+		return;
+	}
+
+	if (!PingPongRenderTarget && RenderTarget)
+	{
+		PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(
+			this,
+			RenderTarget->SizeX,
+			RenderTarget->SizeY,
+			RTF_RGBA8
+		);
+		CopyTextureToTarget(RenderTarget, PingPongRenderTarget);
+	}
+
+	UMaterialInstanceDynamic* ModifierMID = GetOrCreateCanvasModifierMID();
+	if (!ModifierMID)
+	{
+		PrintScreenWarning(TEXT("[ModifyCanvasChannels] FAILED: No CanvasModifierMaterial found! Assign one or ensure /Game/TextureDraw/M_TextureCanvas exists."), 5.0f);
+		return;
+	}
+
+	// Apply parameters to dynamic material
+	ApplyParametersToMID(ModifierMID, RenderTarget, nullptr, ChannelDeltas, FVector2D::ZeroVector, 0.f, 0.f, true);
+
+	// Draw full screen quad to PingPongRenderTarget
+	UKismetRenderingLibrary::DrawMaterialToRenderTarget(this, PingPongRenderTarget, ModifierMID);
+
+	// Swap targets and update dynamic material on target mesh
+	SwapRenderTargets();
+	PrintScreenLog(TEXT("[ModifyCanvasChannels] Global canvas modification complete."), FColor::Green, 3.0f);
+}
+
+void UTexturePaintComponent::ModifySingleChannel(EPaintChannel Channel, float DeltaValue)
+{
+	const TCHAR* ChannelNames[] = { TEXT("Red (Heat)"), TEXT("Green (Dirt/Oil)"), TEXT("Blue (Rust)"), TEXT("Alpha"), TEXT("All") };
+	const int32 ChannelIdx = static_cast<int32>(Channel);
+	const TCHAR* ChannelStr = (ChannelIdx >= 0 && ChannelIdx < 5) ? ChannelNames[ChannelIdx] : TEXT("Unknown");
+
+	PrintScreenLog(FString::Printf(TEXT("[ModifySingleChannel] Global mod: Channel=%s | Delta=%0.4f"), ChannelStr, DeltaValue), FColor::Cyan, 3.0f);
+
+	if (DeltaValue == 0.f)
+	{
+		return;
+	}
+
+	FLinearColor Deltas(0.f, 0.f, 0.f, 0.f);
+	switch (Channel)
+	{
+	case EPaintChannel::Red:
+		Deltas.R = DeltaValue;
+		break;
+	case EPaintChannel::Green:
+		Deltas.G = DeltaValue;
+		break;
+	case EPaintChannel::Blue:
+		Deltas.B = DeltaValue;
+		break;
+	case EPaintChannel::Alpha:
+		Deltas.A = DeltaValue;
+		break;
+	case EPaintChannel::All:
+		Deltas = FLinearColor(DeltaValue, DeltaValue, DeltaValue, DeltaValue);
+		break;
+	}
+
+	ModifyCanvasChannels(Deltas);
+}
+
+void UTexturePaintComponent::PaintChannelsAtUV(FVector2D UVCoordinate, float BrushSize, FLinearColor ChannelDeltas, float InRotationDegrees)
+{
+	PrintScreenLog(FString::Printf(TEXT("[PaintChannelsAtUV] UV=(%0.4f, %0.4f) | BrushSize=%0.1f | Deltas=(R=%0.3f, G=%0.3f, B=%0.3f, A=%0.3f) | Rot=%0.1f"),
+		UVCoordinate.X, UVCoordinate.Y, BrushSize, ChannelDeltas.R, ChannelDeltas.G, ChannelDeltas.B, ChannelDeltas.A, InRotationDegrees),
+		FColor::Cyan, 2.0f);
+
+	if (!RenderTarget)
+	{
+		PrintScreenWarning(TEXT("[PaintChannelsAtUV] RenderTarget is null! Attempting AutoInitialize..."), 4.0f);
+		if (!AutoInitialize())
+		{
+			PrintScreenError(TEXT("[PaintChannelsAtUV] ABORTED: AutoInitialize failed!"), 6.0f);
+			return;
+		}
+	}
+
+	if (BrushSize <= 0.0f)
+	{
+		PrintScreenWarning(FString::Printf(TEXT("[PaintChannelsAtUV] BrushSize %0.1f <= 0! Skipping."), BrushSize), 3.0f);
+		return;
+	}
+
+	if (ChannelDeltas.R == 0.f && ChannelDeltas.G == 0.f && ChannelDeltas.B == 0.f && ChannelDeltas.A == 0.f)
+	{
+		PrintScreenWarning(TEXT("[PaintChannelsAtUV] All channel deltas are 0.0, nothing to modify."), 2.0f);
+		return;
+	}
+
+	if (UVCoordinate.IsNearlyZero())
+	{
+		PrintScreenWarning(TEXT("[PaintChannelsAtUV] WARNING: UV is (0,0)! If using Line Trace, verify 'Find Collision UV' is enabled on Line Trace node and complex collision is enabled on the mesh."), 5.0f);
+	}
+	if (UVCoordinate.X < 0.0f || UVCoordinate.X > 1.0f || UVCoordinate.Y < 0.0f || UVCoordinate.Y > 1.0f)
+	{
+		PrintScreenWarning(FString::Printf(TEXT("[PaintChannelsAtUV] WARNING: UV (%0.3f, %0.3f) is outside [0.0, 1.0]!"), UVCoordinate.X, UVCoordinate.Y), 5.0f);
+	}
+
+	if (!PingPongRenderTarget && RenderTarget)
+	{
+		PrintScreenLog(FString::Printf(TEXT("[PaintChannelsAtUV] Allocating PingPongRenderTarget (%dx%d)..."), RenderTarget->SizeX, RenderTarget->SizeY), FColor::White, 3.0f);
+		PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(
+			this,
+			RenderTarget->SizeX,
+			RenderTarget->SizeY,
+			RTF_RGBA8
+		);
+		CopyTextureToTarget(RenderTarget, PingPongRenderTarget);
+	}
+
+	// Resolve the active brush texture from component property or default Bake_Mask_Image
+	UTexture* ActiveBrushTexture = BrushMaskTexture;
+	if (!ActiveBrushTexture)
+	{
+		ActiveBrushTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/BrushMask/Bake_Mask_Image.Bake_Mask_Image")));
+	}
+	if (!ActiveBrushTexture)
+	{
+		ActiveBrushTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/Bake_Mask_Image.Bake_Mask_Image")));
+	}
+
+	PrintScreenLog(FString::Printf(TEXT("   - ActiveBrushTexture: '%s'"), ActiveBrushTexture ? *ActiveBrushTexture->GetName() : TEXT("NONE")), FColor::White, 2.0f);
+
+	const float EffectiveRotation = (InRotationDegrees > -900.0f) ? InRotationDegrees : BrushRotation;
+
+	const bool bHasNegativeDelta = (ChannelDeltas.R < 0.f || ChannelDeltas.G < 0.f || ChannelDeltas.B < 0.f);
+
+	if (bHasNegativeDelta)
+	{
+		UMaterialInstanceDynamic* ModifierMID = GetOrCreateBrushModifierMID();
+		if (ModifierMID)
+		{
+			// Erase color: which channels are being erased (positive mask, e.g. 1.0 for the channel to erase)
+			const FLinearColor EraseColor(
+				ChannelDeltas.R < 0.f ? FMath::Abs(ChannelDeltas.R) : 0.f,
+				ChannelDeltas.G < 0.f ? FMath::Abs(ChannelDeltas.G) : 0.f,
+				ChannelDeltas.B < 0.f ? FMath::Abs(ChannelDeltas.B) : 0.f,
+				1.0f
+			);
+
+			// Apply parameters
+			ApplyParametersToMID(ModifierMID, RenderTarget, ActiveBrushTexture, EraseColor, UVCoordinate, BrushSize, EffectiveRotation, false);
+			ModifierMID->SetVectorParameterValue(FName("EraseColor"), EraseColor);
+
+			const bool bIsModulate = (ModifierMID->GetBlendMode() == BLEND_Modulate);
+			UTextureRenderTarget2D* DrawTarget = bIsModulate ? RenderTarget : PingPongRenderTarget;
+
+			if (!bIsModulate)
+			{
+				CopyTextureToTarget(RenderTarget, PingPongRenderTarget);
+			}
+
+			PrintScreenLog(FString::Printf(TEXT("   - ERASE PATH: %s | EraseColor=(R=%0.2f, G=%0.2f, B=%0.2f)"),
+				bIsModulate ? TEXT("Modulate Blend (Direct, Zero Hazard)") : TEXT("Ping-Pong Subtraction"),
+				EraseColor.R, EraseColor.G, EraseColor.B), FColor::Emerald, 2.0f);
+
+			UCanvas* Canvas = nullptr;
+			FVector2D CanvasSize;
+			FDrawToRenderTargetContext DrawContext;
+			UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(this, DrawTarget, Canvas, CanvasSize, DrawContext);
+
+			if (Canvas)
+			{
+				const FVector2D ScreenPos = (UVCoordinate * CanvasSize) - FVector2D(BrushSize * 0.5f, BrushSize * 0.5f);
+				const FVector2D ScreenSize(BrushSize, BrushSize);
+
+				PrintScreenLog(FString::Printf(TEXT("   - Erase quad: Pos=(%0.1f, %0.1f), Size=(%0.1f, %0.1f) on Canvas (%0.0fx%0.0f)"),
+					ScreenPos.X, ScreenPos.Y, ScreenSize.X, ScreenSize.Y, CanvasSize.X, CanvasSize.Y), FColor::White, 2.0f);
+
+				Canvas->K2_DrawMaterial(
+					ModifierMID,
+					ScreenPos,
+					ScreenSize,
+					FVector2D(0.f, 0.f),
+					FVector2D(1.f, 1.f),
+					EffectiveRotation,
+					FVector2D(0.5f, 0.5f)
+				);
+			}
+			else
+			{
+				PrintScreenError(TEXT("[PaintChannelsAtUV] Canvas is null after BeginDrawCanvasToRenderTarget!"), 5.0f);
+			}
+			UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, DrawContext);
+
+			if (!bIsModulate)
+			{
+				SwapRenderTargets();
+			}
+
+			PrintScreenLog(TEXT("[PaintChannelsAtUV] Erase stroke complete!"), FColor::Green, 2.0f);
+		}
+		else
+		{
+			PrintScreenWarning(TEXT("[PaintChannelsAtUV] WARNING: Negative delta (erasing) requested, but BrushModifierMaterial is not assigned! Assign M_Brush_calculate to BrushModifierMaterial for erasing."), 6.0f);
+		}
+	}
+	else
+	{
+		// Painting path: Native Additive blend mode using M_Brush
+		PrintScreenLog(TEXT("   - PAINT PATH: Using M_Brush with Additive blending."), FColor::Cyan, 2.0f);
+		FLinearColor PaintColor = ChannelDeltas;
+		if (PaintColor.A <= 0.0f)
+		{
+			PaintColor.A = 1.0f;
+		}
+
+		PaintAtUV(UVCoordinate, BrushSize, PaintColor, InRotationDegrees);
+	}
+}
+
+void UTexturePaintComponent::PaintSingleChannelAtUV(FVector2D UVCoordinate, float BrushSize, EPaintChannel Channel, float DeltaValue, float InRotationDegrees)
+{
+	const TCHAR* ChannelNames[] = { TEXT("Red (Heat)"), TEXT("Green (Dirt/Oil)"), TEXT("Blue (Rust)"), TEXT("Alpha"), TEXT("All") };
+	const int32 ChannelIdx = static_cast<int32>(Channel);
+	const TCHAR* ChannelStr = (ChannelIdx >= 0 && ChannelIdx < 5) ? ChannelNames[ChannelIdx] : TEXT("Unknown");
+
+	PrintScreenLog(FString::Printf(TEXT("[PaintSingleChannelAtUV] Hit: UV=(%0.4f, %0.4f) | Channel=%s | Delta=%0.4f | BrushSize=%0.1f | Rot=%0.1f"),
+		UVCoordinate.X, UVCoordinate.Y, ChannelStr, DeltaValue, BrushSize, InRotationDegrees),
+		FColor::Cyan, 2.0f);
+
+	if (DeltaValue == 0.f)
+	{
+		PrintScreenWarning(TEXT("[PaintSingleChannelAtUV] DeltaValue is 0.0, nothing to modify."), 2.0f);
+		return;
+	}
+
+	FLinearColor Deltas(0.f, 0.f, 0.f, 1.0f);
+	switch (Channel)
+	{
+	case EPaintChannel::Red:
+		Deltas.R = DeltaValue;
+		break;
+	case EPaintChannel::Green:
+		Deltas.G = DeltaValue;
+		break;
+	case EPaintChannel::Blue:
+		Deltas.B = DeltaValue;
+		break;
+	case EPaintChannel::Alpha:
+		Deltas.A = DeltaValue;
+		break;
+	case EPaintChannel::All:
+		Deltas = FLinearColor(DeltaValue, DeltaValue, DeltaValue, 1.0f);
+		break;
+	}
+
+	PrintScreenLog(FString::Printf(TEXT("   -> Converted Deltas: (R=%0.4f, G=%0.4f, B=%0.4f, A=%0.4f)"),
+		Deltas.R, Deltas.G, Deltas.B, Deltas.A), FColor::White, 2.0f);
+
+	PaintChannelsAtUV(UVCoordinate, BrushSize, Deltas, InRotationDegrees);
 }
 
 float UTexturePaintComponent::CalculatePaintedPercentage(FLinearColor TargetColor, float ColorTolerance, int32 SampleStep)

@@ -17,6 +17,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPaintedPercentageCalculated, floa
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCanvasPixelsReady, const TArray<FColor>&, Pixels, int32, Width, int32, Height);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAsyncCanvasPixelsOutput, const TArray<FColor>&, Pixels, int32, Width, int32, Height, int32, TotalPixels);
 
+/**
+ * Supported texture channels for modular painting and erasing.
+ * Red   = Heat / Emissive (e.g. heated metal on a burner)
+ * Green = Dirt / Oil / Roughness (e.g. grease, grime, sponge cleaning)
+ * Blue  = Rust / Oxidation (e.g. weathering, steel wool scrubbing)
+ * Alpha = Custom layer / Opacity
+ * All   = Applies modification across all channels simultaneously
+ */
+UENUM(BlueprintType)
+enum class EPaintChannel : uint8
+{
+	Red   UMETA(DisplayName = "Red (Heat)"),
+	Green UMETA(DisplayName = "Green (Dirt / Oil)"),
+	Blue  UMETA(DisplayName = "Blue (Rust)"),
+	Alpha UMETA(DisplayName = "Alpha"),
+	All   UMETA(DisplayName = "All Channels")
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class MARRYBYMIDNIGHT_API UTexturePaintComponent : public UActorComponent
 {
@@ -84,6 +102,73 @@ public:
 	/** Returns the active Render Target */
 	UFUNCTION(BlueprintPure, Category = "Painting")
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
+
+	/** Returns the secondary / ping-pong Render Target */
+	UFUNCTION(BlueprintPure, Category = "Painting")
+	UTextureRenderTarget2D* GetPingPongRenderTarget() const { return PingPongRenderTarget; }
+
+	/**
+	 * Paints or erases with brush mask on individual RGB/Alpha channels at a specific UV coordinate.
+	 * Signed delta convention:
+	 *   Delta > 0: Adds to the channel (clamped to 1.0). E.g., R=+0.2 heats up metal.
+	 *   Delta < 0: Subtracts / erases from the channel (clamped to 0.0). E.g., G=-0.3 scrubs off oil.
+	 *   Delta == 0: Leaves channel untouched.
+	 * @param UVCoordinate Center position of the brush stroke in UV space (0.0 to 1.0).
+	 * @param BrushSize Diameter of the brush in texture pixels.
+	 * @param ChannelDeltas Per-channel change values (R, G, B, A).
+	 * @param InRotationDegrees Brush rotation in degrees (-999 uses component's BrushRotation).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void PaintChannelsAtUV(
+		FVector2D UVCoordinate,
+		float BrushSize = 50.0f,
+		FLinearColor ChannelDeltas = FLinearColor(0.1f, 0.f, 0.f, 0.f),
+		float InRotationDegrees = -999.0f
+	);
+
+	/**
+	 * Convenience node to paint or erase a single channel (Red, Green, Blue, Alpha, or All) with a brush.
+	 * @param UVCoordinate Center position of the brush stroke in UV space (0.0 to 1.0).
+	 * @param BrushSize Diameter of the brush in texture pixels.
+	 * @param Channel Which channel to modify (Red/Heat, Green/Oil, Blue/Rust, Alpha, All).
+	 * @param DeltaValue Signed value to apply: positive to add (e.g. +0.2), negative to erase/clean (e.g. -0.3).
+	 * @param InRotationDegrees Brush rotation in degrees (-999 uses component's BrushRotation).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void PaintSingleChannelAtUV(
+		FVector2D UVCoordinate,
+		float BrushSize = 50.0f,
+		EPaintChannel Channel = EPaintChannel::Red,
+		float DeltaValue = 0.1f,
+		float InRotationDegrees = -999.0f
+	);
+
+	/**
+	 * Modifies channels across ALL pixels of the canvas simultaneously.
+	 * Ideal for gradual ambient effects:
+	 *   - Metal cooling: Red = -0.05 * DeltaTime
+	 *   - Washing in soapy water: Green = -0.1 * DeltaTime
+	 *   - Ambient rusting: Blue = +0.01 * DeltaTime
+	 * @param ChannelDeltas Per-channel change values applied to every pixel (clamped between 0.0 and 1.0).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void ModifyCanvasChannels(FLinearColor ChannelDeltas);
+
+	/**
+	 * Modifies a single channel across ALL pixels of the canvas simultaneously.
+	 * @param Channel Which channel to modify (Red, Green, Blue, Alpha, All).
+	 * @param DeltaValue Amount to add (> 0) or subtract (< 0) from all pixels on that channel.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void ModifySingleChannel(EPaintChannel Channel, float DeltaValue);
+
+	/** Sets or changes the canvas modifier material used for global canvas channel operations */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void SetCanvasModifierMaterial(UMaterialInterface* InMaterial);
+
+	/** Sets or changes the brush modifier material used for local channel painting/erasing */
+	UFUNCTION(BlueprintCallable, Category = "Painting|ModularChannels")
+	void SetBrushModifierMaterial(UMaterialInterface* InMaterial);
 
 	/** Returns the dynamic material instance applied to the mesh */
 	UFUNCTION(BlueprintPure, Category = "Painting")
@@ -165,9 +250,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting")
 	bool bAutoInitializeOnBeginPlay;
 
-	/** If true, prints all setup, stroke, warning, and error messages to the on-screen viewport and log. Disabled by default. */
+	/** If true, prints all setup, stroke, warning, and error messages to the on-screen viewport and log. Enabled by default for diagnostic debugging. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting|Debug")
-	bool bEnableScreenLogging = false;
+	bool bEnableScreenLogging = true;
 
 	/**
 	 * Sets debug logging on or off. When false, stroke printing, readback info, and diagnostics are muted.
@@ -245,6 +330,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting")
 	UTexture* BrushMaskTexture;
 
+	/** Configurable canvas modifier material for full-canvas operations (defaults to /Game/TextureDraw/M_TextureCanvas if null) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting|ModularChannels")
+	UMaterialInterface* CanvasModifierMaterial;
+
+	/** Configurable brush modifier material for localized channel painting/erasing (defaults to /Game/TextureDraw/M_Brush_calculate if null) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting|ModularChannels")
+	UMaterialInterface* BrushModifierMaterial;
+
 	/** Name of the texture parameter inside the material to bind the Render Target to */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting")
 	FName TextureParameterName;
@@ -287,6 +380,30 @@ private:
 	/** Copies a source texture across the entire Render Target canvas */
 	void CopyTextureToRenderTarget(UTexture* InTexture);
 
+	/** Copies a source texture across the specified Render Target */
+	void CopyTextureToTarget(UTexture* InTexture, UTextureRenderTarget2D* TargetRT);
+
+	/** Swaps RenderTarget and PingPongRenderTarget, updating the DynamicMaterial parameter */
+	void SwapRenderTargets();
+
+	/** Gets or creates the dynamic material instance for canvas channel modification */
+	UMaterialInstanceDynamic* GetOrCreateCanvasModifierMID();
+
+	/** Gets or creates the dynamic material instance for brush channel modification */
+	UMaterialInstanceDynamic* GetOrCreateBrushModifierMID();
+
+	/** Applies texture, deltas, transform, and flag parameters to a modifier dynamic material */
+	void ApplyParametersToMID(
+		UMaterialInstanceDynamic* MID,
+		UTexture* InCanvasTexture,
+		UTexture* InBrushMask,
+		const FLinearColor& InDeltas,
+		const FVector2D& InUV = FVector2D::ZeroVector,
+		float InBrushSize = 0.0f,
+		float InRotation = 0.0f,
+		bool bIsGlobal = false
+	);
+
 	/** Tracks the last painted UV coordinate for automatic direction calculation */
 	FVector2D LastPaintedUV;
 	bool bHasLastPaintedUV;
@@ -295,10 +412,19 @@ private:
 	UTextureRenderTarget2D* RenderTarget;
 
 	UPROPERTY(Transient)
+	UTextureRenderTarget2D* PingPongRenderTarget;
+
+	UPROPERTY(Transient)
 	UMaterialInstanceDynamic* DynamicMaterial;
 
 	UPROPERTY(Transient)
 	UMaterialInstanceDynamic* BrushMID;
+
+	UPROPERTY(Transient)
+	UMaterialInstanceDynamic* CanvasModifierMID;
+
+	UPROPERTY(Transient)
+	UMaterialInstanceDynamic* BrushModifierMID;
 
 	UPROPERTY(Transient)
 	UTexture* CachedBaseTexture;
