@@ -52,8 +52,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Painting", meta = (AdvancedDisplay = "InMaterialSlotIndex, InOverrideBaseTexture"))
 	void SetupPainting(
-		UStaticMeshComponent* InMeshComponent,
-		UMaterialInterface* InBaseMaterial,
+		UStaticMeshComponent* InMeshComponent = nullptr,
+		UMaterialInterface* InBaseMaterial = nullptr,
 		FName InTextureParameterName = FName("PaintTexture"),
 		int32 InMaterialSlotIndex = 0,
 		UTexture* InOverrideBaseTexture = nullptr
@@ -252,7 +252,7 @@ public:
 
 	/** If true, prints all setup, stroke, warning, and error messages to the on-screen viewport and log. Enabled by default for diagnostic debugging. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Painting|Debug")
-	bool bEnableScreenLogging = true;
+	bool bEnableScreenLogging = false;
 
 	/**
 	 * Sets debug logging on or off. When false, stroke printing, readback info, and diagnostics are muted.

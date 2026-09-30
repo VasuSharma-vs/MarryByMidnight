@@ -19,7 +19,7 @@
 
 UTexturePaintComponent::UTexturePaintComponent()
 	: bAutoInitializeOnBeginPlay(true)
-	, bEnableScreenLogging(true)
+	, bEnableScreenLogging(false)
 	, BrushRotation(0.0f)
 	, MinOrientSpeed(0.01f)
 	, MinRotationInterpSpeed(3.0f)
@@ -53,11 +53,12 @@ void UTexturePaintComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Enable debug logging for diagnostic debugging
-	bEnableScreenLogging = true;
-	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] BeginPlay on '%s' (AutoInit=%s, DefaultRes=%d, Param='%s')"),
-		*GetNameSafe(GetOwner()), bAutoInitializeOnBeginPlay ? TEXT("true") : TEXT("false"),
-		DefaultRenderTargetResolution, *TextureParameterName.ToString());
+	if (bEnableScreenLogging)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[TexturePaint] BeginPlay on '%s' (AutoInit=%s, DefaultRes=%d, Param='%s')"),
+			*GetNameSafe(GetOwner()), bAutoInitializeOnBeginPlay ? TEXT("true") : TEXT("false"),
+			DefaultRenderTargetResolution, *TextureParameterName.ToString());
+	}
 
 	if (bAutoInitializeOnBeginPlay && !RenderTarget)
 	{
@@ -112,10 +113,13 @@ void UTexturePaintComponent::SetEnableScreenLogging(bool bEnable)
 
 void UTexturePaintComponent::PrintScreenLog(const FString& Message, FColor Color, float Duration, uint64 Key)
 {
-	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] %s"), *Message);
-	if (bEnableScreenLogging && GEngine)
+	if (bEnableScreenLogging)
 	{
-		GEngine->AddOnScreenDebugMessage(Key, Duration, Color, FString::Printf(TEXT("[Paint] %s"), *Message));
+		UE_LOG(LogTemp, Log, TEXT("[TexturePaint] %s"), *Message);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(Key, Duration, Color, FString::Printf(TEXT("[Paint] %s"), *Message));
+		}
 	}
 }
 
@@ -146,8 +150,6 @@ bool UTexturePaintComponent::AutoInitialize()
 		return false;
 	}
 
-	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 1/4: Owner actor '%s' found. Searching for StaticMeshComponent..."), *Owner->GetName()), FColor::Cyan, 6.0f);
-
 	UStaticMeshComponent* FoundMesh = TargetMesh;
 	if (!FoundMesh)
 	{
@@ -160,34 +162,11 @@ bool UTexturePaintComponent::AutoInitialize()
 		return false;
 	}
 
-	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 2/4: StaticMeshComponent '%s' found (NumMaterials=%d)."),
-		*FoundMesh->GetName(), FoundMesh->GetNumMaterials()), FColor::Cyan, 6.0f);
+	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Found StaticMeshComponent '%s' on '%s'. Initializing SetupPainting..."),
+		*FoundMesh->GetName(), *Owner->GetName()), FColor::Cyan, 4.0f);
 
-	UMaterialInterface* BaseMat = FoundMesh->GetMaterial(MaterialSlotIndex);
-	if (!BaseMat)
-	{
-		PrintScreenWarning(FString::Printf(TEXT("[AutoInit] No material at slot %d, trying slot 0..."), MaterialSlotIndex), 5.0f);
-		BaseMat = FoundMesh->GetMaterial(0);
-		if (BaseMat)
-		{
-			MaterialSlotIndex = 0;
-		}
-	}
-
-	if (!BaseMat)
-	{
-		PrintScreenWarning(FString::Printf(TEXT("[AutoInit] FAILED: Mesh '%s' has NO material assigned at any slot!"),
-			*FoundMesh->GetName()), 6.0f);
-		return false;
-	}
-
-	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 3/4: Material '%s' (%s) selected at slot %d."),
-		*BaseMat->GetName(), *BaseMat->GetClass()->GetName(), MaterialSlotIndex), FColor::Cyan, 6.0f);
-
-	PrintScreenLog(FString::Printf(TEXT("[AutoInit] Step 4/4: Calling SetupPainting(Mesh='%s', Mat='%s', Param='%s', Slot=%d)..."),
-		*FoundMesh->GetName(), *BaseMat->GetName(), *TextureParameterName.ToString(), MaterialSlotIndex), FColor::Cyan, 6.0f);
-
-	SetupPainting(FoundMesh, BaseMat, TextureParameterName, MaterialSlotIndex);
+	// Pass nullptr for InBaseMaterial to use the unified auto-detection logic
+	SetupPainting(FoundMesh, nullptr, TextureParameterName, MaterialSlotIndex);
 	return RenderTarget != nullptr;
 }
 
@@ -204,11 +183,11 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 
 	UTexture* ExtractedTexture = nullptr;
 
-	// 1. Try specified parameter name
+	// 1. Try specified parameter name (must not be an active RenderTarget)
 	if (!InParamName.IsNone())
 	{
 		InMaterial->GetTextureParameterValue(InParamName, ExtractedTexture);
-		if (ExtractedTexture)
+		if (ExtractedTexture && !ExtractedTexture->IsA<UTextureRenderTarget2D>())
 		{
 			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] FOUND MATCH via specified param '%s' -> Texture '%s' (%s)"),
 				*InParamName.ToString(), *ExtractedTexture->GetName(), *ExtractedTexture->GetClass()->GetName()), FColor::Green, 5.0f);
@@ -216,8 +195,7 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 		}
 		else
 		{
-			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Specified param '%s' has no assigned texture. Scanning fallbacks..."),
-				*InParamName.ToString()), FColor::Yellow, 4.0f);
+			ExtractedTexture = nullptr;
 		}
 	}
 
@@ -238,31 +216,28 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 			continue;
 		}
 		InMaterial->GetTextureParameterValue(ParamName, ExtractedTexture);
-		if (ExtractedTexture)
+		if (ExtractedTexture && !ExtractedTexture->IsA<UTextureRenderTarget2D>())
 		{
 			PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] FOUND MATCH via common param '%s' -> Texture '%s'"),
 				*ParamName.ToString(), *ExtractedTexture->GetName()), FColor::Green, 5.0f);
 			return ExtractedTexture;
 		}
+		ExtractedTexture = nullptr;
 	}
 
 	// 3. Search all texture parameters defined on this material
 	TArray<FMaterialParameterInfo> OutParameterInfo;
 	TArray<FGuid> OutParameterGuids;
 	InMaterial->GetAllTextureParameterInfo(OutParameterInfo, OutParameterGuids);
-	PrintScreenLog(FString::Printf(TEXT("[ExtractBaseTexture] Material '%s' defines %d texture parameter(s):"),
-		*InMaterial->GetName(), OutParameterInfo.Num()), FColor::White, 5.0f);
 
 	for (const FMaterialParameterInfo& ParamInfo : OutParameterInfo)
 	{
 		UTexture* CandidateTex = nullptr;
 		InMaterial->GetTextureParameterValue(ParamInfo, CandidateTex);
-		PrintScreenLog(FString::Printf(TEXT("   - Param '%s' = '%s'"),
-			*ParamInfo.Name.ToString(), CandidateTex ? *CandidateTex->GetName() : TEXT("None")), FColor::White, 4.0f);
-
-		if (!ExtractedTexture && CandidateTex)
+		if (CandidateTex && !CandidateTex->IsA<UTextureRenderTarget2D>())
 		{
 			ExtractedTexture = CandidateTex;
+			break;
 		}
 	}
 
@@ -273,7 +248,7 @@ UTexture* UTexturePaintComponent::ExtractBaseTexture(UMaterialInterface* InMater
 		return ExtractedTexture;
 	}
 
-	PrintScreenWarning(FString::Printf(TEXT("[ExtractBaseTexture] No texture parameter found in material '%s'. Canvas will initialize with solid color."),
+	PrintScreenWarning(FString::Printf(TEXT("[ExtractBaseTexture] No base texture parameter found in material '%s'. Canvas will initialize with solid color."),
 		*InMaterial->GetName()), 5.0f);
 	return nullptr;
 }
@@ -345,11 +320,16 @@ void UTexturePaintComponent::SetupPainting(
 	UTexture* InOverrideBaseTexture)
 {
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 1: Validating Inputs ==="), FColor::Cyan, 6.0f);
-	PrintScreenLog(FString::Printf(TEXT("   - InMeshComponent: %s"), InMeshComponent ? *InMeshComponent->GetName() : TEXT("NULL")), FColor::White, 5.0f);
-	PrintScreenLog(FString::Printf(TEXT("   - InBaseMaterial: %s"), InBaseMaterial ? *InBaseMaterial->GetName() : TEXT("NULL (will auto-fallback)")), FColor::White, 5.0f);
-	PrintScreenLog(FString::Printf(TEXT("   - InTextureParameterName: '%s'"), *InTextureParameterName.ToString()), FColor::White, 5.0f);
-	PrintScreenLog(FString::Printf(TEXT("   - InMaterialSlotIndex: %d"), InMaterialSlotIndex), FColor::White, 5.0f);
-	PrintScreenLog(FString::Printf(TEXT("   - InOverrideBaseTexture: %s"), InOverrideBaseTexture ? *InOverrideBaseTexture->GetName() : TEXT("None")), FColor::White, 5.0f);
+
+	// 1. Resolve mesh component: Use input, or fallback to cached TargetMesh, or search Owner actor
+	if (!InMeshComponent)
+	{
+		InMeshComponent = TargetMesh;
+		if (!InMeshComponent && GetOwner())
+		{
+			InMeshComponent = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
+		}
+	}
 
 	if (!InMeshComponent)
 	{
@@ -360,12 +340,21 @@ void UTexturePaintComponent::SetupPainting(
 	TargetMesh = InMeshComponent;
 	MaterialSlotIndex = InMaterialSlotIndex;
 
-	// Auto-fallback: If InBaseMaterial was left unconnected, grab it directly from the mesh component
+	if (!InTextureParameterName.IsNone())
+	{
+		TextureParameterName = InTextureParameterName;
+	}
+
+	// 2. Auto-fallback: If InBaseMaterial was left unconnected, query mesh component or static mesh asset
 	if (!InBaseMaterial)
 	{
 		PrintScreenLog(FString::Printf(TEXT("[SetupPainting] InBaseMaterial not provided; querying mesh '%s' slot %d..."), *TargetMesh->GetName(), MaterialSlotIndex), FColor::Yellow, 5.0f);
+
+		// Try requested slot on mesh component
 		InBaseMaterial = TargetMesh->GetMaterial(MaterialSlotIndex);
-		if (!InBaseMaterial)
+
+		// If slot had nothing and index wasn't 0, try slot 0
+		if (!InBaseMaterial && MaterialSlotIndex != 0)
 		{
 			InBaseMaterial = TargetMesh->GetMaterial(0);
 			if (InBaseMaterial)
@@ -373,26 +362,71 @@ void UTexturePaintComponent::SetupPainting(
 				MaterialSlotIndex = 0;
 			}
 		}
+
+		// If still nothing, search all slots on the mesh component
+		if (!InBaseMaterial)
+		{
+			const int32 NumMats = TargetMesh->GetNumMaterials();
+			for (int32 Slot = 0; Slot < NumMats; ++Slot)
+			{
+				if (UMaterialInterface* Mat = TargetMesh->GetMaterial(Slot))
+				{
+					InBaseMaterial = Mat;
+					MaterialSlotIndex = Slot;
+					break;
+				}
+			}
+		}
+
+		// If still nothing on component, check the StaticMesh asset itself directly
+		if (!InBaseMaterial && TargetMesh->GetStaticMesh())
+		{
+			UStaticMesh* SM = TargetMesh->GetStaticMesh();
+			InBaseMaterial = SM->GetMaterial(MaterialSlotIndex);
+			if (!InBaseMaterial)
+			{
+				const TArray<FStaticMaterial>& StaticMaterials = SM->GetStaticMaterials();
+				for (int32 Slot = 0; Slot < StaticMaterials.Num(); ++Slot)
+				{
+					if (StaticMaterials[Slot].MaterialInterface)
+					{
+						InBaseMaterial = StaticMaterials[Slot].MaterialInterface;
+						MaterialSlotIndex = Slot;
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	if (!InBaseMaterial)
 	{
-		PrintScreenError(FString::Printf(TEXT("[SetupPainting] ABORTED: Mesh '%s' has NO material assigned at slot %d or slot 0!"),
-			*TargetMesh->GetName(), MaterialSlotIndex), 8.0f);
+		PrintScreenError(FString::Printf(TEXT("[SetupPainting] ABORTED: Mesh '%s' has NO material assigned at any slot or asset!"),
+			*TargetMesh->GetName()), 8.0f);
 		return;
 	}
 
-	PrintScreenLog(FString::Printf(TEXT("[SetupPainting] Base material confirmed: '%s' (%s)"),
-		*InBaseMaterial->GetName(), *InBaseMaterial->GetClass()->GetName()), FColor::Cyan, 5.0f);
-
-	if (!InTextureParameterName.IsNone())
+	// 3. Unwrap any existing MaterialInstanceDynamic to find the true root master material (UMaterial or UMaterialInstanceConstant).
+	// In Unreal Engine, a UMaterialInstanceDynamic cannot have another UMaterialInstanceDynamic as parent!
+	UMaterialInterface* CleanBaseMaterial = InBaseMaterial;
+	while (UMaterialInstanceDynamic* AsMID = Cast<UMaterialInstanceDynamic>(CleanBaseMaterial))
 	{
-		TextureParameterName = InTextureParameterName;
+		if (AsMID->Parent)
+		{
+			CleanBaseMaterial = AsMID->Parent;
+		}
+		else
+		{
+			break;
+		}
 	}
 
-	// 2. Resolve base texture
+	PrintScreenLog(FString::Printf(TEXT("[SetupPainting] Base material confirmed: '%s' (%s) [Parent: '%s']"),
+		*InBaseMaterial->GetName(), *InBaseMaterial->GetClass()->GetName(), *CleanBaseMaterial->GetName()), FColor::Cyan, 5.0f);
+
+	// 4. Resolve base texture (always scan CleanBaseMaterial so we never extract an active RenderTarget)
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 2: Resolving Base Texture ==="), FColor::Cyan, 5.0f);
-	CachedBaseTexture = InOverrideBaseTexture ? InOverrideBaseTexture : ExtractBaseTexture(InBaseMaterial, TextureParameterName);
+	CachedBaseTexture = InOverrideBaseTexture ? InOverrideBaseTexture : ExtractBaseTexture(CleanBaseMaterial, TextureParameterName);
 	if (CachedBaseTexture)
 	{
 		PrintScreenLog(FString::Printf(TEXT("   -> Base Texture: '%s' (%s)"), *CachedBaseTexture->GetName(), *CachedBaseTexture->GetClass()->GetName()), FColor::Green, 5.0f);
@@ -402,7 +436,7 @@ void UTexturePaintComponent::SetupPainting(
 		PrintScreenLog(TEXT("   -> Base Texture: NONE (canvas will start with CanvasBaseColor)"), FColor::Yellow, 5.0f);
 	}
 
-	// 3. Determine Render Target resolution
+	// 5. Determine Render Target resolution
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 3: Determining Canvas Resolution ==="), FColor::Cyan, 5.0f);
 	int32 TargetWidth = DefaultRenderTargetResolution > 0 ? DefaultRenderTargetResolution : 1024;
 	int32 TargetHeight = TargetWidth;
@@ -426,10 +460,17 @@ void UTexturePaintComponent::SetupPainting(
 		PrintScreenLog(FString::Printf(TEXT("   -> Using default resolution: %dx%d"), TargetWidth, TargetHeight), FColor::Cyan, 5.0f);
 	}
 
-	// 4. Create or reallocate Render Targets (Use RTF_RGBA8 for 8-bit RGBA and direct PF_B8G8R8A8 memory layout)
+	// 6. Create or reallocate Render Targets (Use RTF_RGBA8 for 8-bit RGBA and direct PF_B8G8R8A8 memory layout)
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 4: Creating Render Targets (RTF_RGBA8) ==="), FColor::Cyan, 5.0f);
-	RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
-	PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
+	if (!RenderTarget || RenderTarget->SizeX != TargetWidth || RenderTarget->SizeY != TargetHeight)
+	{
+		RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
+	}
+	if (!PingPongRenderTarget || PingPongRenderTarget->SizeX != TargetWidth || PingPongRenderTarget->SizeY != TargetHeight)
+	{
+		PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, TargetWidth, TargetHeight, RTF_RGBA8);
+	}
+
 	if (!RenderTarget || !PingPongRenderTarget)
 	{
 		PrintScreenError(FString::Printf(TEXT("[SetupPainting] FAILED to allocate %dx%d RenderTarget(s)!"), TargetWidth, TargetHeight), 8.0f);
@@ -438,17 +479,24 @@ void UTexturePaintComponent::SetupPainting(
 	PrintScreenLog(FString::Printf(TEXT("   -> RenderTarget: %dx%d (Addr: %p)"), TargetWidth, TargetHeight, (void*)RenderTarget), FColor::Green, 5.0f);
 	PrintScreenLog(FString::Printf(TEXT("   -> PingPongRenderTarget: %dx%d (Addr: %p)"), TargetWidth, TargetHeight, (void*)PingPongRenderTarget), FColor::Green, 5.0f);
 
-	// 5. Copy base texture onto Render Targets
+	// 7. Copy base texture onto Render Targets
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 5: Initializing Canvas Contents ==="), FColor::Cyan, 5.0f);
 	CopyTextureToTarget(CachedBaseTexture, RenderTarget);
 	CopyTextureToTarget(CachedBaseTexture, PingPongRenderTarget);
 
-	// 6. Create Dynamic Material Instance from base material
+	// 8. Create or obtain Dynamic Material Instance on the mesh component
+	// Using CleanBaseMaterial ensures the parent is always a valid UMaterial or UMaterialInstanceConstant
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 6: Creating Dynamic Material Instance ==="), FColor::Cyan, 5.0f);
-	DynamicMaterial = UMaterialInstanceDynamic::Create(InBaseMaterial, this);
+	DynamicMaterial = TargetMesh->CreateDynamicMaterialInstance(MaterialSlotIndex, CleanBaseMaterial);
 	if (!DynamicMaterial)
 	{
-		PrintScreenError(FString::Printf(TEXT("[SetupPainting] FAILED to create Dynamic Material Instance from '%s'!"), *InBaseMaterial->GetName()), 8.0f);
+		DynamicMaterial = UMaterialInstanceDynamic::Create(CleanBaseMaterial, this);
+		TargetMesh->SetMaterial(MaterialSlotIndex, DynamicMaterial);
+	}
+
+	if (!DynamicMaterial)
+	{
+		PrintScreenError(FString::Printf(TEXT("[SetupPainting] FAILED to create Dynamic Material Instance from '%s'!"), *CleanBaseMaterial->GetName()), 8.0f);
 		return;
 	}
 
@@ -468,12 +516,15 @@ void UTexturePaintComponent::SetupPainting(
 	if (!bParamBound)
 	{
 		PrintScreenWarning(FString::Printf(TEXT("[SetupPainting] WARNING: Material '%s' does NOT have a texture parameter named '%s'! Ensure the material has a Texture Sample Parameter named '%s'!"),
-			*InBaseMaterial->GetName(), *TextureParameterName.ToString(), *TextureParameterName.ToString()), 7.0f);
+			*CleanBaseMaterial->GetName(), *TextureParameterName.ToString(), *TextureParameterName.ToString()), 7.0f);
 	}
 
-	// 7. Apply to mesh component at designated slot
+	// 9. Apply to mesh component at designated slot
 	PrintScreenLog(TEXT("[SetupPainting] === STEP 7: Applying Dynamic Material to Mesh ==="), FColor::Cyan, 5.0f);
-	TargetMesh->SetMaterial(MaterialSlotIndex, DynamicMaterial);
+	if (TargetMesh->GetMaterial(MaterialSlotIndex) != DynamicMaterial)
+	{
+		TargetMesh->SetMaterial(MaterialSlotIndex, DynamicMaterial);
+	}
 
 	// Verify material on mesh slot
 	UMaterialInterface* AppliedMat = TargetMesh->GetMaterial(MaterialSlotIndex);
@@ -1033,33 +1084,113 @@ void UTexturePaintComponent::ModifyCanvasChannels(FLinearColor ChannelDeltas)
 		return;
 	}
 
-	if (!PingPongRenderTarget && RenderTarget)
+	// Resolve a pure solid white mask for whole-canvas drawing
+	UTexture* WhiteTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/BrushMask/White1.White1")));
+	if (!WhiteTexture)
 	{
-		PingPongRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(
-			this,
-			RenderTarget->SizeX,
-			RenderTarget->SizeY,
-			RTF_RGBA8
-		);
-		CopyTextureToTarget(RenderTarget, PingPongRenderTarget);
+		WhiteTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Game/TextureDraw/White1.White1")));
+	}
+	if (!WhiteTexture)
+	{
+		WhiteTexture = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture")));
 	}
 
-	UMaterialInstanceDynamic* ModifierMID = GetOrCreateCanvasModifierMID();
-	if (!ModifierMID)
+	const bool bHasNegativeDelta = (ChannelDeltas.R < 0.f || ChannelDeltas.G < 0.f || ChannelDeltas.B < 0.f || ChannelDeltas.A < 0.f);
+	const bool bHasPositiveDelta = (ChannelDeltas.R > 0.f || ChannelDeltas.G > 0.f || ChannelDeltas.B > 0.f || ChannelDeltas.A > 0.f);
+
+	// Pass 1: Negative deltas (Cooling / Cleaning / Erasing) via M_EraseBrush (Modulate, direct draw, zero hazard)
+	if (bHasNegativeDelta)
 	{
-		PrintScreenWarning(TEXT("[ModifyCanvasChannels] FAILED: No CanvasModifierMaterial found! Assign one or ensure /Game/TextureDraw/M_TextureCanvas exists."), 5.0f);
-		return;
+		UMaterialInstanceDynamic* EraseMID = GetOrCreateBrushModifierMID();
+		if (EraseMID)
+		{
+			auto MapEraseDelta = [](float InDelta) -> float
+			{
+				if (InDelta >= 0.0f)
+				{
+					return 0.0f;
+				}
+				const float Mag = FMath::Clamp(FMath::Abs(InDelta), 0.0f, 1.0f);
+				return FMath::Pow(Mag, 0.45f);
+			};
+
+			const FLinearColor EraseColor(
+				MapEraseDelta(ChannelDeltas.R),
+				MapEraseDelta(ChannelDeltas.G),
+				MapEraseDelta(ChannelDeltas.B),
+				ChannelDeltas.A < 0.f ? MapEraseDelta(ChannelDeltas.A) : 1.0f
+			);
+
+			if (WhiteTexture)
+			{
+				EraseMID->SetTextureParameterValue(FName("BrushTexture"), WhiteTexture);
+				EraseMID->SetTextureParameterValue(FName("BrushMask"), WhiteTexture);
+				EraseMID->SetTextureParameterValue(FName("Mask"), WhiteTexture);
+			}
+			EraseMID->SetVectorParameterValue(FName("EraseColor"), EraseColor);
+			EraseMID->SetVectorParameterValue(FName("PaintColor"), EraseColor);
+			EraseMID->SetVectorParameterValue(FName("Color"), EraseColor);
+
+			UCanvas* Canvas = nullptr;
+			FVector2D CanvasSize;
+			FDrawToRenderTargetContext DrawContext;
+			UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(this, RenderTarget, Canvas, CanvasSize, DrawContext);
+			if (Canvas)
+			{
+				Canvas->K2_DrawMaterial(EraseMID, FVector2D(0.f, 0.f), CanvasSize, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f));
+			}
+			UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, DrawContext);
+			PrintScreenLog(TEXT("   - Global erase pass complete (Modulate, direct draw)."), FColor::Emerald, 2.0f);
+		}
 	}
 
-	// Apply parameters to dynamic material
-	ApplyParametersToMID(ModifierMID, RenderTarget, nullptr, ChannelDeltas, FVector2D::ZeroVector, 0.f, 0.f, true);
+	// Pass 2: Positive deltas (Heating / Adding) via M_Brush (Additive, direct draw)
+	if (bHasPositiveDelta)
+	{
+		UMaterialInterface* BaseBrushMat = BrushMaterial;
+		if (!BaseBrushMat)
+		{
+			BaseBrushMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/TextureDraw/M_Brush.M_Brush")));
+		}
+		if (BaseBrushMat && !BrushMID)
+		{
+			BrushMID = UMaterialInstanceDynamic::Create(BaseBrushMat, this);
+		}
 
-	// Draw full screen quad to PingPongRenderTarget
-	UKismetRenderingLibrary::DrawMaterialToRenderTarget(this, PingPongRenderTarget, ModifierMID);
+		if (BrushMID)
+		{
+			const FLinearColor PaintColor(
+				ChannelDeltas.R > 0.f ? ChannelDeltas.R : 0.f,
+				ChannelDeltas.G > 0.f ? ChannelDeltas.G : 0.f,
+				ChannelDeltas.B > 0.f ? ChannelDeltas.B : 0.f,
+				ChannelDeltas.A > 0.f ? ChannelDeltas.A : 0.f
+			);
 
-	// Swap targets and update dynamic material on target mesh
-	SwapRenderTargets();
-	PrintScreenLog(TEXT("[ModifyCanvasChannels] Global canvas modification complete."), FColor::Green, 3.0f);
+			if (WhiteTexture)
+			{
+				BrushMID->SetTextureParameterValue(FName("BrushTexture"), WhiteTexture);
+				BrushMID->SetTextureParameterValue(FName("BrushMask"), WhiteTexture);
+				BrushMID->SetTextureParameterValue(FName("Mask"), WhiteTexture);
+			}
+			BrushMID->SetVectorParameterValue(FName("PaintColor"), PaintColor);
+			BrushMID->SetVectorParameterValue(FName("Color"), PaintColor);
+			BrushMID->SetVectorParameterValue(FName("Tint"), PaintColor);
+			BrushMID->SetVectorParameterValue(FName("BrushColor"), PaintColor);
+
+			UCanvas* Canvas = nullptr;
+			FVector2D CanvasSize;
+			FDrawToRenderTargetContext DrawContext;
+			UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(this, RenderTarget, Canvas, CanvasSize, DrawContext);
+			if (Canvas)
+			{
+				Canvas->K2_DrawMaterial(BrushMID, FVector2D(0.f, 0.f), CanvasSize, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f));
+			}
+			UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, DrawContext);
+			PrintScreenLog(TEXT("   - Global paint pass complete (Additive, direct draw)."), FColor::Cyan, 2.0f);
+		}
+	}
+
+	PrintScreenLog(TEXT("[ModifyCanvasChannels] Global canvas modification complete."), FColor::Green, 2.0f);
 }
 
 void UTexturePaintComponent::ModifySingleChannel(EPaintChannel Channel, float DeltaValue)
@@ -1162,24 +1293,45 @@ void UTexturePaintComponent::PaintChannelsAtUV(FVector2D UVCoordinate, float Bru
 
 	const float EffectiveRotation = (InRotationDegrees > -900.0f) ? InRotationDegrees : BrushRotation;
 
-	const bool bHasNegativeDelta = (ChannelDeltas.R < 0.f || ChannelDeltas.G < 0.f || ChannelDeltas.B < 0.f);
+	const bool bHasNegativeDelta = (ChannelDeltas.R < 0.f || ChannelDeltas.G < 0.f || ChannelDeltas.B < 0.f || ChannelDeltas.A < 0.f);
 
 	if (bHasNegativeDelta)
 	{
 		UMaterialInstanceDynamic* ModifierMID = GetOrCreateBrushModifierMID();
 		if (ModifierMID)
 		{
-			// Erase color: which channels are being erased (positive mask, e.g. 1.0 for the channel to erase)
+			// Map raw negative deltas through a perceptual curve (power 0.45).
+			// This ensures low deltas (e.g. -0.1) have sufficient per-frame attenuation
+			// to cross the 8-bit quantization threshold (< 0.002) and drop to true 0.0,
+			// eliminating asymptotic ghost residue smudges while maintaining controllable speed.
+			auto MapEraseDelta = [](float InDelta) -> float
+			{
+				if (InDelta >= 0.0f)
+				{
+					return 0.0f;
+				}
+				const float Mag = FMath::Clamp(FMath::Abs(InDelta), 0.0f, 1.0f);
+				return FMath::Pow(Mag, 0.45f);
+			};
+
 			const FLinearColor EraseColor(
-				ChannelDeltas.R < 0.f ? FMath::Abs(ChannelDeltas.R) : 0.f,
-				ChannelDeltas.G < 0.f ? FMath::Abs(ChannelDeltas.G) : 0.f,
-				ChannelDeltas.B < 0.f ? FMath::Abs(ChannelDeltas.B) : 0.f,
-				1.0f
+				MapEraseDelta(ChannelDeltas.R),
+				MapEraseDelta(ChannelDeltas.G),
+				MapEraseDelta(ChannelDeltas.B),
+				ChannelDeltas.A < 0.f ? MapEraseDelta(ChannelDeltas.A) : 1.0f
 			);
 
 			// Apply parameters
 			ApplyParametersToMID(ModifierMID, RenderTarget, ActiveBrushTexture, EraseColor, UVCoordinate, BrushSize, EffectiveRotation, false);
 			ModifierMID->SetVectorParameterValue(FName("EraseColor"), EraseColor);
+			ModifierMID->SetVectorParameterValue(FName("PaintColor"), EraseColor);
+			ModifierMID->SetVectorParameterValue(FName("Color"), EraseColor);
+
+			const float MaxEraseMag = FMath::Max3(EraseColor.R, EraseColor.G, EraseColor.B);
+			ModifierMID->SetScalarParameterValue(FName("EraseStrength"), MaxEraseMag);
+			ModifierMID->SetScalarParameterValue(FName("Strength"), MaxEraseMag);
+			ModifierMID->SetScalarParameterValue(FName("Delta"), MaxEraseMag);
+			ModifierMID->SetScalarParameterValue(FName("DeltaValue"), MaxEraseMag);
 
 			const bool bIsModulate = (ModifierMID->GetBlendMode() == BLEND_Modulate);
 			UTextureRenderTarget2D* DrawTarget = bIsModulate ? RenderTarget : PingPongRenderTarget;
@@ -1189,9 +1341,10 @@ void UTexturePaintComponent::PaintChannelsAtUV(FVector2D UVCoordinate, float Bru
 				CopyTextureToTarget(RenderTarget, PingPongRenderTarget);
 			}
 
-			PrintScreenLog(FString::Printf(TEXT("   - ERASE PATH: %s | EraseColor=(R=%0.2f, G=%0.2f, B=%0.2f)"),
+			PrintScreenLog(FString::Printf(TEXT("   - ERASE PATH: %s | EffectiveErase=(R=%0.3f, G=%0.3f, B=%0.3f) [RawDelta=(R=%0.3f, G=%0.3f, B=%0.3f)]"),
 				bIsModulate ? TEXT("Modulate Blend (Direct, Zero Hazard)") : TEXT("Ping-Pong Subtraction"),
-				EraseColor.R, EraseColor.G, EraseColor.B), FColor::Emerald, 2.0f);
+				EraseColor.R, EraseColor.G, EraseColor.B,
+				ChannelDeltas.R, ChannelDeltas.G, ChannelDeltas.B), FColor::Emerald, 2.0f);
 
 			UCanvas* Canvas = nullptr;
 			FVector2D CanvasSize;
