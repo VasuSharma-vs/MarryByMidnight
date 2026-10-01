@@ -83,15 +83,100 @@ void UStaticMeshPhysicsSimulationComponent::OnRep_CurrentState()
 
 void UStaticMeshPhysicsSimulationComponent::OnRep_IsGrabbable()
 {
+	SetActorGrabbableValue(bIsGrabbable);
+}
+
+FBoolProperty* UStaticMeshPhysicsSimulationComponent::FindActorGrabbableProperty() const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return nullptr;
+
+	UClass* OwnerClass = Owner->GetClass();
+	static const TArray<FName> PotentialNames = {
+		FName(TEXT("bIsGrabbable")),
+		FName(TEXT("bIsGrabable")),
+		FName(TEXT("IsGrabbable")),
+		FName(TEXT("IsGrabable")),
+		FName(TEXT("is_grabbable")),
+		FName(TEXT("is_grabable")),
+		FName(TEXT("is grabable")),
+		FName(TEXT("is grabbable"))
+	};
+
+	for (const FName& PropName : PotentialNames)
+	{
+		if (FProperty* Prop = OwnerClass->FindPropertyByName(PropName))
+		{
+			if (FBoolProperty* BoolProp = CastField<FBoolProperty>(Prop))
+			{
+				return BoolProp;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+bool UStaticMeshPhysicsSimulationComponent::GetActorGrabbableValue(bool& bOutHasProperty) const
+{
+	bOutHasProperty = false;
+	AActor* Owner = GetOwner();
+	if (!Owner) return false;
+
+	if (AInteractableProp* Prop = Cast<AInteractableProp>(Owner))
+	{
+		bOutHasProperty = true;
+		return Prop->bIsGrabbable;
+	}
+
+	if (FBoolProperty* BoolProp = FindActorGrabbableProperty())
+	{
+		bOutHasProperty = true;
+		return BoolProp->GetPropertyValue_InContainer(Owner);
+	}
+
+	return false;
+}
+
+void UStaticMeshPhysicsSimulationComponent::SetActorGrabbableValue(bool bNewGrabbable)
+{
+	bIsGrabbable = bNewGrabbable;
+
 	AActor* Owner = GetOwner();
 	if (Owner)
 	{
+		// 1. Direct typed access if owner is AInteractableProp
 		if (AInteractableProp* Prop = Cast<AInteractableProp>(Owner))
 		{
-			Prop->SetGrabbable(bIsGrabbable);
+			Prop->SetGrabbable(bNewGrabbable);
+			OnGrabbableStateChanged.Broadcast(bNewGrabbable);
+			return;
 		}
+
+		// 2. Dynamic reflection access for Blueprint actors (e.g. PSO_BaseMesh)
+		if (FBoolProperty* BoolProp = FindActorGrabbableProperty())
+		{
+			BoolProp->SetPropertyValue_InContainer(Owner, bNewGrabbable);
+			OnGrabbableStateChanged.Broadcast(bNewGrabbable);
+			return;
+		}
+
+		// 3. If actor does not have grabbable variable, skip without error
 	}
-	OnGrabbableStateChanged.Broadcast(bIsGrabbable);
+
+	OnGrabbableStateChanged.Broadcast(bNewGrabbable);
+}
+
+bool UStaticMeshPhysicsSimulationComponent::IsGrabbable() const
+{
+	bool bHasProperty = false;
+	const bool bActorValue = GetActorGrabbableValue(bHasProperty);
+	if (bHasProperty)
+	{
+		return bActorValue;
+	}
+
+	return bIsGrabbable;
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetPhysicsState(EPhysicsSimulationState NewState, float CustomDelay, float CustomTolerance)
@@ -285,18 +370,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 
 void UStaticMeshPhysicsSimulationComponent::SetGrabbableInternal(bool bNewGrabbable)
 {
-	bIsGrabbable = bNewGrabbable;
-
-	AActor* Owner = GetOwner();
-	if (Owner)
-	{
-		if (AInteractableProp* Prop = Cast<AInteractableProp>(Owner))
-		{
-			Prop->SetGrabbable(bNewGrabbable);
-		}
-	}
-
-	OnGrabbableStateChanged.Broadcast(bNewGrabbable);
+	SetActorGrabbableValue(bNewGrabbable);
 }
 
 void UStaticMeshPhysicsSimulationComponent::TransitionFromUnsettledToSettling()

@@ -64,12 +64,23 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentState();
 
-	/** Whether the object is currently grabbable in its active state (Replicated) */
-	UPROPERTY(ReplicatedUsing = OnRep_IsGrabbable, VisibleAnywhere, BlueprintReadOnly, Category = "Physics Simulation")
+	/** Internal replicated grabbable state (hidden from Details panel to avoid duplicating Actor's Is Grabable) */
+	UPROPERTY(ReplicatedUsing = OnRep_IsGrabbable)
 	bool bIsGrabbable = false;
 
 	UFUNCTION()
 	void OnRep_IsGrabbable();
+
+	/** Attempts to find the grabbable boolean property on the owning Actor */
+	FBoolProperty* FindActorGrabbableProperty() const;
+
+	/** Reads the grabbable value from the owning Actor if available */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	bool GetActorGrabbableValue(bool& bOutHasProperty) const;
+
+	/** Updates the grabbable value on the owning Actor if available; skips if not available */
+	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
+	void SetActorGrabbableValue(bool bNewGrabbable);
 
 	/** Default delay in seconds before transitioning from Unsettled to Settling (default: 3.0s) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Default Unsettled Delay"), Category = "Physics Simulation")
@@ -124,7 +135,7 @@ public:
 	bool IsUnsettledTimerActive() const;
 
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
-	bool IsGrabbable() const { return bIsGrabbable; }
+	bool IsGrabbable() const;
 
 	UFUNCTION(Server, Reliable, WithValidation, Category = "Physics Simulation|Network")
 	void Server_SetPhysicsState(EPhysicsSimulationState NewState, float CustomDelay = -1.0f, float CustomTolerance = -1.0f);
