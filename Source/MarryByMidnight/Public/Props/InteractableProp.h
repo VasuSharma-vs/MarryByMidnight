@@ -58,6 +58,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void SetGrabbable(bool bNewGrabbable);
 
+	/** Retriggers/resets the unsettled timer back to 3.0s (or custom delay) */
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	void RetriggerUnsettled(float NewDelay = -1.0f);
+
 	// ---------------------------------------------------------
 	// Player Interaction Pathway
 	// ---------------------------------------------------------

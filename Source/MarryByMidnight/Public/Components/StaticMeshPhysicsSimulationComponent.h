@@ -111,6 +111,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
 	void SetStateUnsettled(float UnsettledDelay = -1.0f);
 
+	/** Retriggers/resets the unsettled countdown timer back to full delay (e.g. resets to 3.0s if re-triggered after 2s) */
+	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
+	void RetriggerUnsettledTimer(float NewDelay = -1.0f);
+
+	/** Returns remaining time in seconds on the Unsettled countdown timer before transitioning to Settling */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	float GetRemainingUnsettledTime() const;
+
+	/** Returns true if the Unsettled countdown timer is actively ticking */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	bool IsUnsettledTimerActive() const;
+
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
 	bool IsGrabbable() const { return bIsGrabbable; }
 

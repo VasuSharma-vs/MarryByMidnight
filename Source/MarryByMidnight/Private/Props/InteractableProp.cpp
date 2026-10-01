@@ -103,6 +103,14 @@ void AInteractableProp::SetGrabbable(bool bNewGrabbable)
 	UpdateDebugBillboard();
 }
 
+void AInteractableProp::RetriggerUnsettled(float NewDelay)
+{
+	if (PhysicsSimComponent)
+	{
+		PhysicsSimComponent->RetriggerUnsettledTimer(NewDelay);
+	}
+}
+
 // -------------------------------------------------------------
 // Player Interaction Pathway
 // -------------------------------------------------------------

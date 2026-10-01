@@ -144,6 +144,28 @@ void UStaticMeshPhysicsSimulationComponent::SetStateUnsettled(float UnsettledDel
 	SetPhysicsState(EPhysicsSimulationState::Unsettled, UnsettledDelay);
 }
 
+void UStaticMeshPhysicsSimulationComponent::RetriggerUnsettledTimer(float NewDelay)
+{
+	// Calling SetStateUnsettled resets any active countdown and starts a fresh timer (e.g. 3.0s)
+	SetStateUnsettled(NewDelay);
+}
+
+float UStaticMeshPhysicsSimulationComponent::GetRemainingUnsettledTime() const
+{
+	UWorld* World = GetWorld();
+	if (World && World->GetTimerManager().IsTimerActive(UnsettledTimerHandle))
+	{
+		return World->GetTimerManager().GetTimerRemaining(UnsettledTimerHandle);
+	}
+	return 0.0f;
+}
+
+bool UStaticMeshPhysicsSimulationComponent::IsUnsettledTimerActive() const
+{
+	UWorld* World = GetWorld();
+	return World ? World->GetTimerManager().IsTimerActive(UnsettledTimerHandle) : false;
+}
+
 void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState NewState, float CustomDelay, float CustomTolerance)
 {
 	const EPhysicsSimulationState PrevState = CurrentState;
