@@ -8,11 +8,11 @@ class UPrimitiveComponent;
 
 /**
  * States for physics simulated mesh objects:
- * 1. At Rest: Physics off, default collision profile, not grabbable, replicated.
- * 2. In Motion: Physics on, default collision profile, not grabbable, replicated.
- * 3. Held: Physics off, IgnoreOnlyPawn collision, not grabbable, not replicated.
- * 4. Settling: Physics on, monitors linear velocity until <= tolerance, then sets state to At Rest.
- * 5. Unsettled: Physics on, default collision profile, grabbable, replicated, transitions to Settling after delay.
+ * 1. At Rest: Physics off, default collision profile, grabbable = true, replicated.
+ * 2. In Motion: Physics on, default collision profile, grabbable = true, replicated.
+ * 3. Held: Physics off, IgnoreOnlyPawn collision, grabbable = false, not replicated.
+ * 4. Settling: Physics on, monitors linear velocity until <= tolerance, grabbable = true.
+ * 5. Unsettled: Physics on, default collision profile, grabbable = true, replicated, transitions to Settling after delay.
  */
 UENUM(BlueprintType)
 enum class EPhysicsSimulationState : uint8

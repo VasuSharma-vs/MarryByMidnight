@@ -176,7 +176,7 @@ bool UStaticMeshPhysicsSimulationComponent::IsGrabbable() const
 		return bActorValue;
 	}
 
-	return bIsGrabbable;
+	return CurrentState != EPhysicsSimulationState::Held;
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetPhysicsState(EPhysicsSimulationState NewState, float CustomDelay, float CustomTolerance)
@@ -269,7 +269,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 	switch (NewState)
 	{
 	case EPhysicsSimulationState::AtRest:
-		// at rest -> set simulate physics to false, set collision profile to default profile, set grabable to false, set replicate to true
+		// at rest -> set simulate physics to false, set collision profile to default profile, set grabable to true, set replicate to true
 		if (TargetMesh)
 		{
 			TargetMesh->SetSimulatePhysics(false);
@@ -278,7 +278,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
 		}
-		SetGrabbableInternal(false);
+		SetGrabbableInternal(true);
 		if (Owner)
 		{
 			Owner->SetReplicates(true);
@@ -287,7 +287,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 		break;
 
 	case EPhysicsSimulationState::InMotion:
-		// In motion -> set simulate physics to true, set collision profile to default profile, set grabable to false, set replicate to true
+		// In motion -> set simulate physics to true, set collision profile to default profile, set grabable to true, set replicate to true
 		if (TargetMesh)
 		{
 			TargetMesh->SetSimulatePhysics(true);
@@ -296,7 +296,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
 		}
-		SetGrabbableInternal(false);
+		SetGrabbableInternal(true);
 		if (Owner)
 		{
 			Owner->SetReplicates(true);
@@ -331,7 +331,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
 		}
-		SetGrabbableInternal(false);
+		SetGrabbableInternal(true);
 		if (Owner)
 		{
 			Owner->SetReplicates(true);
