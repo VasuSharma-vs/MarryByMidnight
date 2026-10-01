@@ -54,6 +54,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Personality|Economy")
 	bool SpendCash(float Amount);
 
+	/** Returns current available cash in wallet */
+	UFUNCTION(BlueprintPure, Category = "Personality|Economy")
+	float GetCash() const { return WalletCash; }
+
 	/** Initializes archetype traits to balanced starting profiles */
 	UFUNCTION(BlueprintCallable, Category = "Personality")
 	void ApplyArchetypeDefaults(ENPCArchetype InArchetype);

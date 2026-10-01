@@ -98,6 +98,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI|Resource")
 	void QueryNextReconnaissanceCandidate();
 
+	/** Explores outward to locate new resource locations when no places are known */
+	UFUNCTION(BlueprintCallable, Category = "AI|Resource")
+	void StartSearchingForResource(ENPCSimulationStat NeededStat);
+
 	/** Active pending search query */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Resource")
 	FNPCResourceSearchQuery PendingSearchQuery;

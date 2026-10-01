@@ -393,7 +393,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 			if (!Prop->IsEmpty() && Prop->Price <= CurrentCash)
 			{
 				bool bMatchesStat = false;
-				for (const auto& Mod : Prop->OfferedStimuli)
+				for (const auto& Mod : Prop->StimuliPerPortion)
 				{
 					const bool bRateMatches = PendingSearchQuery.bSeekingIncrease ? (Mod.ChangeRate >= PendingSearchQuery.MinDesirableRate) : (Mod.ChangeRate <= -PendingSearchQuery.MinDesirableRate);
 					if (Mod.Stat == PendingSearchQuery.TargetStat && bRateMatches)
@@ -458,7 +458,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 						UE_LOG(LogTemp, Log, TEXT("[%s Reconnaissance SUCCESS] Found matching affordance [%s] on [%s]! Interacting."),
 							*PossessedNPC->GetName(), *Opt.OptionId.ToString(), *Target->GetName());
 
-						IWorldAffordanceInterface::Execute_ExecuteAffordanceOption(Target, PossessedNPC.Get(), Opt.OptionId);
+						IWorldAffordanceInterface::Execute_ExecuteAffordanceOption(Target, Opt.OptionId, PossessedNPC.Get());
 						CurrentTargetActor = nullptr;
 						CurrentGoalName = FName("Idle");
 
@@ -965,7 +965,7 @@ void ANPCAIController::HandlePerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 
 			// Check if matches active search query
 			bool bMatchesSearch = false;
-			for (const auto& Mod : Prop->OfferedStimuli)
+			for (const auto& Mod : Prop->StimuliPerPortion)
 			{
 				if (Mod.Stat == PendingSearchQuery.TargetStat && (PendingSearchQuery.bSeekingIncrease ? Mod.ChangeRate > 0.0f : Mod.ChangeRate < 0.0f))
 				{
@@ -1187,7 +1187,7 @@ void ANPCAIController::FindResource(const FNPCResourceSearchQuery& Query)
 				if (ScavengeProp && !ScavengeProp->IsEmpty())
 				{
 					bool bSatisfiesQuery = false;
-					for (const auto& Mod : ScavengeProp->OfferedStimuli)
+					for (const auto& Mod : ScavengeProp->StimuliPerPortion)
 					{
 						const bool bRateMatches = Query.bSeekingIncrease ? (Mod.ChangeRate >= Query.MinDesirableRate) : (Mod.ChangeRate <= -Query.MinDesirableRate);
 						if (Mod.Stat == Query.TargetStat && bRateMatches)

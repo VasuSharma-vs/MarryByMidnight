@@ -227,7 +227,7 @@ bool ANPCOperableObject::StartOperatingOffering(AActor* UserActor, FName Offerin
 	// Affordability check (both cash and required items)
 	if (!CanNPCAffordOffering(NPC, Offering))
 	{
-		OutFailureReason = FString::Printf(TEXT("Cannot afford offering (Requires $%0.2f + items, NPC has $%0.2f)"),
+		OutFailureReason = FString::Printf(TEXT("Cannot afford offering (Requires $%.2f + items, NPC has $%.2f)"),
 			Offering.MoneyCost, NPC->PersonalityComponent ? NPC->PersonalityComponent->GetCash() : 0.0f);
 		return false;
 	}

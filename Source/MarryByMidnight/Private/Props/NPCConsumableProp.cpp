@@ -127,7 +127,7 @@ bool ANPCConsumableProp::ConsumePortion(AActor* ConsumerActor, float PortionRati
 		// 4. Taste compatibility check against NPC personality
 		if (NPC->PersonalityComponent)
 		{
-			const float Compatibility = NPC->PersonalityComponent->Traits.TastePreferences.CalculateCompatibility(TasteProfile);
+			const float Compatibility = NPC->PersonalityComponent->EvaluateTaste(TasteProfile);
 			if (Compatibility >= 0.65f)
 			{
 				// Loved the taste!
