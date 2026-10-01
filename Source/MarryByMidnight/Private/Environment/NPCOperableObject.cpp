@@ -6,7 +6,7 @@
 #include "Components/NPCPersonalityComponent.h"
 #include "Components/NPCWorldModelComponent.h"
 #include "Subsystems/NPCKnowledgeSubsystem.h"
-#include "Props/NPCConsumableProp.h"
+#include "Props/InteractableProp.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 
@@ -59,7 +59,7 @@ void ANPCOperableObject::SetupDefaultVendingOfferings()
 	ColdDrink.MoneyCost = 2.0f;
 	ColdDrink.ExecutionDuration = 1.0f;
 	ColdDrink.bIsContinuousOverTime = false;
-	ColdDrink.DispensedPropClass = ANPCConsumableProp::StaticClass();
+	ColdDrink.DispensedPropClass = AInteractableProp::StaticClass();
 
 	ColdDrink.OfferedStimuli.Add(FNPCSimulationStatModifier(ENPCSimulationStat::Power, 10.0f));
 	ColdDrink.OfferedStimuli.Add(FNPCSimulationStatModifier(ENPCSimulationStat::Hunger, -5.0f));

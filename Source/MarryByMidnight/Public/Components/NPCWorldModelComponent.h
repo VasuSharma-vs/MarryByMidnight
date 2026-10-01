@@ -6,7 +6,7 @@
 #include "NPCWorldModelComponent.generated.h"
 
 class ANPCOperableObject;
-class ANPCConsumableProp;
+class AInteractableProp;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnNewObjectDiscovered, FName, ObjectId, FGameplayTag, RequiredInput, FVector, Location);
@@ -72,7 +72,7 @@ public:
 
 	/** Records or updates memory of a consumable prop */
 	UFUNCTION(BlueprintCallable, Category = "Knowledge|Props")
-	void RememberConsumableProp(ANPCConsumableProp* Prop);
+	void RememberConsumableProp(AInteractableProp* Prop);
 
 	/** Finds best known source for a specific stat (Hunger, Thirst, Power, Stress) in memory */
 	UFUNCTION(BlueprintCallable, Category = "Knowledge")
@@ -89,6 +89,6 @@ public:
 	bool FindOpportunisticScavengeProp(
 		float AvailableCash,
 		FVector& OutLocation,
-		ANPCConsumableProp*& OutProp) const;
+		AInteractableProp*& OutProp) const;
 };
 

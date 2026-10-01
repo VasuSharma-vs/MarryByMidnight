@@ -10,7 +10,7 @@ class UAISenseConfig_Sight;
 class ANPCCharacter;
 class ANPCSimulationTestZone;
 class ANPCOperableObject;
-class ANPCConsumableProp;
+class AInteractableProp;
 
 
 /**

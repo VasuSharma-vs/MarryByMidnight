@@ -10,7 +10,7 @@ class UStaticMeshComponent;
 class UBoxComponent;
 class UTextRenderComponent;
 class ANPCCharacter;
-class ANPCConsumableProp;
+class AInteractableProp;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnOperableInteracted, ANPCOperableObject*, Object, AActor*, User, FName, OfferingId);
 

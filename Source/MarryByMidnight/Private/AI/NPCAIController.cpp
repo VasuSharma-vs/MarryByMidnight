@@ -10,7 +10,7 @@
 #include "Components/NPCWorldModelComponent.h"
 #include "Environment/NPCSimulationTestZone.h"
 #include "Environment/NPCOperableObject.h"
-#include "Props/NPCConsumableProp.h"
+#include "Props/InteractableProp.h"
 #include "Interfaces/WorldAffordanceInterface.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
@@ -383,7 +383,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 			}
 		}
 		// Consumable Prop Candidate
-		else if (ANPCConsumableProp* Prop = Cast<ANPCConsumableProp>(Target))
+		else if (AInteractableProp* Prop = Cast<AInteractableProp>(Target))
 		{
 			if (PossessedNPC->WorldModelComponent)
 			{
@@ -482,7 +482,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 	// 1. Check if target is a physical consumable prop (drink can, food item)
 	if (CurrentTargetActor.IsValid())
 	{
-		if (ANPCConsumableProp* Prop = Cast<ANPCConsumableProp>(CurrentTargetActor.Get()))
+		if (AInteractableProp* Prop = Cast<AInteractableProp>(CurrentTargetActor.Get()))
 		{
 			Prop->ConsumePortion(PossessedNPC.Get());
 			CurrentTargetActor = nullptr;
@@ -941,7 +941,7 @@ void ANPCAIController::HandlePerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 		}
 	}
 	// 2. Consumable Prop Perception & Memory Discovery
-	else if (ANPCConsumableProp* Prop = Cast<ANPCConsumableProp>(Actor))
+	else if (AInteractableProp* Prop = Cast<AInteractableProp>(Actor))
 	{
 		if (PossessedNPC->WorldModelComponent)
 		{
@@ -1181,7 +1181,7 @@ void ANPCAIController::FindResource(const FNPCResourceSearchQuery& Query)
 		if (Query.bAllowOpportunisticScavenge)
 		{
 			FVector ScavengeLoc;
-			ANPCConsumableProp* ScavengeProp = nullptr;
+			AInteractableProp* ScavengeProp = nullptr;
 			if (PossessedNPC->WorldModelComponent->FindOpportunisticScavengeProp(CurrentCash, ScavengeLoc, ScavengeProp))
 			{
 				if (ScavengeProp && !ScavengeProp->IsEmpty())
@@ -1374,7 +1374,7 @@ void ANPCAIController::StartPhysicalObjectQueryReconnaissance(const FNPCResource
 
 	// 3. Gather consumable props in radius
 	TArray<AActor*> Props;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ANPCConsumableProp::StaticClass(), Props);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AInteractableProp::StaticClass(), Props);
 	for (AActor* Act : Props)
 	{
 		if (Act && FVector::DistSquared(PawnLoc, Act->GetActorLocation()) <= FMath::Square(SearchRadius))

@@ -1,7 +1,7 @@
 #include "Components/NPCWorldModelComponent.h"
 #include "Subsystems/NPCKnowledgeSubsystem.h"
 #include "Environment/NPCOperableObject.h"
-#include "Props/NPCConsumableProp.h"
+#include "Props/InteractableProp.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
@@ -119,7 +119,7 @@ void UNPCWorldModelComponent::RememberOperableMachine(ANPCOperableObject* Machin
 	Memory.LastSeenTime = World ? World->GetTimeSeconds() : 0.0f;
 }
 
-void UNPCWorldModelComponent::RememberConsumableProp(ANPCConsumableProp* Prop)
+void UNPCWorldModelComponent::RememberConsumableProp(AInteractableProp* Prop)
 {
 	if (!Prop) return;
 
@@ -160,7 +160,7 @@ bool UNPCWorldModelComponent::FindBestKnownSourceForStat(
 		const FDiscoveredPropMemory& Mem = Pair.Value;
 		if (!Mem.PropActor.IsValid()) continue;
 
-		ANPCConsumableProp* Prop = Cast<ANPCConsumableProp>(Mem.PropActor.Get());
+		AInteractableProp* Prop = Cast<AInteractableProp>(Mem.PropActor.Get());
 		if (!Prop || Prop->IsEmpty()) continue;
 
 		// Can we afford it?
@@ -235,14 +235,14 @@ bool UNPCWorldModelComponent::FindBestKnownSourceForStat(
 bool UNPCWorldModelComponent::FindOpportunisticScavengeProp(
 	float AvailableCash,
 	FVector& OutLocation,
-	ANPCConsumableProp*& OutProp) const
+	AInteractableProp*& OutProp) const
 {
 	for (const auto& Pair : RememberedProps)
 	{
 		const FDiscoveredPropMemory& Mem = Pair.Value;
 		if (!Mem.PropActor.IsValid()) continue;
 
-		ANPCConsumableProp* Prop = Cast<ANPCConsumableProp>(Mem.PropActor.Get());
+		AInteractableProp* Prop = Cast<AInteractableProp>(Mem.PropActor.Get());
 		if (!Prop || Prop->IsEmpty()) continue;
 
 		if (Mem.Price > AvailableCash) continue;
