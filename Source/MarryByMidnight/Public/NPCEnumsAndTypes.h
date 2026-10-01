@@ -401,8 +401,8 @@ struct MARRYBYMIDNIGHT_API FNPCMentalState
 {
 	GENERATED_BODY()
 
-	/** Immediate reward / neurochemical stimulation [0.0 - 100.0] */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mental")
+	/** Immediate reward / neurochemical stimulation [-100.0 - 100.0]. Negative values represent clinical depression. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mental", meta = (ClampMin = "-100.0", ClampMax = "100.0"))
 	float Dopamine = 50.0f;
 
 	/** Post-stimulation crash severity [0.0 - 100.0] */

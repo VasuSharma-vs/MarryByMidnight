@@ -77,6 +77,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Mental|Getters")
 	bool IsEnraged() const { return CurrentMoodTier == ENPCMoodTier::Enraged; }
 
+	/** Returns true if in a clinically depressed dopamine state (Dopamine < 0.0) */
+	UFUNCTION(BlueprintPure, Category = "Mental|Getters")
+	bool IsDepressed() const { return MentalState.Dopamine < 0.0f; }
+
+	/** Returns depression severity [0.0 to 100.0], where 0 is normal and 100 is maximal depression */
+	UFUNCTION(BlueprintPure, Category = "Mental|Getters")
+	float GetDepressionLevel() const { return MentalState.Dopamine < 0.0f ? -MentalState.Dopamine : 0.0f; }
+
 	/** Derives Valence and Arousal from physical, needs, and mental inputs */
 	UFUNCTION(BlueprintCallable, Category = "Mental|Affect")
 	void RecalculateAffect();

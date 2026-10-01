@@ -9,6 +9,7 @@
 class UStaticMeshComponent;
 class UTextRenderComponent;
 class UStaticMeshPhysicsSimulationComponent;
+class UInteractablePropDataAsset;
 class ANPCCharacter;
 class APawn;
 
@@ -18,6 +19,7 @@ class APawn;
  * - Players: Direct physical grab/hold/drop/throw and player interaction interface.
  * - NPCs: Evaluates via AI perception, memory, affordances, hunger/thirst satisfaction, taste profiling.
  * Integrated with UStaticMeshPhysicsSimulationComponent (At Rest, In Motion, Held, Settling, Unsettled).
+ * Can be fully configured via UInteractablePropDataAsset in editor and runtime.
  */
 UCLASS(BlueprintType, Blueprintable)
 class MARRYBYMIDNIGHT_API AInteractableProp : public AActor, public IWorldAffordanceInterface
@@ -30,9 +32,21 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+	// ---------------------------------------------------------
+	// Data Asset Configuration
+	// ---------------------------------------------------------
+	/** Primary Data Asset defining this prop's mesh, temperature, portions, expiry, taste profile, and stimuli */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Data", meta = (ExposeOnSpawn = "true"))
+	TObjectPtr<UInteractablePropDataAsset> PropDataAsset;
+
+	/** Applies all properties, mesh, portions, temperature, stimuli, and taste profile from the given Data Asset */
+	UFUNCTION(BlueprintCallable, Category = "Prop Data")
+	void ApplyDataAsset(const UInteractablePropDataAsset* InDataAsset);
+
 	// ---------------------------------------------------------
 	// Components
 	// ---------------------------------------------------------
@@ -80,6 +94,11 @@ public:
 	bool OnPlayerRelease(FVector LaunchVelocity = FVector::ZeroVector);
 	virtual bool OnPlayerRelease_Implementation(FVector LaunchVelocity = FVector::ZeroVector);
 
+	/** Event fired when a player consumes a portion of this prop */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction|Player")
+	void OnConsumedByPlayer(APawn* PlayerPawn, float BodyTempDelta, float ItemTemp, bool bWasExpired);
+	virtual void OnConsumedByPlayer_Implementation(APawn* PlayerPawn, float BodyTempDelta, float ItemTemp, bool bWasExpired);
+
 	// ---------------------------------------------------------
 	// NPC Interaction Pathway
 	// ---------------------------------------------------------
@@ -101,15 +120,69 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Economy")
 	float Price = 2.0f;
 
-	/** Temperature / Coldness [0.0 = Warm / Ambient, 1.0 = Ice Cold] */
+	// ---------------------------------------------------------
+	// Temperature Configuration & State
+	// ---------------------------------------------------------
+	/** Ideal serving temperature in Celsius (e.g. 4.0 for cold soda, 65.0 for hot coffee) */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
+	float ConsumableTemperature = 4.0f;
+
+	/** Current physical temperature of this prop in Celsius */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
+	float CurrentTemperature = 4.0f;
+
+	/** Temperature tolerance in Celsius: if CurrentTemperature is within this range of ConsumableTemperature, awards dopamine bonus */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (ClampMin = "0.5", ClampMax = "20.0", Units = "Celsius"))
+	float TemperatureTolerance = 5.0f;
+
+	/** Dopamine bonus granted when consumed at or near ideal temperature */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature")
+	float TemperatureDopamineBonus = 10.0f;
+
+	/** Body temperature change applied to consumer (e.g. -0.5 for chilled drink, +0.8 for hot soup) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
+	float BodyTemperatureEffect = -0.5f;
+
+	/** Rate at which prop temperature normalizes towards ambient room temp (21°C) per second */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature")
+	float ThermalExchangeRate = 0.015f;
+
+	/** Ambient room temperature in Celsius */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
+	float AmbientRoomTemperature = 21.0f;
+
+	/** Legacy coldness level [0.0 = Warm / Ambient, 1.0 = Ice Cold] */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Physical", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float Coldness = 0.85f;
+
+	// ---------------------------------------------------------
+	// Expiry & Freshness Configuration & State
+	// ---------------------------------------------------------
+	/** Whether this prop has an expiry date */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry")
+	bool bHasExpiry = true;
+
+	/** Total lifetime in minutes before item expires */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry", ClampMin = "0.5"))
+	float ExpiryLifetimeMinutes = 60.0f;
+
+	/** Age of the item in minutes since spawned */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Consumable|Freshness & Expiry")
+	float AgeMinutes = 0.0f;
+
+	/** Sickness level added to consumer when expired */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry"))
+	float SicknessLevel = 35.0f;
+
+	/** Dopamine subtracted when consumed expired (negative values represent depression) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry"))
+	float ExpiredDopaminePenalty = 25.0f;
 
 	/** Expiry freshness [1.0 = Fresh, 0.0 = Expired / Rotten] */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ExpiryFreshness = 1.0f;
 
-	/** Rate at which freshness decays per minute */
+	/** Rate at which freshness decays per minute (legacy) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness")
 	float ExpiryRatePerMinute = 0.02f;
 
@@ -139,7 +212,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Taste")
 	FNPCTasteVector TasteProfile;
 
-	/** Stimuli modifiers applied per portion consumed */
+	/** Stimuli modifiers applied per portion consumed (Index stats are chooseable) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Stimuli")
 	TArray<FNPCSimulationStatModifier> StimuliPerPortion;
 
@@ -157,7 +230,13 @@ public:
 	bool IsEmpty() const { return RemainingPortions <= 0 || QuantityLevel <= 0.0f; }
 
 	UFUNCTION(BlueprintPure, Category = "Consumable")
-	bool IsSpoiled() const { return ExpiryFreshness <= 0.25f; }
+	bool IsExpired() const { return bHasExpiry && (AgeMinutes >= ExpiryLifetimeMinutes); }
+
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsSpoiled() const { return IsExpired() || ExpiryFreshness <= 0.25f; }
+
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsAtIdealTemperature() const { return FMath::Abs(CurrentTemperature - ConsumableTemperature) <= TemperatureTolerance; }
 
 	UFUNCTION(Server, Reliable, WithValidation, Category = "Consumable|Network")
 	void Server_ConsumePortion(AActor* ConsumerActor, float PortionRatio = 1.0f);

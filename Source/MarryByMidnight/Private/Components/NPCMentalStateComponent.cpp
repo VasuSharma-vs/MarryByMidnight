@@ -49,7 +49,7 @@ void UNPCMentalStateComponent::GrantDopamine(float Amount)
 {
 	if (GetOwner() && !GetOwner()->HasAuthority()) return;
 
-	MentalState.Dopamine = FMath::Clamp(MentalState.Dopamine + Amount, 0.0f, 100.0f);
+	MentalState.Dopamine = FMath::Clamp(MentalState.Dopamine + Amount, -100.0f, 100.0f);
 	RecalculateAffect();
 }
 
@@ -74,7 +74,7 @@ void UNPCMentalStateComponent::TriggerDopamineCrash(float Severity)
 	if (GetOwner() && !GetOwner()->HasAuthority()) return;
 
 	MentalState.DopamineCrash = FMath::Clamp(MentalState.DopamineCrash + Severity, 0.0f, 100.0f);
-	MentalState.Dopamine = FMath::Clamp(MentalState.Dopamine - Severity * 0.7f, 0.0f, 100.0f);
+	MentalState.Dopamine = FMath::Clamp(MentalState.Dopamine - Severity * 0.7f, -100.0f, 100.0f);
 	AddStress(Severity * 0.5f);
 	OnDopamineCrash.Broadcast(Severity);
 	RecalculateAffect();

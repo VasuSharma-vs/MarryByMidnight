@@ -521,7 +521,7 @@ void ANPCCharacter::ApplySimulationStatDelta(ENPCSimulationStat Stat, float Delt
 		if (MentalStateComponent)
 		{
 			if (DeltaAmount > 0.0f) MentalStateComponent->GrantDopamine(DeltaAmount);
-			else MentalStateComponent->MentalState.Dopamine = FMath::Max(0.0f, MentalStateComponent->MentalState.Dopamine + DeltaAmount);
+			else MentalStateComponent->MentalState.Dopamine = FMath::Clamp(MentalStateComponent->MentalState.Dopamine + DeltaAmount, -100.0f, 100.0f);
 		}
 		break;
 	case ENPCSimulationStat::Stress:
