@@ -90,6 +90,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Velocity Tolerance"), Category = "Physics Simulation")
 	float VelocityTolerance = 10.0f;
 
+	/** Whether to use the central Prop Manager / ISM settling queue instead of individual per-component tick */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Check Instanced / Manager Settling"), Category = "Physics Simulation")
+	bool bCheckInstancedStaticMeshes = true;
+
+	/** Whether getting hit by another object / pawn automatically knocks this prop into Unsettled state */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Simulation")
+	bool bUnsettleOnHit = true;
+
+	/** Minimum hit impulse magnitude to trigger Unsettled state on collision */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Simulation", meta = (ClampMin = "0.0"))
+	float HitImpulseThreshold = 10.0f;
+
 	/** Broadcast when the simulation state transitions */
 	UPROPERTY(BlueprintAssignable, Category = "Physics Simulation")
 	FOnPhysicsSimulationStateChanged OnPhysicsSimulationStateChanged;
@@ -137,10 +149,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
 	bool IsGrabbable() const;
 
+	/** Returns current linear speed of target mesh in cm/s */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	float GetLinearSpeed() const;
+
 	UFUNCTION(Server, Reliable, WithValidation, Category = "Physics Simulation|Network")
 	void Server_SetPhysicsState(EPhysicsSimulationState NewState, float CustomDelay = -1.0f, float CustomTolerance = -1.0f);
 
 protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION()
+	void OnTargetMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 	FTimerHandle UnsettledTimerHandle;
 	float ActiveVelocityTolerance = 10.0f;
 

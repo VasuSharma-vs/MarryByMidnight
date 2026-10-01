@@ -6,6 +6,7 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Props/InteractableProp.h"
+#include "Props/InteractablePropManager.h"
 
 UStaticMeshPhysicsSimulationComponent::UStaticMeshPhysicsSimulationComponent()
 {
@@ -24,6 +25,13 @@ void UStaticMeshPhysicsSimulationComponent::BeginPlay()
 	{
 		// Store initial default collision profile on BeginPlay
 		DefaultCollisionProfile = TargetMesh->GetCollisionProfileName();
+
+		// Bind hit events so colliding with objects knocks this prop into Unsettled state
+		if (bUnsettleOnHit)
+		{
+			TargetMesh->SetNotifyRigidBodyCollision(true);
+			TargetMesh->OnComponentHit.AddDynamic(this, &UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit);
+		}
 	}
 
 	AActor* Owner = GetOwner();
@@ -31,6 +39,41 @@ void UStaticMeshPhysicsSimulationComponent::BeginPlay()
 	{
 		ApplyState(InitialState);
 	}
+}
+
+void UStaticMeshPhysicsSimulationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (TargetMesh)
+	{
+		TargetMesh->OnComponentHit.RemoveDynamic(this, &UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit);
+	}
+
+	if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+	{
+		Manager->UnregisterSettlingComponent(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (!bUnsettleOnHit) return;
+	if (CurrentState == EPhysicsSimulationState::Held) return;
+
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority()) return;
+
+	// Knock into Unsettled if impulse exceeds threshold or valid impact
+	if (NormalImpulse.SizeSquared() >= FMath::Square(HitImpulseThreshold))
+	{
+		SetStateUnsettled(-1.0f);
+	}
+}
+
+float UStaticMeshPhysicsSimulationComponent::GetLinearSpeed() const
+{
+	return TargetMesh ? TargetMesh->GetComponentVelocity().Size() : 0.0f;
 }
 
 void UStaticMeshPhysicsSimulationComponent::EnsureTargetMeshResolved()
@@ -53,7 +96,10 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Settling State: check velocity until it reaches below tolerance level
+	// If manager handles settling, skip per-component tick to maximize performance
+	if (bCheckInstancedStaticMeshes) return;
+
+	// Fallback local Settling check: check velocity until it reaches below tolerance level
 	if (CurrentState == EPhysicsSimulationState::Settling)
 	{
 		EnsureTargetMeshResolved();
@@ -266,6 +312,15 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 		World->GetTimerManager().ClearTimer(UnsettledTimerHandle);
 	}
 
+	// Unregister from central settling queue if leaving Settling state
+	if (PrevState == EPhysicsSimulationState::Settling && NewState != EPhysicsSimulationState::Settling)
+	{
+		if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+		{
+			Manager->UnregisterSettlingComponent(this);
+		}
+	}
+
 	switch (NewState)
 	{
 	case EPhysicsSimulationState::AtRest:
@@ -336,6 +391,15 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 		{
 			Owner->SetReplicates(true);
 			Owner->SetReplicateMovement(true);
+		}
+
+		// Register with central Prop Manager settling queue if enabled
+		if (bCheckInstancedStaticMeshes && Owner && Owner->HasAuthority())
+		{
+			if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+			{
+				Manager->RegisterSettlingComponent(this);
+			}
 		}
 		break;
 

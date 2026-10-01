@@ -87,6 +87,10 @@ public:
 	// -------------------------------------------------------------
 	// Temperature Configuration
 	// -------------------------------------------------------------
+	/** Option to enable temperature simulation. If false, prop only has ConsumableTemperature and does not adjust to environment */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (DisplayName = "Enable Prop Temperature"))
+	bool bEnableTemperature = false;
+
 	/** Ideal serving temperature in Celsius (e.g. 4.0 for cold soda, 65.0 for hot coffee) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (Units = "Celsius"))
 	float ConsumableTemperature = 4.0f;

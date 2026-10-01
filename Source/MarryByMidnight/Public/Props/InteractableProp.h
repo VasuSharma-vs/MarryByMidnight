@@ -31,6 +31,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -123,6 +124,10 @@ public:
 	// ---------------------------------------------------------
 	// Temperature Configuration & State
 	// ---------------------------------------------------------
+	/** Option to enable temperature simulation. If false, prop only has ConsumableTemperature and does not adjust to environment */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (DisplayName = "Enable Prop Temperature"))
+	bool bEnableTemperature = false;
+
 	/** Ideal serving temperature in Celsius (e.g. 4.0 for cold soda, 65.0 for hot coffee) */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
 	float ConsumableTemperature = 4.0f;
@@ -130,6 +135,10 @@ public:
 	/** Current physical temperature of this prop in Celsius */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
 	float CurrentTemperature = 4.0f;
+
+	/** Called by PropManager during distributed round-robin frame loop to update temperature */
+	UFUNCTION(BlueprintCallable, Category = "Consumable|Temperature")
+	void UpdateTemperature(float AmbientTemp, float DeltaSeconds);
 
 	/** Temperature tolerance in Celsius: if CurrentTemperature is within this range of ConsumableTemperature, awards dopamine bonus */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (ClampMin = "0.5", ClampMax = "20.0", Units = "Celsius"))

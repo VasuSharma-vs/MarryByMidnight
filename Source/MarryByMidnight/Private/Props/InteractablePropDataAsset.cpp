@@ -8,6 +8,7 @@ UInteractablePropDataAsset::UInteractablePropDataAsset()
 	MaxPortions = 4;
 	EnergyLevel = 10.0f;
 	ConsumableTemperature = 4.0f;
+	bEnableTemperature = false;
 	TemperatureTolerance = 5.0f;
 	TemperatureDopamineBonus = 10.0f;
 	BodyTemperatureEffect = -0.5f;

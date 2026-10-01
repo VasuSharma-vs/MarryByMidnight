@@ -1,5 +1,6 @@
 #include "Props/InteractableProp.h"
 #include "Props/InteractablePropDataAsset.h"
+#include "Props/InteractablePropManager.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
@@ -33,6 +34,7 @@ AInteractableProp::AInteractableProp()
 	PhysicsSimComponent->InitialState = EPhysicsSimulationState::AtRest;
 
 	// Default temperature values
+	bEnableTemperature = false;
 	ConsumableTemperature = 4.0f;
 	CurrentTemperature = 4.0f;
 	TemperatureTolerance = 5.0f;
@@ -103,6 +105,7 @@ void AInteractableProp::ApplyDataAsset(const UInteractablePropDataAsset* InDataA
 	QuantityLevel = 1.0f;
 
 	// 4. Temperature Configuration
+	bEnableTemperature = InDataAsset->bEnableTemperature;
 	ConsumableTemperature = InDataAsset->ConsumableTemperature;
 	CurrentTemperature = InDataAsset->ConsumableTemperature;
 	TemperatureTolerance = InDataAsset->TemperatureTolerance;
@@ -135,6 +138,56 @@ void AInteractableProp::BeginPlay()
 		ApplyDataAsset(PropDataAsset);
 	}
 
+	// Register with central Prop Manager for distributed round-robin temperature ticks
+	if (HasAuthority() && bEnableTemperature)
+	{
+		if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+		{
+			Manager->RegisterProp(this);
+		}
+	}
+
+	UpdateDebugBillboard();
+}
+
+void AInteractableProp::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+	{
+		Manager->UnregisterProp(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void AInteractableProp::UpdateTemperature(float AmbientTemp, float DeltaSeconds)
+{
+	if (!bEnableTemperature) return;
+
+	if (ThermalExchangeRate > 0.0f && FMath::Abs(CurrentTemperature - AmbientTemp) > 0.05f)
+	{
+		const float TempDelta = (AmbientTemp - CurrentTemperature) * ThermalExchangeRate * DeltaSeconds;
+		CurrentTemperature += TempDelta;
+	}
+
+	if (bHasExpiry)
+	{
+		AgeMinutes += (DeltaSeconds / 60.0f);
+		if (ExpiryLifetimeMinutes > 0.0f)
+		{
+			ExpiryFreshness = FMath::Clamp(1.0f - (AgeMinutes / ExpiryLifetimeMinutes), 0.0f, 1.0f);
+		}
+	}
+
+	if (CurrentTemperature < AmbientTemp)
+	{
+		Coldness = FMath::Clamp((AmbientTemp - CurrentTemperature) / 17.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		Coldness = 0.0f;
+	}
+
 	UpdateDebugBillboard();
 }
 
@@ -142,9 +195,10 @@ void AInteractableProp::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (HasAuthority())
+	// If bEnableTemperature is handled by central Prop Manager, we avoid per-actor thermal tick overhead
+	if (!bEnableTemperature && HasAuthority())
 	{
-		// 1. Expiration & aging
+		// Non-temperature items only age if they have expiration
 		if (bHasExpiry)
 		{
 			AgeMinutes += (DeltaSeconds / 60.0f);
@@ -152,28 +206,6 @@ void AInteractableProp::Tick(float DeltaSeconds)
 			{
 				ExpiryFreshness = FMath::Clamp(1.0f - (AgeMinutes / ExpiryLifetimeMinutes), 0.0f, 1.0f);
 			}
-		}
-		else if (ExpiryRatePerMinute > 0.0f && ExpiryFreshness > 0.0f)
-		{
-			const float FreshnessDecay = (ExpiryRatePerMinute / 60.0f) * DeltaSeconds;
-			ExpiryFreshness = FMath::Clamp(ExpiryFreshness - FreshnessDecay, 0.0f, 1.0f);
-		}
-
-		// 2. Thermal exchange towards ambient room temperature (21°C)
-		if (ThermalExchangeRate > 0.0f && FMath::Abs(CurrentTemperature - AmbientRoomTemperature) > 0.05f)
-		{
-			const float TempDelta = (AmbientRoomTemperature - CurrentTemperature) * ThermalExchangeRate * DeltaSeconds;
-			CurrentTemperature += TempDelta;
-		}
-
-		// Sync legacy Coldness
-		if (CurrentTemperature < AmbientRoomTemperature)
-		{
-			Coldness = FMath::Clamp((AmbientRoomTemperature - CurrentTemperature) / 17.0f, 0.0f, 1.0f);
-		}
-		else
-		{
-			Coldness = 0.0f;
 		}
 	}
 
@@ -190,6 +222,7 @@ void AInteractableProp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(AInteractableProp, Coldness);
 	DOREPLIFETIME(AInteractableProp, ExpiryFreshness);
 	DOREPLIFETIME(AInteractableProp, Price);
+	DOREPLIFETIME(AInteractableProp, bEnableTemperature);
 	DOREPLIFETIME(AInteractableProp, ConsumableTemperature);
 	DOREPLIFETIME(AInteractableProp, CurrentTemperature);
 	DOREPLIFETIME(AInteractableProp, bHasExpiry);
