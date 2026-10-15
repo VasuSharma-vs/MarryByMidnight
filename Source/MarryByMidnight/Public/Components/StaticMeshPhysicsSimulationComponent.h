@@ -90,6 +90,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Velocity Tolerance"), Category = "Physics Simulation")
 	float VelocityTolerance = 10.0f;
 
+	/** Angular velocity tolerance threshold (deg/s). Evaluated alongside linear velocity during Settling (Section 12) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Angular Velocity Tolerance"), Category = "Physics Simulation")
+	float AngularVelocityTolerance = 15.0f;
+
 	/** Whether to use the central Prop Manager / ISM settling queue instead of individual per-component tick */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Check Instanced / Manager Settling"), Category = "Physics Simulation")
 	bool bCheckInstancedStaticMeshes = true;
@@ -153,6 +157,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
 	float GetLinearSpeed() const;
 
+	/** Returns current angular speed of target mesh in deg/s */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	float GetAngularSpeed() const;
+
+	/** Evaluates whether both linear and angular speed are within settling tolerances */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	bool CheckSettled(float CustomLinearTolerance = -1.0f, float CustomAngularTolerance = -1.0f) const;
+
 	UFUNCTION(Server, Reliable, WithValidation, Category = "Physics Simulation|Network")
 	void Server_SetPhysicsState(EPhysicsSimulationState NewState, float CustomDelay = -1.0f, float CustomTolerance = -1.0f);
 
@@ -164,6 +176,9 @@ protected:
 
 	FTimerHandle UnsettledTimerHandle;
 	float ActiveVelocityTolerance = 10.0f;
+	float ActiveUnsettledDelay = 3.0f;
+	float StationaryTimeAccumulated = 0.0f;
+	float StateElapsedTime = 0.0f;
 
 	void ApplyState(EPhysicsSimulationState NewState, float CustomDelay = -1.0f, float CustomTolerance = -1.0f);
 	void SetGrabbableInternal(bool bNewGrabbable);

@@ -2,6 +2,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
@@ -48,7 +49,7 @@ void UStaticMeshPhysicsSimulationComponent::EndPlay(const EEndPlayReason::Type E
 		TargetMesh->OnComponentHit.RemoveDynamic(this, &UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit);
 	}
 
-	if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+	if (APropManager* Manager = APropManager::Get(this))
 	{
 		Manager->UnregisterSettlingComponent(this);
 	}
@@ -63,17 +64,61 @@ void UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit(UPrimitiveComponent*
 
 	AActor* Owner = GetOwner();
 	if (!Owner || !Owner->HasAuthority()) return;
-
-	// Knock into Unsettled if impulse exceeds threshold or valid impact
-	if (NormalImpulse.SizeSquared() >= FMath::Square(HitImpulseThreshold))
+	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
-		SetStateUnsettled(-1.0f);
+		if (!Prop->bIsActive) return;
+	}
+
+	// Ignore passive static floor/world geometry unless hit by a Pawn, a moving physics body, or receiving an impact impulse
+	const bool bHitByPawn = (OtherActor && OtherActor->IsA<APawn>());
+	const bool bHitByMovingPhysics = (OtherComp && OtherComp->IsSimulatingPhysics() && OtherComp->GetComponentVelocity().SizeSquared() > FMath::Square(VelocityTolerance));
+	const bool bHasImpulse = (NormalImpulse.SizeSquared() >= FMath::Square(HitImpulseThreshold));
+
+	if (!bHitByPawn && !bHitByMovingPhysics && !bHasImpulse)
+	{
+		return;
+	}
+
+	const float UnsettledDuration = (DefaultUnsettledDelay > 0.0f) ? DefaultUnsettledDelay : 3.0f;
+
+	// 1. If currently in Unsettled state: Retrigger the delay timer back to 3.0s on repeated hits
+	if (CurrentState == EPhysicsSimulationState::Unsettled)
+	{
+		RetriggerUnsettledTimer(UnsettledDuration);
+		return;
+	}
+
+	// 2. If in Settling or AtRest: Transition to Unsettled with fresh 3.0s delay
+	if (CurrentState == EPhysicsSimulationState::Settling || CurrentState == EPhysicsSimulationState::AtRest)
+	{
+		SetStateUnsettled(UnsettledDuration);
 	}
 }
 
 float UStaticMeshPhysicsSimulationComponent::GetLinearSpeed() const
 {
 	return TargetMesh ? TargetMesh->GetComponentVelocity().Size() : 0.0f;
+}
+
+float UStaticMeshPhysicsSimulationComponent::GetAngularSpeed() const
+{
+	if (!TargetMesh) return 0.0f;
+	return TargetMesh->GetPhysicsAngularVelocityInDegrees().Size();
+}
+
+bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearTolerance, float CustomAngularTolerance) const
+{
+	if (!TargetMesh)
+	{
+		return true;
+	}
+	if (!TargetMesh->IsSimulatingPhysics() || !TargetMesh->IsAnyRigidBodyAwake())
+	{
+		return true;
+	}
+	const float LinTol = (CustomLinearTolerance > 0.0f) ? CustomLinearTolerance : ActiveVelocityTolerance;
+	const float AngTol = (CustomAngularTolerance > 0.0f) ? CustomAngularTolerance : AngularVelocityTolerance;
+	return (GetLinearSpeed() <= LinTol) && (GetAngularSpeed() <= AngTol);
 }
 
 void UStaticMeshPhysicsSimulationComponent::EnsureTargetMeshResolved()
@@ -96,20 +141,62 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// If manager handles settling, skip per-component tick to maximize performance
-	if (bCheckInstancedStaticMeshes) return;
-
-	// Fallback local Settling check: check velocity until it reaches below tolerance level
-	if (CurrentState == EPhysicsSimulationState::Settling)
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
 	{
-		EnsureTargetMeshResolved();
-		if (TargetMesh)
+		return;
+	}
+
+	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
+	{
+		if (!Prop->bIsActive)
 		{
-			const float LinearSpeed = TargetMesh->GetComponentVelocity().Size();
-			if (LinearSpeed <= ActiveVelocityTolerance)
-			{
-				SetStateAtRest();
-			}
+			return;
+		}
+	}
+
+	if (CurrentState == EPhysicsSimulationState::AtRest || CurrentState == EPhysicsSimulationState::Held)
+	{
+		return;
+	}
+
+	EnsureTargetMeshResolved();
+	if (!TargetMesh)
+	{
+		return;
+	}
+
+	StateElapsedTime += DeltaTime;
+	const bool bIsCurrentlyStationary = CheckSettled();
+	if (bIsCurrentlyStationary)
+	{
+		StationaryTimeAccumulated += DeltaTime;
+	}
+	else
+	{
+		StationaryTimeAccumulated = 0.0f;
+	}
+
+	if (CurrentState == EPhysicsSimulationState::InMotion)
+	{
+		// InMotion: remains actively simulating physics continuously until an external function changes its state.
+		return;
+	}
+	else if (CurrentState == EPhysicsSimulationState::Unsettled)
+	{
+		const float EffectiveDelay = (ActiveUnsettledDelay > 0.0f) ? ActiveUnsettledDelay : (DefaultUnsettledDelay > 0.0f ? DefaultUnsettledDelay : 3.0f);
+		// Unsettled: transitions to Settling only when the delay duration (default 3.0s) has completed and timer is done
+		if (StateElapsedTime >= EffectiveDelay && !IsUnsettledTimerActive())
+		{
+			SetStateSettling();
+		}
+	}
+	else if (CurrentState == EPhysicsSimulationState::Settling)
+	{
+		// Settling: checks rotation and location velocity against tolerance; moves to AtRest when within tolerance
+		if (bIsCurrentlyStationary)
+		{
+			SetStateAtRest();
 		}
 	}
 }
@@ -124,6 +211,17 @@ void UStaticMeshPhysicsSimulationComponent::GetLifetimeReplicatedProps(TArray<FL
 
 void UStaticMeshPhysicsSimulationComponent::OnRep_CurrentState()
 {
+	if (AActivePropActor* Prop = Cast<AActivePropActor>(GetOwner()))
+	{
+		if (!Prop->bIsActive || Prop->ISID <= 0)
+		{
+			return;
+		}
+		if (!Prop->GetActorEnableCollision() || Prop->IsHidden() || (Prop->PropMesh && !Prop->PropMesh->GetStaticMesh()) || Prop->GetActorLocation().Z < -50000.0f || Prop->GetActorScale3D().GetMax() < 0.005f)
+		{
+			Prop->OnRep_IsActive();
+		}
+	}
 	ApplyState(CurrentState);
 }
 
@@ -169,7 +267,7 @@ bool UStaticMeshPhysicsSimulationComponent::GetActorGrabbableValue(bool& bOutHas
 	AActor* Owner = GetOwner();
 	if (!Owner) return false;
 
-	if (AInteractableProp* Prop = Cast<AInteractableProp>(Owner))
+	if (AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
 		bOutHasProperty = true;
 		return Prop->bIsGrabbable;
@@ -191,8 +289,8 @@ void UStaticMeshPhysicsSimulationComponent::SetActorGrabbableValue(bool bNewGrab
 	AActor* Owner = GetOwner();
 	if (Owner)
 	{
-		// 1. Direct typed access if owner is AInteractableProp
-		if (AInteractableProp* Prop = Cast<AInteractableProp>(Owner))
+		// 1. Direct typed access if owner is AActivePropActor
+		if (AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 		{
 			Prop->SetGrabbable(bNewGrabbable);
 			OnGrabbableStateChanged.Broadcast(bNewGrabbable);
@@ -230,11 +328,8 @@ void UStaticMeshPhysicsSimulationComponent::SetPhysicsState(EPhysicsSimulationSt
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
-	if (Owner->HasAuthority())
-	{
-		ApplyState(NewState, CustomDelay, CustomTolerance);
-	}
-	else
+	ApplyState(NewState, CustomDelay, CustomTolerance);
+	if (!Owner->HasAuthority() && Owner->GetNetConnection() != nullptr && !Owner->IsA<AActivePropActor>())
 	{
 		Server_SetPhysicsState(NewState, CustomDelay, CustomTolerance);
 	}
@@ -301,10 +396,16 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 {
 	const EPhysicsSimulationState PrevState = CurrentState;
 	CurrentState = NewState;
+	StateElapsedTime = 0.0f;
+	if (NewState != EPhysicsSimulationState::Settling)
+	{
+		StationaryTimeAccumulated = 0.0f;
+	}
 
 	EnsureTargetMeshResolved();
 
 	AActor* Owner = GetOwner();
+	AActivePropActor* ActivePropOwner = Cast<AActivePropActor>(Owner);
 	UWorld* World = GetWorld();
 
 	if (World)
@@ -315,11 +416,15 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 	// Unregister from central settling queue if leaving Settling state
 	if (PrevState == EPhysicsSimulationState::Settling && NewState != EPhysicsSimulationState::Settling)
 	{
-		if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+		if (APropManager* Manager = APropManager::Get(this))
 		{
 			Manager->UnregisterSettlingComponent(this);
 		}
 	}
+
+	const bool bCanModifyReplication = (Owner && Owner->HasAuthority() && World && !World->IsNetMode(NM_Client));
+	const bool bAllowPhysicsOnOwner = (!ActivePropOwner || ActivePropOwner->bIsActive);
+	const bool bReplicateMovementWhenFree = (ActivePropOwner == nullptr);
 
 	switch (NewState)
 	{
@@ -328,75 +433,100 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 		if (TargetMesh)
 		{
 			TargetMesh->SetSimulatePhysics(false);
-			if (!DefaultCollisionProfile.IsNone())
+			if (!DefaultCollisionProfile.IsNone() && TargetMesh->GetCollisionProfileName() != DefaultCollisionProfile)
 			{
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
 		}
 		SetGrabbableInternal(true);
-		if (Owner)
+		if (bCanModifyReplication)
 		{
 			Owner->SetReplicates(true);
-			Owner->SetReplicateMovement(true);
+			Owner->SetReplicateMovement(bReplicateMovementWhenFree);
 		}
 		break;
 
 	case EPhysicsSimulationState::InMotion:
 		// In motion -> set simulate physics to true, set collision profile to default profile, set grabable to true, set replicate to true
-		if (TargetMesh)
+		if (TargetMesh && bAllowPhysicsOnOwner)
 		{
-			TargetMesh->SetSimulatePhysics(true);
-			if (!DefaultCollisionProfile.IsNone())
+			if (Owner && !Owner->GetActorEnableCollision())
+			{
+				Owner->SetActorEnableCollision(true);
+			}
+			if (!DefaultCollisionProfile.IsNone() && TargetMesh->GetCollisionProfileName() != DefaultCollisionProfile)
 			{
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
+			if (TargetMesh->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics)
+			{
+				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			}
+			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
+			if (!TargetMesh->IsSimulatingPhysics())
+			{
+				TargetMesh->SetSimulatePhysics(true);
+			}
 		}
 		SetGrabbableInternal(true);
-		if (Owner)
+		if (bCanModifyReplication)
 		{
 			Owner->SetReplicates(true);
-			Owner->SetReplicateMovement(true);
+			Owner->SetReplicateMovement(bReplicateMovementWhenFree);
 		}
 		break;
 
 	case EPhysicsSimulationState::Held:
-		// held -> set simulate physics to false, set collision profile to IgnoreOnlyPawn, set grabable to false, set replicate to false
+		// Section 27: Held ASM remains network-relevant and replicated while gameplay-relevant
 		if (TargetMesh)
 		{
 			TargetMesh->SetSimulatePhysics(false);
-			TargetMesh->SetCollisionProfileName(FName(TEXT("IgnoreOnlyPawn")));
-			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+			TargetMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+			TargetMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			TargetMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
 		}
 		SetGrabbableInternal(false);
-		if (Owner)
+		if (bCanModifyReplication)
 		{
-			Owner->SetReplicateMovement(false);
-			Owner->SetReplicates(false);
+			Owner->SetReplicates(true);
+			Owner->SetReplicateMovement(true);
 		}
 		break;
 
 	case EPhysicsSimulationState::Settling:
 		// Settling -> check velocity of object when reach nearly input parameter of tolerance level to set object state at rest
 		ActiveVelocityTolerance = (CustomTolerance > 0.0f) ? CustomTolerance : VelocityTolerance;
-		if (TargetMesh)
+		if (TargetMesh && bAllowPhysicsOnOwner)
 		{
-			TargetMesh->SetSimulatePhysics(true);
-			if (!DefaultCollisionProfile.IsNone())
+			if (Owner && !Owner->GetActorEnableCollision())
+			{
+				Owner->SetActorEnableCollision(true);
+			}
+			if (!DefaultCollisionProfile.IsNone() && TargetMesh->GetCollisionProfileName() != DefaultCollisionProfile)
 			{
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
+			if (TargetMesh->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics)
+			{
+				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			}
+			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
+			if (!TargetMesh->IsSimulatingPhysics())
+			{
+				TargetMesh->SetSimulatePhysics(true);
+			}
 		}
 		SetGrabbableInternal(true);
-		if (Owner)
+		if (bCanModifyReplication)
 		{
 			Owner->SetReplicates(true);
-			Owner->SetReplicateMovement(true);
+			Owner->SetReplicateMovement(bReplicateMovementWhenFree);
 		}
 
 		// Register with central Prop Manager settling queue if enabled
 		if (bCheckInstancedStaticMeshes && Owner && Owner->HasAuthority())
 		{
-			if (AInteractablePropManager* Manager = AInteractablePropManager::Get(this))
+			if (APropManager* Manager = APropManager::Get(this))
 			{
 				Manager->RegisterSettlingComponent(this);
 			}
@@ -406,30 +536,56 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 	case EPhysicsSimulationState::Unsettled:
 		// Unsettled -> set simulate physics to true, set collision profile to default profile, set grabable to true, set replicate to true
 		// then after input parameter delay set unsettled to settling state (default: 3.0s if -1)
-		if (TargetMesh)
+		if (TargetMesh && bAllowPhysicsOnOwner)
 		{
-			TargetMesh->SetSimulatePhysics(true);
-			if (!DefaultCollisionProfile.IsNone())
+			if (Owner && !Owner->GetActorEnableCollision())
+			{
+				Owner->SetActorEnableCollision(true);
+			}
+			if (!DefaultCollisionProfile.IsNone() && TargetMesh->GetCollisionProfileName() != DefaultCollisionProfile)
 			{
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
+			if (TargetMesh->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics)
+			{
+				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			}
+			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
+			if (!TargetMesh->IsSimulatingPhysics())
+			{
+				TargetMesh->SetSimulatePhysics(true);
+			}
 		}
 		SetGrabbableInternal(true);
-		if (Owner)
+		if (bCanModifyReplication)
 		{
 			Owner->SetReplicates(true);
-			Owner->SetReplicateMovement(true);
+			Owner->SetReplicateMovement(bReplicateMovementWhenFree);
 		}
 
 		if (World && Owner && Owner->HasAuthority())
 		{
-			const float Delay = (CustomDelay >= 0.0f) ? CustomDelay : DefaultUnsettledDelay;
+			float Delay = (CustomDelay > 0.0f) ? CustomDelay : DefaultUnsettledDelay;
+			if (Delay <= 0.0f)
+			{
+				Delay = 3.0f;
+			}
+			ActiveUnsettledDelay = Delay;
 			World->GetTimerManager().SetTimer(UnsettledTimerHandle, this, &UStaticMeshPhysicsSimulationComponent::TransitionFromUnsettledToSettling, Delay, false);
 		}
 		break;
 	}
 
 	OnPhysicsSimulationStateChanged.Broadcast(CurrentState, PrevState);
+
+	// If we just transitioned into Settling and the object is already completely stationary, settle to AtRest immediately
+	if (NewState == EPhysicsSimulationState::Settling && Owner && Owner->HasAuthority())
+	{
+		if (CheckSettled() && (PrevState == EPhysicsSimulationState::Unsettled || PrevState == EPhysicsSimulationState::InMotion))
+		{
+			SetStateAtRest();
+		}
+	}
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetGrabbableInternal(bool bNewGrabbable)

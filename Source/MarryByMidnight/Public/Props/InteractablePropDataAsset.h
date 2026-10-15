@@ -6,6 +6,8 @@
 #include "InteractablePropDataAsset.generated.h"
 
 class UStaticMesh;
+class AActivePropActor;
+class UMaterialInterface;
 
 /**
  * Taste types that can be chosen per index in the Data Asset
@@ -61,6 +63,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TObjectPtr<UStaticMesh> StaticMesh;
 
+	/** Optional material overrides for the static mesh */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TArray<TObjectPtr<UMaterialInterface>> MaterialOverrides;
+
+	/** Optional custom Blueprint or C++ AActivePropActor subclass spawned when this prop is promoted from ISM to ASM */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual", meta = (DisplayName = "Custom Active Prop Actor Class (BP)"))
+	TSubclassOf<AActivePropActor> CustomActiveActorClass;
+
 	/** In-game display name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FText ItemDisplayName = FText::FromString(TEXT("Interactable Prop"));
@@ -76,36 +86,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	float Price = 2.0f;
 
-	/** Maximum total portions (e.g. 4 sips or bites) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quantity", meta = (ClampMin = "1"))
-	int32 MaxPortions = 4;
-
-	/** Caloric energy value directly boosting internal Power stat */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physical")
-	float EnergyLevel = 10.0f;
+	/** Total number of portions (e.g. 4 sips or bites) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "1"))
+	int32 NumOfPortions = 4;
 
 	// -------------------------------------------------------------
 	// Temperature Configuration
 	// -------------------------------------------------------------
-	/** Option to enable temperature simulation. If false, prop only has ConsumableTemperature and does not adjust to environment */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (DisplayName = "Enable Prop Temperature"))
-	bool bEnableTemperature = false;
+	/** Option to enable temperature simulation update. If false, prop only has ConsumableTemperature and does not adjust to environment */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (DisplayName = "Enable Temperature Update"))
+	bool bEnableTemperatureUpdate = false;
 
 	/** Ideal serving temperature in Celsius (e.g. 4.0 for cold soda, 65.0 for hot coffee) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (Units = "Celsius"))
 	float ConsumableTemperature = 4.0f;
 
-	/** Tolerance range in Celsius. If current temp is within this range of ConsumableTemperature, awards dopamine bonus */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (ClampMin = "0.5", ClampMax = "20.0", Units = "Celsius"))
-	float TemperatureTolerance = 5.0f;
-
-	/** Dopamine bonus awarded when consumed near optimal temperature */
+	/** Max dopamine bonus awarded per portion when consumed at ConsumableTemperature (decreases and goes negative as temperature diverges) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature")
-	float TemperatureDopamineBonus = 10.0f;
-
-	/** Body temperature change applied to consumer (e.g. -0.5 for chilled drink, +0.8 for hot soup) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature", meta = (Units = "Celsius"))
-	float BodyTemperatureEffect = -0.5f;
+	float TemperatureDopamineBonus = 0.5f;
 
 	/** Rate at which temperature normalizes towards ambient room temp per second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Temperature")
@@ -130,6 +128,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Freshness & Expiry", meta = (EditCondition = "bHasExpiry"))
 	float ExpiredDopaminePenalty = 25.0f;
 
+	/** Stimulus profile applied per portion when consumed expired (enabled when bHasExpiry is true) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Freshness & Expiry", meta = (EditCondition = "bHasExpiry", DisplayName = "Expiry Stimulus Profile"))
+	TArray<FNPCSimulationStatModifier> ExpiryStimulusProfile;
+
 	// -------------------------------------------------------------
 	// Stimuli Modifiers (Index stats are chooseable)
 	// -------------------------------------------------------------
@@ -147,6 +149,41 @@ public:
 	/** Custom taste profile when expired (e.g. high sour and bitter) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Taste", meta = (EditCondition = "bHasExpiry"))
 	TArray<FNPCTasteEntry> ExpiredTasteEntries;
+
+	// -------------------------------------------------------------
+	// Interaction Capability & Physics Profiles (IISMDB Section 5 & 14)
+	// -------------------------------------------------------------
+	/** Whether instances of this product can be grabbed/carried */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction Profile")
+	bool bCanGrab = true;
+
+	/** Whether instances of this product can be used */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction Profile")
+	bool bCanUse = true;
+
+	/** Whether instances of this product can be consumed */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction Profile")
+	bool bCanConsume = true;
+
+	/** Whether instances of this product can be thrown */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction Profile")
+	bool bCanThrow = true;
+
+	/** Whether instances of this product can be inspected */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction Profile")
+	bool bCanInspect = true;
+
+	/** Linear velocity threshold (cm/s) for settling evaluation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Profile", meta = (ClampMin = "0.1"))
+	float LinearVelocityTolerance = 10.0f;
+
+	/** Angular velocity threshold (deg/s) for settling evaluation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Profile", meta = (ClampMin = "0.1"))
+	float AngularVelocityTolerance = 15.0f;
+
+	/** Delay in seconds in Unsettled state before transitioning to Settling */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Profile", meta = (ClampMin = "0.0"))
+	float UnsettledDelay = 3.0f;
 
 	// -------------------------------------------------------------
 	// Helper Methods

@@ -59,7 +59,7 @@ void ANPCOperableObject::SetupDefaultVendingOfferings()
 	ColdDrink.MoneyCost = 2.0f;
 	ColdDrink.ExecutionDuration = 1.0f;
 	ColdDrink.bIsContinuousOverTime = false;
-	ColdDrink.DispensedPropClass = AInteractableProp::StaticClass();
+	ColdDrink.DispensedPropClass = AActivePropActor::StaticClass();
 
 	ColdDrink.OfferedStimuli.Add(FNPCSimulationStatModifier(ENPCSimulationStat::Power, 10.0f));
 	ColdDrink.OfferedStimuli.Add(FNPCSimulationStatModifier(ENPCSimulationStat::Hunger, -5.0f));

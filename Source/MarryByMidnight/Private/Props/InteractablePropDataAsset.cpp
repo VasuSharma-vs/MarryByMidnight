@@ -5,13 +5,10 @@ UInteractablePropDataAsset::UInteractablePropDataAsset()
 {
 	ConsumableType = EConsumablePropType::Drink;
 	Price = 2.0f;
-	MaxPortions = 4;
-	EnergyLevel = 10.0f;
+	NumOfPortions = 4;
 	ConsumableTemperature = 4.0f;
-	bEnableTemperature = false;
-	TemperatureTolerance = 5.0f;
-	TemperatureDopamineBonus = 10.0f;
-	BodyTemperatureEffect = -0.5f;
+	bEnableTemperatureUpdate = false;
+	TemperatureDopamineBonus = 0.5f;
 	ThermalExchangeRate = 0.015f;
 
 	bHasExpiry = true;

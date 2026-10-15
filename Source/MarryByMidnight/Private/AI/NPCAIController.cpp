@@ -383,7 +383,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 			}
 		}
 		// Consumable Prop Candidate
-		else if (AInteractableProp* Prop = Cast<AInteractableProp>(Target))
+		else if (AActivePropActor* Prop = Cast<AActivePropActor>(Target))
 		{
 			if (PossessedNPC->WorldModelComponent)
 			{
@@ -482,7 +482,7 @@ void ANPCAIController::CompleteInteractionAtTarget()
 	// 1. Check if target is a physical consumable prop (drink can, food item)
 	if (CurrentTargetActor.IsValid())
 	{
-		if (AInteractableProp* Prop = Cast<AInteractableProp>(CurrentTargetActor.Get()))
+		if (AActivePropActor* Prop = Cast<AActivePropActor>(CurrentTargetActor.Get()))
 		{
 			Prop->ConsumePortion(PossessedNPC.Get());
 			CurrentTargetActor = nullptr;
@@ -941,7 +941,7 @@ void ANPCAIController::HandlePerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 		}
 	}
 	// 2. Consumable Prop Perception & Memory Discovery
-	else if (AInteractableProp* Prop = Cast<AInteractableProp>(Actor))
+	else if (AActivePropActor* Prop = Cast<AActivePropActor>(Actor))
 	{
 		if (PossessedNPC->WorldModelComponent)
 		{
@@ -1181,7 +1181,7 @@ void ANPCAIController::FindResource(const FNPCResourceSearchQuery& Query)
 		if (Query.bAllowOpportunisticScavenge)
 		{
 			FVector ScavengeLoc;
-			AInteractableProp* ScavengeProp = nullptr;
+			AActivePropActor* ScavengeProp = nullptr;
 			if (PossessedNPC->WorldModelComponent->FindOpportunisticScavengeProp(CurrentCash, ScavengeLoc, ScavengeProp))
 			{
 				if (ScavengeProp && !ScavengeProp->IsEmpty())
@@ -1374,7 +1374,7 @@ void ANPCAIController::StartPhysicalObjectQueryReconnaissance(const FNPCResource
 
 	// 3. Gather consumable props in radius
 	TArray<AActor*> Props;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AInteractableProp::StaticClass(), Props);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActivePropActor::StaticClass(), Props);
 	for (AActor* Act : Props)
 	{
 		if (Act && FVector::DistSquared(PawnLoc, Act->GetActorLocation()) <= FMath::Square(SearchRadius))
