@@ -7,6 +7,8 @@
 
 class AActivePropActor;
 class UASMComponent;
+class UPropBatchUpdateComponent;
+class UInteractablePropSenseSightComponent;
 class UInteractableISMComponent;
 class UStaticMeshPhysicsSimulationComponent;
 class UPrimitiveComponent;
@@ -63,6 +65,14 @@ public:
 	/** Dedicated ASM Component that handles all ASM actors, dynamic 100-500 pool scaling (90% threshold), and EmptyASMIDs */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prop Manager|ASM")
 	TObjectPtr<UASMComponent> ASMComponent;
+
+	/** Dedicated Batch Update Component that exposes time-sliced prop batches (10 to 50 ISIDs/frame) to listeners and handles field-level delta replication */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prop Manager|Batch Update")
+	TObjectPtr<UPropBatchUpdateComponent> BatchUpdateComponent;
+
+	/** Dedicated AI Sense Sight Component providing time-sliced vision and closest visible prop queries for AI and players */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prop Manager|AI Perception")
+	TObjectPtr<UInteractablePropSenseSightComponent> SenseSightComponent;
 
 	/** Array of all managed AActivePropActor units (100 to 500, synced from ASMComponent) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prop Manager|ASM")
@@ -283,6 +293,18 @@ public:
 	/** Searches registered product definitions for one matching the given Static Mesh */
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
 	int32 FindProductIDByStaticMesh(const UStaticMesh* InMesh) const;
+
+	/** Returns an array of all registered ProductIDs in the database */
+	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
+	TArray<int32> GetAllProductIDs() const;
+
+	/**
+	 * Returns an array of random ProductIDs from registered products (e.g. for generating shopping lists or NPC needs).
+	 * @param Count Number of ProductIDs to select.
+	 * @param bAllowDuplicates If false, returned PIDs are unique (clamped to total available products). If true, duplicate PIDs can be picked.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
+	TArray<int32> GetRandomProductIDs(int32 Count, bool bAllowDuplicates = false) const;
 
 	/**
 	 * Registers a product definition from an AActivePropActor's PropDataAsset or PropMesh.

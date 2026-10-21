@@ -506,6 +506,119 @@ struct MARRYBYMIDNIGHT_API FPropRuntimeSyncItem
 };
 
 /**
+ * Dirty mask bitflags for fine-grained runtime field replication.
+ */
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EPropRuntimeDirtyMask : uint8
+{
+	None        = 0       UMETA(Hidden),
+	Temperature = 1 << 0  UMETA(DisplayName = "Temperature"),
+	Portions    = 1 << 1  UMETA(DisplayName = "Portions"),
+	State       = 1 << 2  UMETA(DisplayName = "State"),
+	Flags       = 1 << 3  UMETA(DisplayName = "Flags")
+};
+ENUM_CLASS_FLAGS(EPropRuntimeDirtyMask);
+
+/**
+ * Fine-grained per-ISID runtime field delta containing only modified properties.
+ * Sent over the network when specific fields change (e.g. only portions when drinking, only temperature in fridge).
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropRuntimeFieldDelta
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 ISID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	uint8 DirtyFlags = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	float Temperature = 21.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 RemainingPortions = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	EPropState State = EPropState::AtRest;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 LastUpdatedMinute = 0;
+
+	bool HasFlag(EPropRuntimeDirtyMask Flag) const
+	{
+		return (DirtyFlags & static_cast<uint8>(Flag)) != 0;
+	}
+
+	void SetFlag(EPropRuntimeDirtyMask Flag)
+	{
+		DirtyFlags |= static_cast<uint8>(Flag);
+	}
+
+	void ClearFlag(EPropRuntimeDirtyMask Flag)
+	{
+		DirtyFlags &= ~static_cast<uint8>(Flag);
+	}
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+};
+
+template<>
+struct TStructOpsTypeTraits<FPropRuntimeFieldDelta> : public TStructOpsTypeTraitsBase2<FPropRuntimeFieldDelta>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
+};
+
+/**
+ * Per-instance context exposed in UPropBatchUpdateComponent's frame batch evaluation event.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropBatchEvaluationItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	int32 ISID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	int32 ProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	EPropRepresentation Representation = EPropRepresentation::ISM;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	EPropState State = EPropState::AtRest;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	FVector WorldLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	FTransform WorldTransform = FTransform::Identity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	float CurrentTemperature = 21.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	int32 RemainingPortions = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	float AgeMinutes = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	TWeakObjectPtr<AActor> ActiveActor = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	bool bIsGrabbable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Batch Evaluation")
+	int32 IISMComponentID = 0;
+};
+
+/**
  * Extended interaction-specific runtime data for an ISID (Sections 26 & 33).
  */
 USTRUCT(BlueprintType)

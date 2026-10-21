@@ -2,6 +2,8 @@
 #include "Props/InteractableProp.h"
 #include "Props/InteractablePropDataAsset.h"
 #include "Components/ASMComponent.h"
+#include "Components/PropBatchUpdateComponent.h"
+#include "Components/InteractablePropSenseSightComponent.h"
 #include "Components/InteractableInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -33,6 +35,8 @@ APropManager::APropManager()
 	SetRootComponent(SceneRoot);
 
 	ASMComponent = CreateDefaultSubobject<UASMComponent>(TEXT("ASMComponent"));
+	BatchUpdateComponent = CreateDefaultSubobject<UPropBatchUpdateComponent>(TEXT("BatchUpdateComponent"));
+	SenseSightComponent = CreateDefaultSubobject<UInteractablePropSenseSightComponent>(TEXT("SenseSightComponent"));
 
 	DefaultResetTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -100000.0f), FVector(0.0001f));
 	ActivePropActorClass = AActivePropActor::StaticClass();
@@ -166,13 +170,15 @@ void APropManager::Tick(float DeltaSeconds)
 	if (HasAuthority())
 	{
 		UpdateDistributedProps(DeltaSeconds);
-		UpdateDistributedISM(DeltaSeconds);
 		ProcessPendingTasks(DeltaSeconds);
 		ProcessBulkReplication(DeltaSeconds);
 		ProcessQueuedPlacedConversions();
 		ProcessQueuedISMPromotions();
 		ProcessActivePhysicsReplication(DeltaSeconds);
-		ProcessTimestampedThermalUpdates(DeltaSeconds);
+		if (BatchUpdateComponent)
+		{
+			BatchUpdateComponent->ProcessBatchUpdate(DeltaSeconds);
+		}
 	}
 	else
 	{
@@ -446,6 +452,59 @@ int32 APropManager::FindProductIDByStaticMesh(const UStaticMesh* InMesh) const
 		}
 	}
 	return 0;
+}
+
+TArray<int32> APropManager::GetAllProductIDs() const
+{
+	TSet<int32> UniquePIDs;
+	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
+	{
+		if (Pair.Key > 0)
+		{
+			UniquePIDs.Add(Pair.Key);
+		}
+	}
+	for (const TPair<int32, TObjectPtr<UInteractableISMComponent>>& Pair : ComponentsByICID)
+	{
+		if (Pair.Value && Pair.Value->ProductID > 0)
+		{
+			UniquePIDs.Add(Pair.Value->ProductID);
+		}
+	}
+
+	TArray<int32> Result = UniquePIDs.Array();
+	Result.Sort();
+	return Result;
+}
+
+TArray<int32> APropManager::GetRandomProductIDs(int32 Count, bool bAllowDuplicates) const
+{
+	TArray<int32> AllPIDs = GetAllProductIDs();
+	if (Count <= 0 || AllPIDs.IsEmpty())
+	{
+		return TArray<int32>();
+	}
+
+	if (!bAllowDuplicates)
+	{
+		const int32 NumToSelect = FMath::Clamp(Count, 0, AllPIDs.Num());
+		for (int32 i = AllPIDs.Num() - 1; i > 0; --i)
+		{
+			const int32 j = FMath::RandRange(0, i);
+			AllPIDs.Swap(i, j);
+		}
+		AllPIDs.SetNum(NumToSelect);
+		return AllPIDs;
+	}
+
+	TArray<int32> Result;
+	Result.Reserve(Count);
+	for (int32 i = 0; i < Count; ++i)
+	{
+		const int32 RandIndex = FMath::RandRange(0, AllPIDs.Num() - 1);
+		Result.Add(AllPIDs[RandIndex]);
+	}
+	return Result;
 }
 
 int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
@@ -6661,65 +6720,7 @@ void APropManager::UpdateDistributedProps(float DeltaSeconds)
 
 void APropManager::UpdateDistributedISM(float DeltaSeconds)
 {
-	RegisteredISMComponents.RemoveAll([](const TWeakObjectPtr<UInteractableISMComponent>& Ptr) { return !Ptr.IsValid(); });
-
-	if (RegisteredISMComponents.Num() == 0) return;
-
-	if (CurrentISMUpdateIndex >= RegisteredISMComponents.Num())
-	{
-		CurrentISMUpdateIndex = 0;
-	}
-
-	if (RegisteredISMComponents.IsValidIndex(CurrentISMUpdateIndex))
-	{
-		if (UInteractableISMComponent* ISM = RegisteredISMComponents[CurrentISMUpdateIndex].Get())
-		{
-			const int32 NumInstances = ISM->GetInstanceCount();
-			if (NumInstances > 0)
-			{
-				if (CurrentISMInstanceIndex >= NumInstances)
-				{
-					CurrentISMInstanceIndex = 0;
-				}
-
-				// Section 40: Empty Instances are not gameplay-relevant and must not be updated
-				if (!ISM->IsEmptyInstance(CurrentISMInstanceIndex))
-				{
-					const float EffectiveDelta = DeltaSeconds * static_cast<float>(NumInstances);
-					ISM->UpdateInstanceTemperature(CurrentISMInstanceIndex, AmbientTemperature, EffectiveDelta);
-
-					const int32 MappedISID = ISM->FindISID(CurrentISMInstanceIndex);
-					if (MappedISID > 0)
-					{
-						if (FISIDRuntimeIndex* Record = FindISIDData(MappedISID))
-						{
-							FPropPackedRuntimeData UpdatedPacked;
-							if (ISM->GetInstanceDataByISMI(CurrentISMInstanceIndex, UpdatedPacked))
-							{
-								Record->PackedRuntimeData.Temperature = UpdatedPacked.Temperature;
-								Record->RuntimeData.Temperature = UpdatedPacked.Temperature;
-							}
-						}
-					}
-				}
-
-				CurrentISMInstanceIndex++;
-				if (CurrentISMInstanceIndex >= NumInstances)
-				{
-					CurrentISMInstanceIndex = 0;
-					CurrentISMUpdateIndex = (CurrentISMUpdateIndex + 1) % RegisteredISMComponents.Num();
-				}
-			}
-			else
-			{
-				CurrentISMUpdateIndex = (CurrentISMUpdateIndex + 1) % RegisteredISMComponents.Num();
-			}
-		}
-		else
-		{
-			CurrentISMUpdateIndex = (CurrentISMUpdateIndex + 1) % RegisteredISMComponents.Num();
-		}
-	}
+	// Deprecated: Real-time prop updates and event evaluation are now managed by UPropBatchUpdateComponent
 }
 
 void APropManager::CheckSettlingQueue()
@@ -7046,6 +7047,15 @@ bool APropManager::Server_RequestTemperatureUpdate_Validate(int32 InISID, float 
 
 void APropManager::Server_RequestTemperatureUpdate_Implementation(int32 InISID, float NewTemperature)
 {
+	if (BatchUpdateComponent)
+	{
+		if (BatchUpdateComponent->SetInstanceTemperature(InISID, NewTemperature))
+		{
+			BatchUpdateComponent->FlushFieldDeltas();
+		}
+		return;
+	}
+
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return;
 
@@ -7091,7 +7101,19 @@ bool APropManager::ConsumeInstancePortion(int32 InISID, AActor* ConsumerActor, f
 	}
 
 	const int32 PortionsToConsume = FMath::Max(1, FMath::RoundToInt(PortionRatio));
-	Record->PackedRuntimeData.RemainingPortions = FMath::Max(0, Record->PackedRuntimeData.RemainingPortions - PortionsToConsume);
+	const int32 NewPortions = FMath::Max(0, Record->PackedRuntimeData.RemainingPortions - PortionsToConsume);
+
+	if (BatchUpdateComponent)
+	{
+		BatchUpdateComponent->SetInstancePortions(InISID, NewPortions);
+		if (HasAuthority())
+		{
+			BatchUpdateComponent->FlushFieldDeltas();
+		}
+		return true;
+	}
+
+	Record->PackedRuntimeData.RemainingPortions = NewPortions;
 	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
 
 	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))

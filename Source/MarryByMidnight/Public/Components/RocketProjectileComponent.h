@@ -222,6 +222,14 @@ struct FRocketFlightSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "0.5", ClampMax = "30.0"))
 	float MaxFuelDuration = 12.0f;
 
+	/** Total distance in cm of powered rocket flight before fuel is exhausted (governs flight duration by distance). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "500.0", ClampMax = "100000.0"))
+	float MaxFuelDistance = 15000.0f;
+
+	/** Random deflection angle in degrees added on each in-flight bounce/ricochet (produces chaotic bounces in different directions). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "10.0", ClampMax = "75.0"))
+	float FlightBounceRandomDeflection = 45.0f;
+
 	/** Speed curve over flight time (X: normalized 0-1 time, Y: speed multiplier). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight")
 	TObjectPtr<UCurveFloat> FuelThrustCurve;
@@ -446,6 +454,14 @@ public:
 	/** Total duration of rocket thrust in seconds before fizz is depleted. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "0.5", ClampMax = "30.0"))
 	float MaxFuelDuration = 12.0f;
+
+	/** Maximum distance the rocket can travel under power in cm before fuel is exhausted. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "500.0", ClampMax = "100000.0"))
+	float MaxFuelDistance = 15000.0f;
+
+	/** Random deflection angle in degrees added on each in-flight bounce/ricochet (produces chaotic bounces in different directions). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "10.0", ClampMax = "75.0"))
+	float FlightBounceRandomDeflection = 45.0f;
 
 	/** Gravity acceleration applied during flight (cm/s^2). Default is normal Unreal gravity (980 cm/s^2). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing")
@@ -691,6 +707,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Rocket")
 	float GetNormalizedRemainingFuel() const;
 
+	/** Gets total distance traveled under rocket power in cm. */
+	UFUNCTION(BlueprintPure, Category = "Rocket")
+	float GetTotalFlightDistanceTraveled() const { return TotalFlightDistanceTraveled; }
+
+	/** Gets maximum fuel distance in cm. */
+	UFUNCTION(BlueprintPure, Category = "Rocket")
+	float GetMaxFuelDistance() const { return FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance; }
+
 	/** Gets elapsed powered rocket flight time in seconds (stops counting when fuel is depleted). */
 	UFUNCTION(BlueprintPure, Category = "Rocket")
 	float GetElapsedFlightTime() const { return ElapsedFlightTime; }
@@ -771,6 +795,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
 	float ElapsedFlightTime = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
+	float TotalFlightDistanceTraveled = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
+	float TimeSpentFalling = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
 	float TotalAirTime = 0.0f;

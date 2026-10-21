@@ -30,6 +30,10 @@ URocketProjectileComponent::URocketProjectileComponent()
 
 	BaseSpeed = 2400.0f;
 	MaxFuelDuration = 12.0f;
+	MaxFuelDistance = 15000.0f;
+	FlightBounceRandomDeflection = 45.0f;
+	TotalFlightDistanceTraveled = 0.0f;
+	TimeSpentFalling = 0.0f;
 	GravityZ = -980.0f;
 	InFlightGravityScale = 0.15f;
 
@@ -83,6 +87,8 @@ URocketProjectileComponent::URocketProjectileComponent()
 	// Synchronize struct movement settings with baseline property defaults
 	FlightSettings.BaseSpeed = BaseSpeed;
 	FlightSettings.MaxFuelDuration = MaxFuelDuration;
+	FlightSettings.MaxFuelDistance = MaxFuelDistance;
+	FlightSettings.FlightBounceRandomDeflection = FlightBounceRandomDeflection;
 	FlightSettings.GravityZ = GravityZ;
 	FlightSettings.InFlightGravityScale = InFlightGravityScale;
 	FlightSettings.bAlignRotationToVelocity = bAlignRotationToVelocity;
@@ -294,6 +300,16 @@ void URocketProjectileComponent::InitializeFlightPath(const FVector& InStartLoc,
 	// Waypoint generation
 	FlightWaypoints.Add(FlightStartLocation);
 
+	// Check if the next node has a subsequent node after it (open-air transition lookahead)
+	FVector UpcomingTurnDir = FVector::ZeroVector;
+	const bool bHasUpcomingTurn = AuthoritativeFlightNodes.IsValidIndex(CurrentFlightPlanNodeIndex + 2);
+	if (bHasUpcomingTurn)
+	{
+		const FVector Node1 = AuthoritativeFlightNodes[CurrentFlightPlanNodeIndex + 1];
+		const FVector Node2 = AuthoritativeFlightNodes[CurrentFlightPlanNodeIndex + 2];
+		UpcomingTurnDir = (Node2 - Node1).GetSafeNormal();
+	}
+
 	if (FlightSettings.bEnableErraticPath)
 	{
 		FRandomStream PathStream(InSeed > 0 ? InSeed : 1);
@@ -303,6 +319,7 @@ void URocketProjectileComponent::InitializeFlightPath(const FVector& InStartLoc,
 		for (int32 i = 1; i <= NumSegments; ++i)
 		{
 			const float Dist = i * Spacing;
+			const float SegmentProgress = Dist / EffectiveBaselineLength;
 			const FVector BasePt = FlightStartLocation + (FlightBaselineDir * Dist);
 
 			// Alternating lateral offsets primarily along horizontal PerpendicularU (Yellow circles in Image 1)
@@ -313,6 +330,14 @@ void URocketProjectileComponent::InitializeFlightPath(const FVector& InStartLoc,
 			const float VertOffset = PathStream.FRandRange(0.0f, DevDist * 0.30f);
 
 			FVector Waypoint = BasePt + (PerpendicularU * (DevDist * SideSign)) + (FVector::UpVector * VertOffset);
+
+			// If nearing the end of an open-air leg with an upcoming turn, smoothly blend the waypoint towards the next direction
+			if (bHasUpcomingTurn && SegmentProgress > 0.65f)
+			{
+				const float TurnBlend = (SegmentProgress - 0.65f) / 0.35f;
+				const float TurnLeadDist = DevDist * TurnBlend * 0.8f;
+				Waypoint += UpcomingTurnDir * TurnLeadDist;
+			}
 
 			// Ground clearance safety trace for each waypoint:
 			// Ensures waypoint never dips below ground level + sweep radius + 10cm
@@ -368,13 +393,9 @@ void URocketProjectileComponent::EvaluateFlightSpline(float Progress, FVector& O
 		return;
 	}
 
-	// Normalize Progress to [0.0, 1.0]
-	float AlphaTotal = Progress;
-	if (Progress > 1.0f && FlightBaselineLength > 0.0f)
-	{
-		AlphaTotal = Progress / FlightBaselineLength;
-	}
-	AlphaTotal = FMath::Clamp(AlphaTotal, 0.0f, 1.0f);
+	// Progress is ALREADY normalized to [0.0, 1.0]!
+	// Simply clamp it to [0.0, 1.0] - NEVER divide by FlightBaselineLength!
+	const float AlphaTotal = FMath::Clamp(Progress, 0.0f, 1.0f);
 
 	const int32 NumSegments = NumPts - 1;
 	const float SegmentFloat = AlphaTotal * static_cast<float>(NumSegments);
@@ -443,7 +464,31 @@ void URocketProjectileComponent::AdvanceToNextFlightLeg()
 	FlightLegIndex++;
 	CurrentFlightPlanNodeIndex++;
 
-	const FVector CurrentLoc = GetWorldCenterLocation();
+	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+
+	// Check if all nodes in authoritative flight plan are completed OR fuel distance is exhausted
+	if ((AuthoritativeFlightNodes.Num() > 0 && CurrentFlightPlanNodeIndex >= AuthoritativeFlightNodes.Num() - 1)
+		|| TotalFlightDistanceTraveled >= EffectiveFuelDist)
+	{
+		LogDebug(FString::Printf(TEXT("Flight plan completed! Reached final node %d/%d (FuelDist=%.0f/%.0f cm). Falling..."),
+			CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist), true);
+
+		// Cut fuel and drop under gravity from this exact final point!
+		bTargetRestRotationInitialized = false;
+		FallingTumbleAngle = 0.0f;
+		TimeSpentFalling = 0.0f;
+		SetSimulationState(ERocketSimulationState::SpentFalling);
+		return;
+	}
+
+	// Arrived at AuthoritativeFlightNodes[CurrentFlightPlanNodeIndex]!
+	// Snap CurrentLoc to the arrived node to guarantee zero drift or snap-back
+	FVector CurrentLoc = GetWorldCenterLocation();
+	if (AuthoritativeFlightNodes.IsValidIndex(CurrentFlightPlanNodeIndex))
+	{
+		CurrentLoc = AuthoritativeFlightNodes[CurrentFlightPlanNodeIndex];
+		SetTargetTransformAroundCenter(CurrentLoc, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+	}
 
 	FVector NewFlightDir = FVector::ForwardVector;
 	if (AuthoritativeFlightNodes.IsValidIndex(CurrentFlightPlanNodeIndex + 1))
@@ -474,8 +519,8 @@ void URocketProjectileComponent::AdvanceToNextFlightLeg()
 		}
 	}
 
-	LogDebug(FString::Printf(TEXT("AdvanceToNextFlightLeg #%d (Node %d/%d): Next Dir: %s, Seed=%d"),
-		FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), *NewFlightDir.ToString(), LaunchSeed + FlightLegIndex * 79));
+	LogDebug(FString::Printf(TEXT("AdvanceToNextFlightLeg #%d (Node %d/%d): Start=%s, Next Dir: %s, Seed=%d"),
+		FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), *CurrentLoc.ToString(), *NewFlightDir.ToString(), LaunchSeed + FlightLegIndex * 79));
 
 	// Initialize new erratic flight spline along the new line trace
 	InitializeFlightPath(CurrentLoc, NewFlightDir, LaunchSeed + FlightLegIndex * 79);
@@ -494,6 +539,7 @@ void URocketProjectileComponent::TransitionToRocketing(const FVector& InLiftoffC
 	SetSimulationState(ERocketSimulationState::Rocketing);
 	ElapsedFlightTime = 0.0f;
 	CurrentFlightPlanNodeIndex = 0;
+	FlightDistanceTraveled = 0.0f;
 
 	// Calculate liftoff heading directly towards first flight plan node if available, else LaunchTargetHitLocation
 	FVector LiftoffHeading = FVector::ForwardVector;
@@ -601,10 +647,11 @@ void URocketProjectileComponent::DrawRocketDebugVisuals(float DeltaTime)
 		const float ProgressPct = (FlightBaselineLength > 0.0f && CurrentState == ERocketSimulationState::Rocketing)
 			? FMath::Clamp(FlightDistanceTraveled / FlightBaselineLength * 100.0f, 0.0f, 100.0f) : 0.0f;
 
+		const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
 		const FString Telemetry = FString::Printf(
-			TEXT("%s %s | State: %s | Seed: %d | Speed: %.0f | AirTime: %.2fs | Loc: (%.0f, %.0f, %.0f) | Progress: %.0f%% | Leg: %d | Catchup: %.2fx"),
-			*RoleTag, *GetNameSafe(GetOwner()), *StateStr, LaunchSeed, Speed, TotalAirTime,
-			CurrentLoc.X, CurrentLoc.Y, CurrentLoc.Z, ProgressPct, FlightLegIndex, ClientCatchupSpeedMultiplier
+			TEXT("%s %s | State: %s | Speed: %.0f | AirTime: %.2fs | Loc: (%.0f, %.0f, %.0f) | Fuel: %.0f/%.0f cm | Node: %d/%d | Catchup: %.2fx"),
+			*RoleTag, *GetNameSafe(GetOwner()), *StateStr, Speed, TotalAirTime,
+			CurrentLoc.X, CurrentLoc.Y, CurrentLoc.Z, TotalFlightDistanceTraveled, EffectiveFuelDist, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), ClientCatchupSpeedMultiplier
 		);
 
 		GEngine->AddOnScreenDebugMessage(CompKey, 0.2f, ThemeColor, Telemetry);
@@ -834,6 +881,8 @@ void URocketProjectileComponent::ConfigureRocket(
 	{
 		MaxFuelDuration = InFuelDuration;
 		FlightSettings.MaxFuelDuration = InFuelDuration;
+		MaxFuelDistance = InFuelDuration * BaseSpeed;
+		FlightSettings.MaxFuelDistance = MaxFuelDistance;
 		FlightNetState.FuelDuration = MaxFuelDuration;
 	}
 	if (InSpeed > 0.0f)
@@ -877,6 +926,8 @@ void URocketProjectileComponent::Multicast_ConfigureRocket_Implementation(
 	{
 		MaxFuelDuration = InFuelDuration;
 		FlightSettings.MaxFuelDuration = InFuelDuration;
+		MaxFuelDistance = InFuelDuration * BaseSpeed;
+		FlightSettings.MaxFuelDistance = MaxFuelDistance;
 	}
 	if (InSpeed > 0.0f)
 	{
@@ -984,17 +1035,20 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 	// Node 0: Initial liftoff location rounded to integer
 	OutNodes.Add(FVector_NetQuantize(LiftoffCenter));
 
-	// 3. Multi-leg line traces (around 8 to 16 nodes, e.g. 12 legs = 13 nodes)
-	const int32 NumLegs = 12;
+	// Distance-based fuel budget (User: around 8 to 16 array of locations)
+	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+	float RemainingBudget = FMath::Max(500.0f, EffectiveFuelDist);
 	const float MaxLegDistance = 2500.0f;
+	const int32 MaxNodesLimit = 16;
 	FRandomStream PlanStream(LaunchSeed > 0 ? LaunchSeed : 1);
 
 	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(RocketServerFlightPlanTrace), false, GetOwner());
 	FVector CurrentLoc = LiftoffCenter;
 
-	for (int32 LegIdx = 0; LegIdx < NumLegs; ++LegIdx)
+	while (RemainingBudget > 50.0f && OutNodes.Num() < MaxNodesLimit)
 	{
-		const FVector TraceEnd = CurrentLoc + (CurrentHeading * MaxLegDistance);
+		const float StepDist = FMath::Min(MaxLegDistance, RemainingBudget);
+		const FVector TraceEnd = CurrentLoc + (CurrentHeading * StepDist);
 		FHitResult Hit;
 		const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CurrentLoc, TraceEnd, ECC_Visibility, TraceParams);
 
@@ -1002,23 +1056,34 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 		{
 			// Store hit location rounded to whole integer
 			const FVector HitPoint = Hit.ImpactPoint;
+			const float LegDist = FVector::Dist(CurrentLoc, HitPoint);
+			RemainingBudget -= LegDist;
 			OutNodes.Add(FVector_NetQuantize(HitPoint));
 
-			// Calculate reflection vector
-			FVector Reflected = CurrentHeading - 2.0f * (CurrentHeading | Hit.Normal) * Hit.Normal;
-
-			// Chaotic deflection cone
-			const float DeflectionDeg = FMath::Max(FallingSettings.RicochetRandomDeflection, RicochetRandomDeflection);
-			if (DeflectionDeg > 0.0f)
+			if (RemainingBudget <= 50.0f || OutNodes.Num() >= MaxNodesLimit)
 			{
-				Reflected = PlanStream.VRandCone(Reflected.GetSafeNormal(), FMath::DegreesToRadians(DeflectionDeg));
+				break; // Fuel exhausted on this obstacle hit!
 			}
 
-			// Anti-stick guard to ensure the reflected trajectory points away from the surface
+			// Calculate reflection vector with enhanced bounce randomness
+			FVector Reflected = CurrentHeading - 2.0f * (CurrentHeading | Hit.Normal) * Hit.Normal;
+
+			// Enhanced chaotic bounce deflection (User: "add some randomness when bottel hit someting bouncing in to different location")
+			const float DeflectionDeg = FMath::Clamp(FlightSettings.FlightBounceRandomDeflection > 0.0f ? FlightSettings.FlightBounceRandomDeflection : FlightBounceRandomDeflection, 25.0f, 65.0f);
+			Reflected = PlanStream.VRandCone(Reflected.GetSafeNormal(), FMath::DegreesToRadians(DeflectionDeg));
+
+			// Anti-stick guard to ensure reflection points away from surface
 			const float NormalComp = Reflected | Hit.Normal;
 			if (NormalComp < 0.25f)
 			{
 				Reflected = (Reflected - (NormalComp * Hit.Normal)) + (Hit.Normal * 0.35f);
+				Reflected.Normalize();
+			}
+
+			// If bouncing off floor/ground (upward normal), give it an upward bounce angle
+			if (Hit.Normal.Z > 0.5f && Reflected.Z < 0.15f)
+			{
+				Reflected.Z = PlanStream.FRandRange(0.20f, 0.55f);
 				Reflected.Normalize();
 			}
 
@@ -1031,10 +1096,16 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 		{
 			// No obstacle hit; store trace end location rounded to whole integer
 			OutNodes.Add(FVector_NetQuantize(TraceEnd));
+			RemainingBudget -= StepDist;
 			CurrentLoc = TraceEnd;
 
-			// Pick next airborne semi-random heading in cone
-			CurrentHeading = PlanStream.VRandCone(CurrentHeading, FMath::DegreesToRadians(50.0f));
+			if (RemainingBudget <= 50.0f || OutNodes.Num() >= MaxNodesLimit)
+			{
+				break; // Fuel exhausted at this open-air location!
+			}
+
+			// Smooth directional variation for open air
+			CurrentHeading = PlanStream.VRandCone(CurrentHeading, FMath::DegreesToRadians(45.0f));
 			if (CurrentHeading.Z < 0.05f)
 			{
 				CurrentHeading.Z = PlanStream.FRandRange(0.12f, 0.40f);
@@ -1043,7 +1114,8 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 		}
 	}
 
-	LogDebug(FString::Printf(TEXT("GenerateServerFlightPlan complete: Generated %d nodes (Seed=%d)"), OutNodes.Num(), LaunchSeed), true);
+	LogDebug(FString::Printf(TEXT("GenerateServerFlightPlan complete: Generated %d nodes (FuelDist=%.0f cm, Seed=%d)"),
+		OutNodes.Num(), EffectiveFuelDist, LaunchSeed), true);
 }
 
 void URocketProjectileComponent::SetAuthoritativeFlightPlan(const TArray<FVector_NetQuantize>& InFlightNodes)
@@ -1064,10 +1136,27 @@ void URocketProjectileComponent::SetAuthoritativeFlightPlan(const TArray<FVector
 		CumulativeFlightPlanDistances.Add(RunningDist);
 	}
 
-	CurrentFlightPlanNodeIndex = 0;
+	if (CurrentState == ERocketSimulationState::Rocketing && CumulativeFlightPlanDistances.Num() > 1 && TotalFlightDistanceTraveled > 0.0f)
+	{
+		// If received while already rocketing, match current leg to traveled distance
+		int32 FoundIndex = 0;
+		for (int32 i = 0; i < CumulativeFlightPlanDistances.Num() - 1; ++i)
+		{
+			if (TotalFlightDistanceTraveled >= CumulativeFlightPlanDistances[i] && TotalFlightDistanceTraveled < CumulativeFlightPlanDistances[i + 1])
+			{
+				FoundIndex = i;
+				break;
+			}
+		}
+		CurrentFlightPlanNodeIndex = FoundIndex;
+	}
+	else
+	{
+		CurrentFlightPlanNodeIndex = 0;
+	}
 
-	LogDebug(FString::Printf(TEXT("SetAuthoritativeFlightPlan: Stored %d rounded nodes, TotalPathDistance=%.1f cm"),
-		AuthoritativeFlightNodes.Num(), RunningDist), true);
+	LogDebug(FString::Printf(TEXT("SetAuthoritativeFlightPlan: Stored %d rounded nodes, TotalPathDistance=%.1f cm (CurrentNode=%d)"),
+		AuthoritativeFlightNodes.Num(), RunningDist, CurrentFlightPlanNodeIndex), true);
 
 	for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
 	{
@@ -1118,6 +1207,8 @@ void URocketProjectileComponent::ApplyClientLaunch(
 	{
 		MaxFuelDuration = InFuelDuration;
 		FlightSettings.MaxFuelDuration = InFuelDuration;
+		MaxFuelDistance = InFuelDuration * BaseSpeed;
+		FlightSettings.MaxFuelDistance = MaxFuelDistance;
 	}
 	if (InSpeed > 0.0f)
 	{
@@ -1194,6 +1285,8 @@ void URocketProjectileComponent::ApplyClientLaunch(
 	}
 
 	ElapsedFlightTime = 0.0f;
+	TotalFlightDistanceTraveled = 0.0f;
+	TimeSpentFalling = 0.0f;
 	TotalAirTime = 0.0f;
 	SimulationTimeAccumulator = 0.0f;
 
@@ -1293,6 +1386,7 @@ void URocketProjectileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 
 	DOREPLIFETIME(URocketProjectileComponent, FlightNetState);
 	DOREPLIFETIME(URocketProjectileComponent, MaxFuelDuration);
+	DOREPLIFETIME(URocketProjectileComponent, MaxFuelDistance);
 	DOREPLIFETIME(URocketProjectileComponent, BaseSpeed);
 	DOREPLIFETIME(URocketProjectileComponent, LaunchSeed);
 }
@@ -1504,6 +1598,8 @@ void URocketProjectileComponent::ResetRocketSimulation()
 	CurrentState = ERocketSimulationState::Idle;
 	CurrentVelocity = FVector::ZeroVector;
 	ElapsedFlightTime = 0.0f;
+	TotalFlightDistanceTraveled = 0.0f;
+	TimeSpentFalling = 0.0f;
 	TotalAirTime = 0.0f;
 	CurrentBounceCount = 0;
 	TipOverElapsedTime = 0.0f;
@@ -1660,6 +1756,8 @@ void URocketProjectileComponent::LaunchRocket(
 	SimulationTimeAccumulator = 0.0f;
 
 	ElapsedFlightTime = 0.0f;
+	TotalFlightDistanceTraveled = 0.0f;
+	TimeSpentFalling = 0.0f;
 	TotalAirTime = 0.0f;
 	CurrentBounceCount = 0;
 	TipOverElapsedTime = 0.0f;
@@ -1674,6 +1772,12 @@ void URocketProjectileComponent::LaunchRocket(
 	FallingTumbleAngle = 0.0f;
 	FlightWaypoints.Empty();
 	FlightDistanceTraveled = 0.0f;
+
+	if (InFuelDuration > 0.0f)
+	{
+		MaxFuelDistance = InFuelDuration * BaseSpeed;
+		FlightSettings.MaxFuelDistance = MaxFuelDistance;
+	}
 
 	// Resolve launch heading (Orange arrow in Images 1-5)
 	FVector CleanHeading = InDirection.GetSafeNormal();
@@ -1950,11 +2054,12 @@ void URocketProjectileComponent::Multicast_SettleRocket_Implementation(FVector I
 
 float URocketProjectileComponent::GetNormalizedRemainingFuel() const
 {
-	if (MaxFuelDuration <= 0.0f)
+	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+	if (EffectiveFuelDist <= 0.0f)
 	{
 		return 0.0f;
 	}
-	return FMath::Clamp(1.0f - (ElapsedFlightTime / MaxFuelDuration), 0.0f, 1.0f);
+	return FMath::Clamp(1.0f - (TotalFlightDistanceTraveled / EffectiveFuelDist), 0.0f, 1.0f);
 }
 
 void URocketProjectileComponent::SetSimulationState(ERocketSimulationState NewState)
@@ -2146,11 +2251,13 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 	ElapsedFlightTime += DeltaTime;
 	TotalAirTime += DeltaTime;
 
-	// Check fuel expiration
-	if (ElapsedFlightTime >= MaxFuelDuration)
+	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+
+	// Check fuel expiration (governed by distance, with MaxFuelDuration safety fallback)
+	if (TotalFlightDistanceTraveled >= EffectiveFuelDist || ElapsedFlightTime >= MaxFuelDuration)
 	{
-		LogDebug(FString::Printf(TEXT("Fuel Expired! Elapsed: %.2f s, Max: %.2f s. bUsePhysicsSimulation: %d"),
-			ElapsedFlightTime, MaxFuelDuration, FallingSettings.bUsePhysicsSimulation ? 1 : 0));
+		LogDebug(FString::Printf(TEXT("Fuel Expired! Distance: %.1f / %.1f cm (AirTime: %.2fs). Falling..."),
+			TotalFlightDistanceTraveled, EffectiveFuelDist, TotalAirTime), true);
 
 		// Immediate synchronized fuel cutoff on both server and client at exact same sub-step
 		if (FallingSettings.bUsePhysicsSimulation || FallingSettings.bHandoffToPhysicsOnDepleted || bHandoffToPhysicsOnDepleted)
@@ -2168,16 +2275,17 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 
 		bTargetRestRotationInitialized = false;
 		FallingTumbleAngle = 0.0f;
+		TimeSpentFalling = 0.0f;
 		SetSimulationState(ERocketSimulationState::SpentFalling);
 		return;
 	}
 
-	// Evaluate fuel curve
+	// Evaluate fuel curve based on distance ratio
 	float SpeedMultiplier = 1.0f;
 	if (FuelThrustCurve)
 	{
-		const float NormalizedFuelTime = FMath::Clamp(ElapsedFlightTime / MaxFuelDuration, 0.0f, 1.0f);
-		SpeedMultiplier = FuelThrustCurve->GetFloatValue(NormalizedFuelTime);
+		const float NormalizedFuel = FMath::Clamp(TotalFlightDistanceTraveled / FMath::Max(EffectiveFuelDist, 1.0f), 0.0f, 1.0f);
+		SpeedMultiplier = FuelThrustCurve->GetFloatValue(NormalizedFuel);
 	}
 
 	// Client dead-reckoning & catch-up: match server position along the authoritative flight plan
@@ -2187,8 +2295,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 		const float PreFlightDuration = TotalTippingDuration + TotalDragDuration;
 		const float ServerElapsedFlight = FMath::Max(0.0f, ClientServerTime - LastReplicatedServerLaunchTime - PreFlightDuration);
 
-		const float ExpectedServerDist = ServerElapsedFlight * FlightSettings.BaseSpeed;
-		const float ClientTraveledDist = (CumulativeFlightPlanDistances.IsValidIndex(CurrentFlightPlanNodeIndex) ? CumulativeFlightPlanDistances[CurrentFlightPlanNodeIndex] : 0.0f) + FlightDistanceTraveled;
+		const float ExpectedServerDist = FMath::Min(ServerElapsedFlight * FlightSettings.BaseSpeed, EffectiveFuelDist);
+		const float ClientTraveledDist = TotalFlightDistanceTraveled;
 
 		const float DistDelta = ExpectedServerDist - ClientTraveledDist;
 		if (DistDelta > 15.0f)
@@ -2207,6 +2315,7 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 	}
 
 	const float TargetSpeed = FlightSettings.BaseSpeed * SpeedMultiplier;
+	const float StepDistance = TargetSpeed * DeltaTime;
 
 	// Maintain forward momentum with slight gravity drop
 	FVector CurrentHeading = CurrentVelocity.GetSafeNormal();
@@ -2215,10 +2324,10 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 		CurrentHeading = TipOverLaunchHeading;
 	}
 
-	const float RemainingFuel = MaxFuelDuration - ElapsedFlightTime;
-	const float EffectiveExhaustDuration = FMath::Min(LowFuelSettings.LowFuelPhaseDuration, MaxFuelDuration * 0.4f);
+	const float RemainingFuelDist = EffectiveFuelDist - TotalFlightDistanceTraveled;
+	const float SputterDistThreshold = FMath::Min(LowFuelSettings.LowFuelPhaseDuration * FlightSettings.BaseSpeed, EffectiveFuelDist * 0.35f);
 
-	if (LowFuelSettings.bEnableLowFuelSputter && RemainingFuel <= EffectiveExhaustDuration && RemainingFuel > 0.0f)
+	if (LowFuelSettings.bEnableLowFuelSputter && RemainingFuelDist <= SputterDistThreshold && RemainingFuelDist > 0.0f)
 	{
 		// State 4: Low Fuel / Sputter (almost empty thrust upward struggle)
 		if (CurrentState != ERocketSimulationState::LowFuelSputter)
@@ -2226,7 +2335,10 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			SetSimulationState(ERocketSimulationState::LowFuelSputter);
 		}
 
-		const float ExhaustAlpha = 1.0f - FMath::Clamp(RemainingFuel / EffectiveExhaustDuration, 0.0f, 1.0f);
+		TotalFlightDistanceTraveled += StepDistance;
+		FlightDistanceTraveled += StepDistance;
+
+		const float ExhaustAlpha = 1.0f - FMath::Clamp(RemainingFuelDist / FMath::Max(SputterDistThreshold, 1.0f), 0.0f, 1.0f);
 
 		// 1. Nose tilts upward into an arc as thrust angles up
 		FVector HorizHeading = FVector(CurrentHeading.X, CurrentHeading.Y, 0.0f).GetSafeNormal();
@@ -2274,7 +2386,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 		// Check if erratic waypoint spline path is active (Image 1)
 		if (FlightSettings.bEnableErraticPath && FlightWaypoints.Num() >= 2)
 		{
-			FlightDistanceTraveled += TargetSpeed * DeltaTime;
+			FlightDistanceTraveled += StepDistance;
+			TotalFlightDistanceTraveled += StepDistance;
 			const float NormalizedProgress = FlightBaselineLength > 0.0f ? (FlightDistanceTraveled / FlightBaselineLength) : 1.0f;
 
 			FVector NextSplineLoc;
@@ -2291,8 +2404,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			if (TravelHistoryLogTimer >= 0.25f)
 			{
 				TravelHistoryLogTimer = 0.0f;
-				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), Catchup=%.2fx"),
-					TotalAirTime, NormalizedProgress * 100.0f, *CurrentCenter.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), ClientCatchupSpeedMultiplier));
+				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
+					TotalAirTime, NormalizedProgress * 100.0f, *CurrentCenter.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
 			}
 
 			FHitResult Hit;
@@ -2314,7 +2427,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 		else
 		{
 			// Baseline straight rocketing
-			FlightDistanceTraveled += TargetSpeed * DeltaTime;
+			FlightDistanceTraveled += StepDistance;
+			TotalFlightDistanceTraveled += StepDistance;
 			const float NormalizedProgress = FlightBaselineLength > 0.0f ? (FlightDistanceTraveled / FlightBaselineLength) : 1.0f;
 
 			TravelHistoryLogTimer += DeltaTime;
@@ -2322,8 +2436,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			{
 				TravelHistoryLogTimer = 0.0f;
 				const FVector Center = GetWorldCenterLocation();
-				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), Catchup=%.2fx"),
-					TotalAirTime, NormalizedProgress * 100.0f, *Center.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), ClientCatchupSpeedMultiplier));
+				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
+					TotalAirTime, NormalizedProgress * 100.0f, *Center.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
 			}
 
 			CurrentVelocity.Z += FlightSettings.GravityZ * FlightSettings.InFlightGravityScale * DeltaTime;
@@ -2366,6 +2480,7 @@ void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 
 	// Option 2: Kinematic ballistic projectile trace with ground proximity landing interpolation (Image 2 - option 2)
 	TotalAirTime += DeltaTime;
+	TimeSpentFalling += DeltaTime;
 
 	// Ballistic drop under gravity
 	CurrentVelocity.Z += FlightSettings.GravityZ * FallingSettings.SpentGravityScale * DeltaTime;
@@ -2453,8 +2568,8 @@ void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 		}
 	}
 
-	// Safety timeout: if falling for more than 2.5s without settling, trace straight down to find the floor and settle flush
-	if (TotalAirTime >= MaxFuelDuration + 2.5f)
+	// Safety timeout: if falling for more than 4.0s without settling, trace straight down to find the floor and settle flush
+	if (TimeSpentFalling >= 4.0f || TotalAirTime >= MaxFuelDuration + 5.0f)
 	{
 		FHitResult FloorHit;
 		FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(RocketFloorTrace), false, GetOwner());
@@ -2581,7 +2696,9 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	FVector Reflected = Incident - 2.0f * (Incident | Hit.Normal) * Hit.Normal;
 
 	// Add chaotic random deflection cone
-	const float DeflectionDeg = FMath::Max(FallingSettings.RicochetRandomDeflection, RicochetRandomDeflection);
+	const float DeflectionDeg = (CurrentState == ERocketSimulationState::Rocketing)
+		? (FlightSettings.FlightBounceRandomDeflection > 0.0f ? FlightSettings.FlightBounceRandomDeflection : FlightBounceRandomDeflection)
+		: FMath::Max(FallingSettings.RicochetRandomDeflection, RicochetRandomDeflection);
 	if (DeflectionDeg > 0.0f)
 	{
 		const float DeflectionRad = FMath::DegreesToRadians(DeflectionDeg);
@@ -2593,6 +2710,13 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	if (NormalComponent < 0.25f)
 	{
 		Reflected = (Reflected - (NormalComponent * Hit.Normal)) + (Hit.Normal * 0.35f);
+		Reflected.Normalize();
+	}
+
+	// If reflecting off floor/ground while rocketing, bounce upward into the air
+	if (CurrentState == ERocketSimulationState::Rocketing && Hit.Normal.Z > 0.5f && Reflected.Z < 0.15f)
+	{
+		Reflected.Z = RandomStream.FRandRange(0.20f, 0.55f);
 		Reflected.Normalize();
 	}
 
@@ -2672,7 +2796,8 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 		float CurveMultiplier = 1.0f;
 		if (FuelThrustCurve)
 		{
-			const float NormalizedFuel = FMath::Clamp(ElapsedFlightTime / MaxFuelDuration, 0.0f, 1.0f);
+			const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+			const float NormalizedFuel = FMath::Clamp(TotalFlightDistanceTraveled / FMath::Max(EffectiveFuelDist, 1.0f), 0.0f, 1.0f);
 			CurveMultiplier = FuelThrustCurve->GetFloatValue(NormalizedFuel);
 		}
 		NewSpeed = FMath::Max(NewSpeed, FlightSettings.BaseSpeed * CurveMultiplier * 0.85f);
@@ -2689,6 +2814,22 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	{
 		FlightLegIndex++;
 		CurrentFlightPlanNodeIndex++;
+
+		const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
+
+		// Check if we completed all flight plan nodes OR if fuel distance is reached
+		if ((AuthoritativeFlightNodes.Num() > 0 && CurrentFlightPlanNodeIndex >= AuthoritativeFlightNodes.Num() - 1)
+			|| TotalFlightDistanceTraveled >= EffectiveFuelDist)
+		{
+			LogDebug(FString::Printf(TEXT("Flight plan completed on ricochet! Node %d/%d (FuelDist=%.0f/%.0f cm). Falling..."),
+				CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist), true);
+
+			bTargetRestRotationInitialized = false;
+			FallingTumbleAngle = 0.0f;
+			TimeSpentFalling = 0.0f;
+			SetSimulationState(ERocketSimulationState::SpentFalling);
+			return;
+		}
 
 		FVector NextHeading = CurrentVelocity.GetSafeNormal();
 		if (AuthoritativeFlightNodes.IsValidIndex(CurrentFlightPlanNodeIndex + 1))

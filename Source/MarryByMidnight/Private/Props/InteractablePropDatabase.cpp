@@ -321,3 +321,32 @@ void FInteractablePropData::SyncFromISIDRecord(const FISIDRuntimeIndex& Record, 
 	SimulationState = ConvertPropStateToPhysicsState(Record.State);
 	AgeMinutes = FMath::Max(0.0f, static_cast<float>(Record.PackedRuntimeData.LastUpdatedMinute - Record.PackedRuntimeData.CreationMinute));
 }
+
+// -----------------------------------------------------------------------------
+// FPropRuntimeFieldDelta
+// -----------------------------------------------------------------------------
+bool FPropRuntimeFieldDelta::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+{
+	Ar << ISID;
+	Ar << DirtyFlags;
+
+	if (HasFlag(EPropRuntimeDirtyMask::Temperature))
+	{
+		Ar << Temperature;
+	}
+	if (HasFlag(EPropRuntimeDirtyMask::Portions))
+	{
+		Ar << RemainingPortions;
+	}
+	if (HasFlag(EPropRuntimeDirtyMask::State))
+	{
+		uint8 StateByte = static_cast<uint8>(State);
+		Ar << StateByte;
+		State = static_cast<EPropState>(StateByte);
+	}
+	Ar << LastUpdatedMinute;
+
+	bOutSuccess = true;
+	return true;
+}
+
