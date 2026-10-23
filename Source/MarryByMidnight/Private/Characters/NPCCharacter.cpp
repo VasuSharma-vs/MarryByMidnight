@@ -249,6 +249,19 @@ void ANPCCharacter::Tick(float DeltaSeconds)
 
 void ANPCCharacter::DrawDebugOverheadStats()
 {
+	if (!bShowDebugUI)
+	{
+		if (DebugTextComponent && DebugTextComponent->IsVisible())
+		{
+			DebugTextComponent->SetVisibility(false);
+		}
+		if (DebugWidgetComponent && DebugWidgetComponent->IsVisible())
+		{
+			DebugWidgetComponent->SetVisibility(false);
+		}
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World) return;
 

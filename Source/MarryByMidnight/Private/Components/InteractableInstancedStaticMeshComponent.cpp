@@ -60,16 +60,42 @@ void UInteractableISMComponent::BeginPlay()
 		CachedGameplayTransformsByISID.Empty();
 	}
 
-	if (DefaultDataAsset && ProductID <= 0)
+	// If ProductID is not explicitly set, try to find an existing registered ProductID from PropManager
+	if (ProductID <= 0)
 	{
-		ProductID = GetTypeHash(DefaultDataAsset->GetFName()) & 0x7FFFFFFF;
-		if (ProductID == 0) ProductID = 1;
+		if (APropManager* Manager = APropManager::Get(this))
+		{
+			if (DefaultDataAsset)
+			{
+				const int32 FoundPID = Manager->FindProductIDByDataAsset(DefaultDataAsset);
+				if (FoundPID > 0)
+				{
+					ProductID = FoundPID;
+				}
+			}
+			else if (GetStaticMesh())
+			{
+				TArray<UMaterialInterface*> CompMats;
+				const int32 NumMats = GetNumMaterials();
+				for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+				{
+					CompMats.Add(GetMaterial(MatIdx));
+				}
+				const int32 FoundPID = Manager->FindProductIDByMeshAndMaterials(GetStaticMesh(), CompMats);
+				if (FoundPID > 0)
+				{
+					ProductID = FoundPID;
+				}
+			}
+		}
+	}
+
+	if (DefaultDataAsset)
+	{
 		IISMDB = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
 	}
-	else if (GetStaticMesh() && ProductID <= 0)
+	else if (GetStaticMesh() && ProductID > 0)
 	{
-		ProductID = GetTypeHash(GetStaticMesh()->GetFName()) & 0x7FFFFFFF;
-		if (ProductID == 0) ProductID = 1;
 		IISMDB.ProductID = ProductID;
 		IISMDB.StaticMeshID = (StaticMeshID > 0) ? StaticMeshID : ProductID;
 		IISMDB.StaticMesh = GetStaticMesh();

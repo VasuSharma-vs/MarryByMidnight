@@ -286,6 +286,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
 	bool IsProductRegistered(int32 InProductID) const;
 
+	/** Returns pointer to registered product definition or nullptr */
+	const FPropProductDefinition* FindProductDefinition(int32 InProductID) const
+	{
+		return ProductDefinitions.Find(InProductID);
+	}
+
 	/** Searches registered product definitions for one matching the given Data Asset */
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
 	int32 FindProductIDByDataAsset(const UInteractablePropDataAsset* InAsset) const;
@@ -294,6 +300,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
 	int32 FindProductIDByStaticMesh(const UStaticMesh* InMesh) const;
 
+	/** Searches registered product definitions for one matching the given Static Mesh and material overrides */
+	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
+	int32 FindProductIDByMeshAndMaterials(const UStaticMesh* InMesh, const TArray<UMaterialInterface*>& InMaterials) const;
+
 	/** Returns an array of all registered ProductIDs in the database */
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Database")
 	TArray<int32> GetAllProductIDs() const;
@@ -301,10 +311,29 @@ public:
 	/**
 	 * Returns an array of random ProductIDs from registered products (e.g. for generating shopping lists or NPC needs).
 	 * @param Count Number of ProductIDs to select.
-	 * @param bAllowDuplicates If false, returned PIDs are unique (clamped to total available products). If true, duplicate PIDs can be picked.
+	 * @param bAllowDuplicates If false (default), returned PIDs are strictly unique. If true, duplicate PIDs can be picked.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
 	TArray<int32> GetRandomProductIDs(int32 Count, bool bAllowDuplicates = false) const;
+
+	/**
+	 * Returns an array of random ProductIDs excluding specific product IDs (e.g. items already held in hand/cart).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
+	TArray<int32> GetRandomProductIDsWithExclusions(int32 Count, bool bAllowDuplicates, const TArray<int32>& ExcludedProductIDs) const;
+
+	/**
+	 * Convenience function: returns strictly unique random ProductIDs with zero duplicates guaranteed.
+	 * @param Count Number of unique ProductIDs to select (clamped to total available products).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
+	TArray<int32> GetRandomUniqueProductIDs(int32 Count) const;
+
+	/**
+	 * Convenience function: returns strictly unique random ProductIDs excluding specific product IDs, with zero duplicates guaranteed.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
+	TArray<int32> GetRandomUniqueProductIDsWithExclusions(int32 Count, const TArray<int32>& ExcludedProductIDs) const;
 
 	/**
 	 * Registers a product definition from an AActivePropActor's PropDataAsset or PropMesh.

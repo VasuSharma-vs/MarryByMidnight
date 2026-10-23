@@ -102,12 +102,15 @@ bool UTexturePaintComponent::ToggleScreenLogging()
 void UTexturePaintComponent::SetEnableScreenLogging(bool bEnable)
 {
 	bEnableScreenLogging = bEnable;
-	const FString StatusStr = bEnableScreenLogging ? TEXT("ENABLED") : TEXT("DISABLED");
-	const FColor StatusColor = bEnableScreenLogging ? FColor::Green : FColor::Red;
-	UE_LOG(LogTemp, Log, TEXT("[TexturePaint] Debug logging set to %s."), *StatusStr);
-	if (GEngine && bEnableScreenLogging)
+	if (bEnableScreenLogging)
 	{
-		GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaint] Debug Logging: %s"), *StatusStr));
+		const FString StatusStr = TEXT("ENABLED");
+		const FColor StatusColor = FColor::Green;
+		UE_LOG(LogTemp, Log, TEXT("[TexturePaint] Debug logging set to %s."), *StatusStr);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(999911, 3.0f, StatusColor, FString::Printf(TEXT("[TexturePaint] Debug Logging: %s"), *StatusStr));
+		}
 	}
 }
 
@@ -125,19 +128,25 @@ void UTexturePaintComponent::PrintScreenLog(const FString& Message, FColor Color
 
 void UTexturePaintComponent::PrintScreenWarning(const FString& Message, float Duration, uint64 Key)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[TexturePaint][WARNING] %s"), *Message);
-	if (bEnableScreenLogging && GEngine)
+	if (bEnableScreenLogging)
 	{
-		GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Yellow, FString::Printf(TEXT("[Warning] %s"), *Message));
+		UE_LOG(LogTemp, Warning, TEXT("[TexturePaint][WARNING] %s"), *Message);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Yellow, FString::Printf(TEXT("[Warning] %s"), *Message));
+		}
 	}
 }
 
 void UTexturePaintComponent::PrintScreenError(const FString& Message, float Duration, uint64 Key)
 {
-	UE_LOG(LogTemp, Error, TEXT("[TexturePaint][ERROR] %s"), *Message);
-	if (bEnableScreenLogging && GEngine)
+	if (bEnableScreenLogging)
 	{
-		GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Red, FString::Printf(TEXT("[Error] %s"), *Message));
+		UE_LOG(LogTemp, Error, TEXT("[TexturePaint][ERROR] %s"), *Message);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(Key, Duration, FColor::Red, FString::Printf(TEXT("[Error] %s"), *Message));
+		}
 	}
 }
 

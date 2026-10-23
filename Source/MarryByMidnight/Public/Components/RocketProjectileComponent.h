@@ -639,6 +639,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Debug")
 	bool bDrawDebugTrajectory = true;
 
+	/** Convenient function to toggle all rocket debug features (Output Log, on-screen messages, and 3D trajectory lines) on or off at once. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Debug")
+	void SetAllDebugEnabled(bool bEnabled)
+	{
+		bEnableDebugLogs = bEnabled;
+		bShowOnScreenDebug = bEnabled;
+		bDrawDebugTrajectory = bEnabled;
+	}
+
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------

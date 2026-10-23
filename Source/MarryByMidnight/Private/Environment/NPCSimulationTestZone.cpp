@@ -247,6 +247,10 @@ void ANPCSimulationTestZone::Tick(float DeltaSeconds)
 	{
 		DrawZoneDebugDisplay();
 	}
+	else if (LabelTextComponent && LabelTextComponent->IsVisible())
+	{
+		LabelTextComponent->SetVisibility(false);
+	}
 }
 
 void ANPCSimulationTestZone::HandleBoxBeginOverlap(
@@ -311,6 +315,15 @@ void ANPCSimulationTestZone::HandleBoxEndOverlap(
 
 void ANPCSimulationTestZone::DrawZoneDebugDisplay()
 {
+	if (!bDrawDebugVisuals)
+	{
+		if (LabelTextComponent && LabelTextComponent->IsVisible())
+		{
+			LabelTextComponent->SetVisibility(false);
+		}
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World || !TriggerBox) return;
 

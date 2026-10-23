@@ -59,7 +59,8 @@ URocketProjectileComponent::URocketProjectileComponent()
 	RestVelocityThreshold = 45.0f;
 
 	bEnableDebugLogs = true;
-	bShowOnScreenDebug = false;
+	bShowOnScreenDebug = true;
+	bDrawDebugTrajectory = true;
 	DebugHeartbeatTimer = 0.0f;
 	TravelHistoryLogTimer = 0.0f;
 	PhysicsSettledTimeAccumulated = 0.0f;
@@ -371,9 +372,12 @@ void URocketProjectileComponent::InitializeFlightPath(const FVector& InStartLoc,
 	LogDebug(FString::Printf(TEXT("InitializeFlightPath: Start=%s, Dir=%s, BaselineLen=%.1f, Waypoints=%d, Seed=%d"),
 		*FlightStartLocation.ToString(), *FlightBaselineDir.ToString(), FlightBaselineLength, FlightWaypoints.Num(), InSeed), true);
 
-	for (int32 i = 0; i < FlightWaypoints.Num(); ++i)
+	if (bEnableDebugLogs || bShowOnScreenDebug)
 	{
-		LogDebug(FString::Printf(TEXT("  SplineWP[%d/%d]: Loc=%s"), i, FlightWaypoints.Num(), *FlightWaypoints[i].ToString()));
+		for (int32 i = 0; i < FlightWaypoints.Num(); ++i)
+		{
+			LogDebug(FString::Printf(TEXT("  SplineWP[%d/%d]: Loc=%s"), i, FlightWaypoints.Num(), *FlightWaypoints[i].ToString()));
+		}
 	}
 }
 
@@ -574,7 +578,7 @@ void URocketProjectileComponent::TransitionToRocketing(const FVector& InLiftoffC
 void URocketProjectileComponent::DrawRocketDebugVisuals(float DeltaTime)
 {
 #if !UE_BUILD_SHIPPING
-	if (!GetWorld())
+	if (!GetWorld() || (!bDrawDebugTrajectory && !bShowOnScreenDebug))
 	{
 		return;
 	}
@@ -683,10 +687,13 @@ void URocketProjectileComponent::AutoResolveTargetPrimitive()
 	if (TargetPrimitive)
 	{
 		CacheMeshBoundsAndCenter();
-		UE_LOG(LogTemp, Log, TEXT("URocketProjectileComponent: Auto-resolved TargetPrimitive to [%s] on Actor [%s]"),
-			*TargetPrimitive->GetName(), *GetOwner()->GetName());
+		if (bEnableDebugLogs)
+		{
+			UE_LOG(LogTemp, Log, TEXT("URocketProjectileComponent: Auto-resolved TargetPrimitive to [%s] on Actor [%s]"),
+				*TargetPrimitive->GetName(), *GetOwner()->GetName());
+		}
 	}
-	else
+	else if (bEnableDebugLogs)
 	{
 		UE_LOG(LogTemp, Error, TEXT("URocketProjectileComponent on [%s]: TargetPrimitive is null and no UPrimitiveComponent found!"),
 			*GetOwner()->GetName());
@@ -695,7 +702,10 @@ void URocketProjectileComponent::AutoResolveTargetPrimitive()
 
 void URocketProjectileComponent::LogDebug(const FString& Message, bool bOnScreen) const
 {
-	if (!bEnableDebugLogs && !bOnScreen)
+	const bool bShouldLogOutput = bEnableDebugLogs;
+	const bool bShouldPrintScreen = bShowOnScreenDebug && bOnScreen;
+
+	if (!bShouldLogOutput && !bShouldPrintScreen)
 	{
 		return;
 	}
@@ -705,12 +715,12 @@ void URocketProjectileComponent::LogDebug(const FString& Message, bool bOnScreen
 	const FString ActorName = GetOwner() ? GetOwner()->GetName() : TEXT("None");
 	const FString FullMessage = FString::Printf(TEXT("%s [%s] %s"), *RoleTag, *ActorName, *Message);
 
-	if (bEnableDebugLogs)
+	if (bShouldLogOutput)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s"), *FullMessage);
 	}
 
-	if ((bOnScreen || bShowOnScreenDebug) && GEngine)
+	if (bShouldPrintScreen && GEngine)
 	{
 		const FColor DisplayColor = bIsServer ? FColor::Green : FColor::Cyan;
 		GEngine->AddOnScreenDebugMessage(-1, 3.5f, DisplayColor, FullMessage);
@@ -719,6 +729,11 @@ void URocketProjectileComponent::LogDebug(const FString& Message, bool bOnScreen
 
 void URocketProjectileComponent::PrintRocketDebugInfo() const
 {
+	if (!bEnableDebugLogs && !bShowOnScreenDebug)
+	{
+		return;
+	}
+
 	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
 	const FString RoleTag = bIsServer ? TEXT("[SERVER]") : TEXT("[CLIENT]");
 	const FString ActorName = GetOwner() ? GetOwner()->GetName() : TEXT("None");
@@ -742,8 +757,11 @@ void URocketProjectileComponent::PrintRocketDebugInfo() const
 		*Loc.ToString(), *Rot.ToString(),
 		bSimPhys ? 1 : 0, *ColProfile, ColEnabled);
 
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *Info);
-	if (GEngine)
+	if (bEnableDebugLogs)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *Info);
+	}
+	if (bShowOnScreenDebug && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 6.0f, bIsServer ? FColor::Yellow : FColor::Orange, Info);
 	}
@@ -1158,10 +1176,13 @@ void URocketProjectileComponent::SetAuthoritativeFlightPlan(const TArray<FVector
 	LogDebug(FString::Printf(TEXT("SetAuthoritativeFlightPlan: Stored %d rounded nodes, TotalPathDistance=%.1f cm (CurrentNode=%d)"),
 		AuthoritativeFlightNodes.Num(), RunningDist, CurrentFlightPlanNodeIndex), true);
 
-	for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
+	if (bEnableDebugLogs || bShowOnScreenDebug)
 	{
-		LogDebug(FString::Printf(TEXT("  FlightPlanNode[%d/%d]: Loc=%s, DistFromStart=%.0f cm"),
-			i, AuthoritativeFlightNodes.Num(), *AuthoritativeFlightNodes[i].ToString(), CumulativeFlightPlanDistances[i]));
+		for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
+		{
+			LogDebug(FString::Printf(TEXT("  FlightPlanNode[%d/%d]: Loc=%s, DistFromStart=%.0f cm"),
+				i, AuthoritativeFlightNodes.Num(), *AuthoritativeFlightNodes[i].ToString(), CumulativeFlightPlanDistances[i]));
+		}
 	}
 }
 
@@ -1401,15 +1422,18 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		if (GetOwner() && GetOwner()->HasAuthority() && TargetPrimitive && TargetPrimitive->IsSimulatingPhysics())
 		{
 			TotalAirTime += DeltaTime;
-			DebugHeartbeatTimer += DeltaTime;
-			if (DebugHeartbeatTimer >= 1.0f)
+			if (bEnableDebugLogs || bShowOnScreenDebug)
 			{
-				DebugHeartbeatTimer = 0.0f;
-				const FVector Loc = TargetPrimitive->GetComponentLocation();
-				const float LinSpeed = TargetPrimitive->GetPhysicsLinearVelocity().Size();
-				const float AngSpeed = TargetPrimitive->GetPhysicsAngularVelocityInDegrees().Size();
-				LogDebug(FString::Printf(TEXT("Physics Tumble: LinSpeed=%.1f, AngSpeed=%.1f, Loc=(X=%.0f, Y=%.0f, Z=%.0f), AirTime=%.1f s"),
-					LinSpeed, AngSpeed, Loc.X, Loc.Y, Loc.Z, TotalAirTime));
+				DebugHeartbeatTimer += DeltaTime;
+				if (DebugHeartbeatTimer >= 1.0f)
+				{
+					DebugHeartbeatTimer = 0.0f;
+					const FVector Loc = TargetPrimitive->GetComponentLocation();
+					const float LinSpeed = TargetPrimitive->GetPhysicsLinearVelocity().Size();
+					const float AngSpeed = TargetPrimitive->GetPhysicsAngularVelocityInDegrees().Size();
+					LogDebug(FString::Printf(TEXT("Physics Tumble: LinSpeed=%.1f, AngSpeed=%.1f, Loc=(X=%.0f, Y=%.0f, Z=%.0f), AirTime=%.1f s"),
+						LinSpeed, AngSpeed, Loc.X, Loc.Y, Loc.Z, TotalAirTime));
+				}
 			}
 
 			const float LinSpeed = TargetPrimitive->GetPhysicsLinearVelocity().Size();
@@ -1455,14 +1479,17 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	TimeSinceLastBounce += DeltaTime;
 
 	// In-flight debug heartbeat every 1 second
-	DebugHeartbeatTimer += DeltaTime;
-	if (DebugHeartbeatTimer >= 1.0f)
+	if (bEnableDebugLogs || bShowOnScreenDebug)
 	{
-		DebugHeartbeatTimer = 0.0f;
-		const FString StateStr = UEnum::GetValueAsString(CurrentState);
-		const FVector Loc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : FVector::ZeroVector;
-		LogDebug(FString::Printf(TEXT("Heartbeat: State=%s, Flight=%.1f/%.1f s, Speed=%.1f, Loc=(X=%.0f, Y=%.0f, Z=%.0f), Bounces=%d"),
-			*StateStr, ElapsedFlightTime, MaxFuelDuration, CurrentVelocity.Size(), Loc.X, Loc.Y, Loc.Z, CurrentBounceCount));
+		DebugHeartbeatTimer += DeltaTime;
+		if (DebugHeartbeatTimer >= 1.0f)
+		{
+			DebugHeartbeatTimer = 0.0f;
+			const FString StateStr = UEnum::GetValueAsString(CurrentState);
+			const FVector Loc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : FVector::ZeroVector;
+			LogDebug(FString::Printf(TEXT("Heartbeat: State=%s, Flight=%.1f/%.1f s, Speed=%.1f, Loc=(X=%.0f, Y=%.0f, Z=%.0f), Bounces=%d"),
+				*StateStr, ElapsedFlightTime, MaxFuelDuration, CurrentVelocity.Size(), Loc.X, Loc.Y, Loc.Z, CurrentBounceCount));
+		}
 	}
 
 	float StepDeltaTime = DeltaTime;
@@ -1738,8 +1765,11 @@ void URocketProjectileComponent::LaunchRocket(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("URocketProjectileComponent::LaunchRocket aborted: No TargetPrimitive found on [%s]! Please add a StaticMeshComponent."),
-			*GetNameSafe(GetOwner()));
+		if (bEnableDebugLogs)
+		{
+			UE_LOG(LogTemp, Error, TEXT("URocketProjectileComponent::LaunchRocket aborted: No TargetPrimitive found on [%s]! Please add a StaticMeshComponent."),
+				*GetNameSafe(GetOwner()));
+		}
 		return;
 	}
 
@@ -2400,12 +2430,15 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			CurrentVelocity = MoveDelta / FMath::Max(DeltaTime, 0.0001f);
 
 			// Continuous travel history logging every 0.25s
-			TravelHistoryLogTimer += DeltaTime;
-			if (TravelHistoryLogTimer >= 0.25f)
+			if (bEnableDebugLogs || bShowOnScreenDebug)
 			{
-				TravelHistoryLogTimer = 0.0f;
-				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
-					TotalAirTime, NormalizedProgress * 100.0f, *CurrentCenter.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
+				TravelHistoryLogTimer += DeltaTime;
+				if (TravelHistoryLogTimer >= 0.25f)
+				{
+					TravelHistoryLogTimer = 0.0f;
+					LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
+						TotalAirTime, NormalizedProgress * 100.0f, *CurrentCenter.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
+				}
 			}
 
 			FHitResult Hit;
@@ -2431,13 +2464,16 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			TotalFlightDistanceTraveled += StepDistance;
 			const float NormalizedProgress = FlightBaselineLength > 0.0f ? (FlightDistanceTraveled / FlightBaselineLength) : 1.0f;
 
-			TravelHistoryLogTimer += DeltaTime;
-			if (TravelHistoryLogTimer >= 0.25f)
+			if (bEnableDebugLogs || bShowOnScreenDebug)
 			{
-				TravelHistoryLogTimer = 0.0f;
-				const FVector Center = GetWorldCenterLocation();
-				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
-					TotalAirTime, NormalizedProgress * 100.0f, *Center.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
+				TravelHistoryLogTimer += DeltaTime;
+				if (TravelHistoryLogTimer >= 0.25f)
+				{
+					TravelHistoryLogTimer = 0.0f;
+					const FVector Center = GetWorldCenterLocation();
+					LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Prog=%.1f%%, Loc=%s, Vel=%s, Spd=%.0f, Leg=%d (Node %d/%d), FuelDist=%.0f/%.0f cm, Catchup=%.2fx"),
+						TotalAirTime, NormalizedProgress * 100.0f, *Center.ToString(), *CurrentVelocity.ToString(), CurrentVelocity.Size(), FlightLegIndex, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist, ClientCatchupSpeedMultiplier));
+				}
 			}
 
 			CurrentVelocity.Z += FlightSettings.GravityZ * FlightSettings.InFlightGravityScale * DeltaTime;

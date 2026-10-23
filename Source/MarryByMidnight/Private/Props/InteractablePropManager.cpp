@@ -353,6 +353,7 @@ void APropManager::InitializePropManager()
 void APropManager::InitializeIISMDB()
 {
 	int32 AutoPID = 1;
+	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] === InitializeIISMDB: Registering %d Default Product Data Assets ==="), DefaultProductDataAssets.Num());
 	for (UInteractablePropDataAsset* Asset : DefaultProductDataAssets)
 	{
 		if (Asset)
@@ -363,9 +364,24 @@ void APropManager::InitializeIISMDB()
 			}
 			FPropProductDefinition Def = FPropProductDefinition::FromDataAsset(Asset, AutoPID, AutoPID);
 			RegisterProductDefinition(Def);
+
+			FString MatsList;
+			for (UMaterialInterface* Mat : Def.MaterialOverrides)
+			{
+				if (Mat) MatsList += Mat->GetName() + TEXT(", ");
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] InitializeIISMDB: Registered Product PID %d: '%s' (DataAsset: '%s', Mesh: '%s', Materials: [%s])"),
+				Def.ProductID,
+				*Def.DisplayName.ToString(),
+				*Asset->GetName(),
+				Def.StaticMesh ? *Def.StaticMesh->GetName() : TEXT("None"),
+				*MatsList);
+
 			++AutoPID;
 		}
 	}
+	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] === InitializeIISMDB Complete. Total Products Registered: %d ==="), ProductDefinitions.Num());
 }
 
 bool APropManager::RegisterProductDefinition(const FPropProductDefinition& InDefinition)
@@ -392,22 +408,27 @@ bool APropManager::RegisterProductDefinition(const FPropProductDefinition& InDef
 
 int32 APropManager::AllocateProductID()
 {
-	int32 MaxPID = 0;
-	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
+	int32 CandidatePID = 1;
+	while (true)
 	{
-		if (Pair.Key > MaxPID)
+		bool bInUse = ProductDefinitions.Contains(CandidatePID);
+		if (!bInUse)
 		{
-			MaxPID = Pair.Key;
+			for (const TPair<int32, TObjectPtr<UInteractableISMComponent>>& Pair : ComponentsByICID)
+			{
+				if (Pair.Value && Pair.Value->ProductID == CandidatePID)
+				{
+					bInUse = true;
+					break;
+				}
+			}
 		}
-	}
-	for (const TPair<int32, TObjectPtr<UInteractableISMComponent>>& Pair : ComponentsByICID)
-	{
-		if (Pair.Value && Pair.Value->ProductID > MaxPID)
+		if (!bInUse)
 		{
-			MaxPID = Pair.Value->ProductID;
+			return CandidatePID;
 		}
+		++CandidatePID;
 	}
-	return (MaxPID >= 100) ? (MaxPID + 1) : 101;
 }
 
 bool APropManager::IsProductRegistered(int32 InProductID) const
@@ -421,11 +442,20 @@ int32 APropManager::FindProductIDByDataAsset(const UInteractablePropDataAsset* I
 	{
 		return 0;
 	}
+	const FString TargetName = InAsset->GetName();
 	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
 	{
 		if (Pair.Value.SourceDataAsset == InAsset)
 		{
 			return Pair.Key;
+		}
+		if (Pair.Value.SourceDataAsset)
+		{
+			if (Pair.Value.SourceDataAsset->GetFName() == InAsset->GetFName() ||
+				Pair.Value.SourceDataAsset->GetName() == TargetName)
+			{
+				return Pair.Key;
+			}
 		}
 	}
 	return 0;
@@ -437,12 +467,22 @@ int32 APropManager::FindProductIDByStaticMesh(const UStaticMesh* InMesh) const
 	{
 		return 0;
 	}
+	int32 FirstPID = 0;
+	int32 MatchCount = 0;
 	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
 	{
 		if (Pair.Value.StaticMesh == InMesh)
 		{
-			return Pair.Key;
+			if (FirstPID == 0)
+			{
+				FirstPID = Pair.Key;
+			}
+			++MatchCount;
 		}
+	}
+	if (FirstPID > 0)
+	{
+		return FirstPID;
 	}
 	for (const TPair<int32, TObjectPtr<UInteractableISMComponent>>& Pair : ComponentsByICID)
 	{
@@ -451,6 +491,80 @@ int32 APropManager::FindProductIDByStaticMesh(const UStaticMesh* InMesh) const
 			return Pair.Value->ProductID;
 		}
 	}
+	return 0;
+}
+
+int32 APropManager::FindProductIDByMeshAndMaterials(const UStaticMesh* InMesh, const TArray<UMaterialInterface*>& InMaterials) const
+{
+	if (!InMesh)
+	{
+		return 0;
+	}
+
+	// 1. First attempt: match both StaticMesh AND material
+	if (InMaterials.Num() > 0)
+	{
+		for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
+		{
+			if (Pair.Value.StaticMesh == InMesh)
+			{
+				bool bMatsMatch = true;
+				const int32 NumToCheck = InMaterials.Num();
+				for (int32 m = 0; m < NumToCheck; ++m)
+				{
+					UMaterialInterface* DefMat = nullptr;
+					if (Pair.Value.MaterialOverrides.IsValidIndex(m) && Pair.Value.MaterialOverrides[m])
+					{
+						DefMat = Pair.Value.MaterialOverrides[m];
+					}
+					else if (InMesh->GetMaterial(m))
+					{
+						DefMat = InMesh->GetMaterial(m);
+					}
+
+					if (InMaterials[m] && DefMat)
+					{
+						const FString NameA = InMaterials[m]->GetName();
+						const FString NameB = DefMat->GetName();
+						if (InMaterials[m] != DefMat &&
+							InMaterials[m]->GetFName() != DefMat->GetFName() &&
+							NameA != NameB)
+						{
+							bMatsMatch = false;
+							break;
+						}
+					}
+				}
+				if (bMatsMatch)
+				{
+					UE_LOG(LogTemp, Log, TEXT("[PropSenseSight] FindProductIDByMeshAndMaterials: Matched PID %d (%s) by Mesh '%s' and Material"),
+						Pair.Key, *Pair.Value.DisplayName.ToString(), *InMesh->GetName());
+					return Pair.Key;
+				}
+			}
+		}
+	}
+
+	// 2. Only fall back to mesh if there is uniquely ONE product definition using this static mesh
+	int32 UniquePID = 0;
+	int32 MatchCount = 0;
+	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
+	{
+		if (Pair.Value.StaticMesh == InMesh)
+		{
+			UniquePID = Pair.Key;
+			MatchCount++;
+		}
+	}
+
+	if (MatchCount == 1)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[PropSenseSight] FindProductIDByMeshAndMaterials: Unique mesh fallback for '%s' returned PID %d"),
+			*InMesh->GetName(), UniquePID);
+		return UniquePID;
+	}
+
+	// If multiple products share this mesh and materials didn't match, return 0 so a distinct ProductID is allocated
 	return 0;
 }
 
@@ -479,14 +593,37 @@ TArray<int32> APropManager::GetAllProductIDs() const
 
 TArray<int32> APropManager::GetRandomProductIDs(int32 Count, bool bAllowDuplicates) const
 {
+	return GetRandomProductIDsWithExclusions(Count, bAllowDuplicates, TArray<int32>());
+}
+
+TArray<int32> APropManager::GetRandomProductIDsWithExclusions(int32 Count, bool bAllowDuplicates, const TArray<int32>& ExcludedProductIDs) const
+{
+	const_cast<APropManager*>(this)->EnsureLevelPropsInitialized();
+
 	TArray<int32> AllPIDs = GetAllProductIDs();
 	if (Count <= 0 || AllPIDs.IsEmpty())
 	{
 		return TArray<int32>();
 	}
 
+	// Filter out any excluded ProductIDs (e.g. products already held in hand or cart)
+	if (ExcludedProductIDs.Num() > 0)
+	{
+		TSet<int32> ExcludedSet(ExcludedProductIDs);
+		AllPIDs.RemoveAll([&ExcludedSet](int32 PID)
+		{
+			return ExcludedSet.Contains(PID);
+		});
+
+		if (AllPIDs.IsEmpty())
+		{
+			return TArray<int32>();
+		}
+	}
+
 	if (!bAllowDuplicates)
 	{
+		// Strict unique selection: clamp to available pool size so duplicates are impossible
 		const int32 NumToSelect = FMath::Clamp(Count, 0, AllPIDs.Num());
 		for (int32 i = AllPIDs.Num() - 1; i > 0; --i)
 		{
@@ -497,6 +634,7 @@ TArray<int32> APropManager::GetRandomProductIDs(int32 Count, bool bAllowDuplicat
 		return AllPIDs;
 	}
 
+	// With duplicates allowed: pick randomly from the available pool
 	TArray<int32> Result;
 	Result.Reserve(Count);
 	for (int32 i = 0; i < Count; ++i)
@@ -505,6 +643,16 @@ TArray<int32> APropManager::GetRandomProductIDs(int32 Count, bool bAllowDuplicat
 		Result.Add(AllPIDs[RandIndex]);
 	}
 	return Result;
+}
+
+TArray<int32> APropManager::GetRandomUniqueProductIDs(int32 Count) const
+{
+	return GetRandomProductIDsWithExclusions(Count, false, TArray<int32>());
+}
+
+TArray<int32> APropManager::GetRandomUniqueProductIDsWithExclusions(int32 Count, const TArray<int32>& ExcludedProductIDs) const
+{
+	return GetRandomProductIDsWithExclusions(Count, false, ExcludedProductIDs);
 }
 
 int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
@@ -522,6 +670,48 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 		return InActor->ProductID;
 	}
 
+	// If the actor has an explicit ProductID specified (> 0), strictly honor and register with that ProductID
+	if (InActor->ProductID > 0)
+	{
+		const int32 ExplicitPID = InActor->ProductID;
+		FPropProductDefinition Def;
+		if (InActor->PropDataAsset)
+		{
+			Def = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, ExplicitPID);
+		}
+		else
+		{
+			UStaticMesh* ActorMesh = InActor->PropMesh ? InActor->PropMesh->GetStaticMesh() : nullptr;
+			Def.ProductID = ExplicitPID;
+			Def.StaticMeshID = ExplicitPID;
+			Def.StaticMesh = ActorMesh;
+			Def.DisplayName = InActor->ItemDisplayName.IsEmpty() && ActorMesh ? FText::FromName(ActorMesh->GetFName()) : InActor->ItemDisplayName;
+			if (InActor->PropMesh)
+			{
+				const int32 NumMats = InActor->PropMesh->GetNumMaterials();
+				for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+				{
+					Def.MaterialOverrides.Add(InActor->PropMesh->GetMaterial(MatIdx));
+				}
+			}
+			Def.ConsumableProfile.Price = InActor->Price;
+			Def.ConsumableProfile.NumOfPortions = InActor->NumOfPortions;
+			Def.ConsumableProfile.ConsumableType = InActor->ConsumableType;
+			Def.TemperatureProfile.bEnableTemperatureUpdate = InActor->bEnableTemperatureUpdate;
+			Def.TemperatureProfile.ConsumableTemperature = InActor->ConsumableTemperature;
+			Def.ExpiryProfile.bHasExpiry = InActor->bHasExpiry;
+			Def.ExpiryProfile.ExpiryLifetimeMinutes = InActor->ExpiryLifetimeMinutes;
+		}
+
+		if (!Def.CustomActiveActorClass)
+		{
+			Def.CustomActiveActorClass = InActor->GetClass();
+		}
+		RegisterProductDefinition(Def);
+		InActor->ProductID = ExplicitPID;
+		return ExplicitPID;
+	}
+
 	// 1. Try finding/building from PropDataAsset
 	if (InActor->PropDataAsset)
 	{
@@ -532,7 +722,7 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 			return ExistingPID;
 		}
 
-		const int32 NewPID = (InActor->ProductID > 0) ? InActor->ProductID : AllocateProductID();
+		const int32 NewPID = AllocateProductID();
 		FPropProductDefinition Def = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, NewPID);
 		if (!Def.CustomActiveActorClass)
 		{
@@ -543,21 +733,27 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 		return NewPID;
 	}
 
-	// 2. Try finding/building from PropMesh
+	// 2. Try finding/building from PropMesh and materials
 	UStaticMesh* ActorMesh = InActor->PropMesh ? InActor->PropMesh->GetStaticMesh() : nullptr;
 	if (ActorMesh)
 	{
-		if (InActor->ProductID <= 0)
+		TArray<UMaterialInterface*> ActorMats;
+		if (InActor->PropMesh)
 		{
-			const int32 ExistingPID = FindProductIDByStaticMesh(ActorMesh);
-			if (ExistingPID > 0)
+			const int32 NumMats = InActor->PropMesh->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 			{
-				InActor->ProductID = ExistingPID;
-				return ExistingPID;
+				ActorMats.Add(InActor->PropMesh->GetMaterial(MatIdx));
 			}
 		}
+		const int32 ExistingPID = FindProductIDByMeshAndMaterials(ActorMesh, ActorMats);
+		if (ExistingPID > 0)
+		{
+			InActor->ProductID = ExistingPID;
+			return ExistingPID;
+		}
 
-		const int32 NewPID = (InActor->ProductID > 0) ? InActor->ProductID : AllocateProductID();
+		const int32 NewPID = AllocateProductID();
 		FPropProductDefinition Def;
 		Def.ProductID = NewPID;
 		Def.StaticMeshID = NewPID;
@@ -642,23 +838,47 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 	// Ensure ProductDefinition is registered if component has a DefaultDataAsset, IISMDB, or StaticMesh
 	if (InComponent->ProductID <= 0)
 	{
-		if (InComponent->IISMDB.ProductID > 0)
+		if (InComponent->DefaultDataAsset)
+		{
+			const int32 ExistingPID = FindProductIDByDataAsset(InComponent->DefaultDataAsset);
+			if (ExistingPID > 0)
+			{
+				InComponent->ProductID = ExistingPID;
+			}
+			else
+			{
+				InComponent->ProductID = AllocateProductID();
+			}
+		}
+		else if (InComponent->IISMDB.ProductID > 0 && IsProductRegistered(InComponent->IISMDB.ProductID))
 		{
 			InComponent->ProductID = InComponent->IISMDB.ProductID;
 		}
-		else if (InComponent->DefaultDataAsset)
-		{
-			InComponent->ProductID = GetTypeHash(InComponent->DefaultDataAsset->GetFName()) & 0x7FFFFFFF;
-			if (InComponent->ProductID == 0) InComponent->ProductID = AssignedICID;
-		}
 		else if (InComponent->GetStaticMesh())
 		{
-			InComponent->ProductID = GetTypeHash(InComponent->GetStaticMesh()->GetFName()) & 0x7FFFFFFF;
-			if (InComponent->ProductID == 0) InComponent->ProductID = AssignedICID;
+			TArray<UMaterialInterface*> CompMats;
+			const int32 NumMats = InComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				CompMats.Add(InComponent->GetMaterial(MatIdx));
+			}
+			const int32 ExistingPID = FindProductIDByMeshAndMaterials(InComponent->GetStaticMesh(), CompMats);
+			if (ExistingPID > 0)
+			{
+				InComponent->ProductID = ExistingPID;
+			}
+			else
+			{
+				InComponent->ProductID = AllocateProductID();
+			}
+		}
+		else if (InComponent->IISMDB.ProductID > 0)
+		{
+			InComponent->ProductID = InComponent->IISMDB.ProductID;
 		}
 		else
 		{
-			InComponent->ProductID = AssignedICID;
+			InComponent->ProductID = AllocateProductID();
 		}
 	}
 	if (InComponent->ProductID > 0)
@@ -694,6 +914,15 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 			ApplyProductDefinitionToComponent(InComponent, Def);
 		}
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] RegisterIISMComponent: ICID %d (Component: '%s', Owner: '%s') -> Assigned ProductID: %d (%s), StaticMesh: '%s', Instances: %d"),
+		InComponent->IISMComponentID,
+		*InComponent->GetName(),
+		InComponent->GetOwner() ? *InComponent->GetOwner()->GetName() : TEXT("None"),
+		InComponent->ProductID,
+		ProductDefinitions.Contains(InComponent->ProductID) ? *ProductDefinitions[InComponent->ProductID].DisplayName.ToString() : TEXT("Unknown"),
+		InComponent->GetStaticMesh() ? *InComponent->GetStaticMesh()->GetName() : TEXT("None"),
+		InComponent->GetInstanceCount());
 
 	InComponent->SyncDatabaseWithInstanceCount();
 
@@ -1653,6 +1882,7 @@ bool APropManager::RegisterInstance(int32 InISID, int32 InProductID, int32 InICI
 	Record.ActiveTransform = InTransform;
 	Record.PackedRuntimeData.CreationMinute = NowMin;
 	Record.PackedRuntimeData.LastUpdatedMinute = NowMin;
+	Record.PackedRuntimeData.bIsGrabbable = true;
 	Record.DirtyFlags = EPropDirtyFlags::Created;
 
 	RegisterISID(Record);
