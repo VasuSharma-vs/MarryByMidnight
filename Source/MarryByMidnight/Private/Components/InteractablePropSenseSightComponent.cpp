@@ -2581,6 +2581,210 @@ bool UInteractablePropSenseSightComponent::FindClosestDetectedProductForObserver
 }
 
 // -----------------------------------------------------------------------------
+// Distance Origin & Combine and Sort Functions
+// -----------------------------------------------------------------------------
+
+FVector UInteractablePropSenseSightComponent::ResolveDistanceOrigin(AActor* ObserverActor, const FVector& LocationOverride) const
+{
+	if (!LocationOverride.IsZero())
+	{
+		return LocationOverride;
+	}
+
+	if (ObserverActor)
+	{
+		if (const FContinuousObserverData* Obs = FindContinuousObserver(ObserverActor))
+		{
+			FVector OriginLocation = FVector::ZeroVector;
+			FRotator EyesRot;
+			ResolveSightTransform(*Obs, OriginLocation, EyesRot);
+			return OriginLocation;
+		}
+
+		for (const FOneTimeObserverData& OneTime : OneTimeObservers)
+		{
+			if (DoesObserverMatch(OneTime.ObserverActor.Get(), ObserverActor))
+			{
+				FVector OriginLocation = FVector::ZeroVector;
+				FRotator EyesRot;
+				ResolveSightTransform(OneTime, OriginLocation, EyesRot);
+				return OriginLocation;
+			}
+		}
+
+		if (APawn* Pawn = Cast<APawn>(ObserverActor))
+		{
+			return Pawn->GetPawnViewLocation();
+		}
+
+		return ObserverActor->GetActorLocation();
+	}
+
+	if (GetOwner())
+	{
+		return GetOwner()->GetActorLocation();
+	}
+
+	return FVector::ZeroVector;
+}
+
+TArray<FPropSightPerceptionResult> UInteractablePropSenseSightComponent::CombineAndSortDetectedProps(
+	const TArray<FPropSightPerceptionResult>& ArrayA,
+	const TArray<FPropSightPerceptionResult>& ArrayB,
+	AActor* ObserverActor,
+	FVector ObserverLocationOverride) const
+{
+	TArray<FPropSightPerceptionResult> Combined;
+	Combined.Reserve(ArrayA.Num() + ArrayB.Num());
+
+	const FVector Origin = ResolveDistanceOrigin(ObserverActor, ObserverLocationOverride);
+	TSet<int32> SeenISIDs;
+
+	auto ProcessAndAddItem = [&](const FPropSightPerceptionResult& InItem)
+	{
+		if (InItem.ISID > 0)
+		{
+			if (SeenISIDs.Contains(InItem.ISID))
+			{
+				return;
+			}
+			SeenISIDs.Add(InItem.ISID);
+		}
+
+		FPropSightPerceptionResult Item = InItem;
+		Item.Distance = FVector::Dist(Origin, Item.WorldLocation);
+		Combined.Add(MoveTemp(Item));
+	};
+
+	for (const FPropSightPerceptionResult& ItemA : ArrayA)
+	{
+		ProcessAndAddItem(ItemA);
+	}
+
+	for (const FPropSightPerceptionResult& ItemB : ArrayB)
+	{
+		ProcessAndAddItem(ItemB);
+	}
+
+	// Sort in ascending order of distance (closest at index 0, farthest at last index)
+	Combined.Sort([](const FPropSightPerceptionResult& A, const FPropSightPerceptionResult& B)
+	{
+		return A.Distance < B.Distance;
+	});
+
+	return Combined;
+}
+
+FPropSightDetectedProps UInteractablePropSenseSightComponent::CombineAndSortDetectedPropsWrapper(
+	const FPropSightDetectedProps& PropsA,
+	const FPropSightDetectedProps& PropsB,
+	AActor* ObserverActor,
+	FVector ObserverLocationOverride) const
+{
+	TArray<FPropSightPerceptionResult> ListA = PropsA.DetectedPropsList;
+	if (ListA.Num() == 0 && PropsA.Props.Num() > 0)
+	{
+		for (const auto& Pair : PropsA.Props)
+		{
+			FPropSightPerceptionResult Res;
+			Res.ISID = Pair.Key;
+			Res.WorldLocation = Pair.Value;
+			if (const int32* FoundPID = PropsA.ISIDToProductID.Find(Pair.Key))
+			{
+				Res.ProductID = *FoundPID;
+			}
+			ListA.Add(Res);
+		}
+	}
+
+	TArray<FPropSightPerceptionResult> ListB = PropsB.DetectedPropsList;
+	if (ListB.Num() == 0 && PropsB.Props.Num() > 0)
+	{
+		for (const auto& Pair : PropsB.Props)
+		{
+			FPropSightPerceptionResult Res;
+			Res.ISID = Pair.Key;
+			Res.WorldLocation = Pair.Value;
+			if (const int32* FoundPID = PropsB.ISIDToProductID.Find(Pair.Key))
+			{
+				Res.ProductID = *FoundPID;
+			}
+			ListB.Add(Res);
+		}
+	}
+
+	TArray<FPropSightPerceptionResult> SortedResults = CombineAndSortDetectedProps(ListA, ListB, ObserverActor, ObserverLocationOverride);
+
+	FPropSightDetectedProps OutProps;
+	OutProps.Props.Reserve(SortedResults.Num());
+	OutProps.ISIDToProductID.Reserve(SortedResults.Num());
+	OutProps.DetectedPropsList = SortedResults;
+
+	TSet<int32> UniquePIDs;
+	for (const FPropSightPerceptionResult& Res : SortedResults)
+	{
+		OutProps.Props.Add(Res.ISID, Res.WorldLocation);
+		OutProps.ISIDToProductID.Add(Res.ISID, Res.ProductID);
+		if (Res.ProductID > 0)
+		{
+			UniquePIDs.Add(Res.ProductID);
+		}
+	}
+
+	OutProps.DetectedProductIDs = UniquePIDs.Array();
+	OutProps.DetectedProductIDs.Sort();
+
+	return OutProps;
+}
+
+TArray<FPropSightDetectedItem> UInteractablePropSenseSightComponent::CombineAndSortDetectedItems(
+	const TArray<FPropSightDetectedItem>& ArrayA,
+	const TArray<FPropSightDetectedItem>& ArrayB,
+	AActor* ObserverActor,
+	FVector ObserverLocationOverride) const
+{
+	TArray<FPropSightDetectedItem> Combined;
+	Combined.Reserve(ArrayA.Num() + ArrayB.Num());
+
+	const FVector Origin = ResolveDistanceOrigin(ObserverActor, ObserverLocationOverride);
+	TSet<int32> SeenISIDs;
+
+	auto ProcessAndAddItem = [&](const FPropSightDetectedItem& InItem)
+	{
+		if (InItem.ISID > 0)
+		{
+			if (SeenISIDs.Contains(InItem.ISID))
+			{
+				return;
+			}
+			SeenISIDs.Add(InItem.ISID);
+		}
+
+		FPropSightDetectedItem Item = InItem;
+		Item.Distance = FVector::Dist(Origin, Item.Location);
+		Combined.Add(MoveTemp(Item));
+	};
+
+	for (const FPropSightDetectedItem& ItemA : ArrayA)
+	{
+		ProcessAndAddItem(ItemA);
+	}
+
+	for (const FPropSightDetectedItem& ItemB : ArrayB)
+	{
+		ProcessAndAddItem(ItemB);
+	}
+
+	// Sort in ascending order of distance (closest at index 0, farthest at last index)
+	Combined.Sort([](const FPropSightDetectedItem& A, const FPropSightDetectedItem& B)
+	{
+		return A.Distance < B.Distance;
+	});
+
+	return Combined;
+}
+
+// -----------------------------------------------------------------------------
 // Section 11.A: ISID Ignore List Management
 // -----------------------------------------------------------------------------
 

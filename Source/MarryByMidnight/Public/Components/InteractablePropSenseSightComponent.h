@@ -158,6 +158,10 @@ struct MARRYBYMIDNIGHT_API FContinuousObserverData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
 	bool bFilterByPID = false;
 
+	/** When true, allows observing all product types without restriction (bypasses PID filter). Default is false. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
+	bool bObserveAllPIDs = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
 	bool bIgnoreBlocked = false;
 
@@ -234,6 +238,10 @@ struct MARRYBYMIDNIGHT_API FOneTimeObserverData
 	/** When true, only perceives products listed in TargetProductIDs. If false, perceives all products. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
 	bool bFilterByPID = false;
+
+	/** When true, allows observing all product types without restriction (bypasses PID filter). Default is false. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
+	bool bObserveAllPIDs = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Sight Perception")
 	bool bIgnoreBlocked = false;
@@ -542,6 +550,53 @@ public:
 		AActor* ObserverActor,
 		int32& OutClosestISID,
 		FVector& OutClosestLocation
+	) const;
+
+	// -------------------------------------------------------------------------
+	// Combine and Sort Detected Props Functions
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Takes two arrays of detected props, combines them (deduplicating by ISID),
+	 * recalculates distance to the specified observer (or location override),
+	 * and sorts the combined array in ascending order of distance (closest at index 0, farthest at last index).
+	 *
+	 * @param ArrayA First array of detected props.
+	 * @param ArrayB Second array of detected props.
+	 * @param ObserverActor The observer actor used as distance origin (uses Pawn view location / eyes if available).
+	 * @param ObserverLocationOverride Optional location override used if ObserverActor is null or as explicit origin.
+	 * @return Single sorted array containing all combined detected props.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Sight Sense|Query")
+	TArray<FPropSightPerceptionResult> CombineAndSortDetectedProps(
+		const TArray<FPropSightPerceptionResult>& ArrayA,
+		const TArray<FPropSightPerceptionResult>& ArrayB,
+		AActor* ObserverActor = nullptr,
+		FVector ObserverLocationOverride = FVector::ZeroVector
+	) const;
+
+	/**
+	 * Takes two FPropSightDetectedProps wrappers, combines their detected items (deduplicating by ISID),
+	 * recalculates distance to the observer, and returns a single sorted wrapper.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Sight Sense|Query")
+	FPropSightDetectedProps CombineAndSortDetectedPropsWrapper(
+		const FPropSightDetectedProps& PropsA,
+		const FPropSightDetectedProps& PropsB,
+		AActor* ObserverActor = nullptr,
+		FVector ObserverLocationOverride = FVector::ZeroVector
+	) const;
+
+	/**
+	 * Takes two arrays of FPropSightDetectedItem, combines them (deduplicating by ISID),
+	 * recalculates distance to the observer, and sorts the combined array ascending by distance.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Sight Sense|Query")
+	TArray<FPropSightDetectedItem> CombineAndSortDetectedItems(
+		const TArray<FPropSightDetectedItem>& ArrayA,
+		const TArray<FPropSightDetectedItem>& ArrayB,
+		AActor* ObserverActor = nullptr,
+		FVector ObserverLocationOverride = FVector::ZeroVector
 	) const;
 
 	// -------------------------------------------------------------------------
@@ -861,9 +916,20 @@ protected:
 	bool IsItemVisible(const FPropBatchEvaluationItem& Item, const FContinuousObserverData& Obs, float& OutDistSq, FVector& OutTargetLoc) const;
 	bool IsItemVisible(const FPropBatchEvaluationItem& Item, const FOneTimeObserverData& Obs, float& OutDistSq, FVector& OutTargetLoc) const;
 
+	/** Checks if a specific ProductID is allowed for this observer based on its PIDs and limits */
+	bool IsProductAllowedForObserver(const FContinuousObserverData& Obs, int32 ProductID) const;
+	bool IsProductAllowedForObserver(const FOneTimeObserverData& Obs, int32 ProductID) const;
+
+	/** Checks whether an observer has any PIDs configured (TargetProductIDs, PIDInstanceLimits, or bObserveAllPIDs) */
+	bool HasObserverConfiguredPIDs(const FContinuousObserverData& Obs) const;
+	bool HasObserverConfiguredPIDs(const FOneTimeObserverData& Obs) const;
+
 	/** Resolves effective sight origin and rotation */
 	void ResolveSightTransform(const FContinuousObserverData& Config, FVector& OutLocation, FRotator& OutRotation) const;
 	void ResolveSightTransform(const FOneTimeObserverData& Config, FVector& OutLocation, FRotator& OutRotation) const;
+
+	/** Resolves distance calculation origin for an observer actor or location override */
+	FVector ResolveDistanceOrigin(AActor* ObserverActor, const FVector& LocationOverride = FVector::ZeroVector) const;
 
 	/** Line of sight multi-point raycast test */
 	bool CheckMultiPointLineOfSight(const FVector& ViewOrigin, const FPropBatchEvaluationItem& Item, ECollisionChannel TraceChannel, AActor* ObserverActor) const;
