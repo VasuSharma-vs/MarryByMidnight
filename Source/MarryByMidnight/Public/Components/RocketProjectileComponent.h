@@ -50,6 +50,17 @@ enum class ERocketPivotCompensationMode : uint8
 };
 
 /**
+ * Mode of erratic zig-zag flight pattern in 2D or 3D.
+ */
+UENUM(BlueprintType)
+enum class ERocketZigZagMode : uint8
+{
+	Alternating UMETA(DisplayName = "Alternating (Left-Right-Up-Down)"),
+	Random3D    UMETA(DisplayName = "Random 3D (Full Perpendicular Wander)"),
+	Corkscrew   UMETA(DisplayName = "Corkscrew (Helical 3D Spiral)")
+};
+
+/**
  * Replicated network state struct for deterministic flight and bounce reconciliation.
  */
 USTRUCT(BlueprintType)
@@ -218,13 +229,17 @@ struct FRocketFlightSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
 	float BaseSpeed = 2400.0f;
 
+	/** Total base spline length budget in cm for rocketing flight before fuel is exhausted (governs flight distance). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "500.0", ClampMax = "100000.0"))
+	float BaseSplineLength = 5000.0f;
+
 	/** Total duration of powered rocket flight in seconds before fuel is exhausted. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "0.5", ClampMax = "30.0"))
 	float MaxFuelDuration = 12.0f;
 
 	/** Total distance in cm of powered rocket flight before fuel is exhausted (governs flight duration by distance). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "500.0", ClampMax = "100000.0"))
-	float MaxFuelDistance = 15000.0f;
+	float MaxFuelDistance = 5000.0f;
 
 	/** Random deflection angle in degrees added on each in-flight bounce/ricochet (produces chaotic bounces in different directions). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "10.0", ClampMax = "75.0"))
@@ -246,17 +261,85 @@ struct FRocketFlightSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight")
 	bool bEnableErraticPath = true;
 
-	/** Spacing in cm between random offset waypoints along the baseline flight ray (Yellow Circles in Image 1). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "100.0", ClampMax = "800.0"))
+	/** Mode of erratic zig-zag flight pattern along the baseline. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath"))
+	ERocketZigZagMode ZigZagMode = ERocketZigZagMode::Random3D;
+
+	/** If true, zig-zag offsets occur in full 3D (both horizontal and vertical perpendicular axes). If false, strictly 2D horizontal. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath"))
+	bool bEnable3DZigZag = true;
+
+	/** If true, randomizes distance between consecutive zig-zag points between MinWaypointSpacing and MaxWaypointSpacing. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath"))
+	bool bUseRandomWaypointSpacing = true;
+
+	/** Minimum segment distance in cm between consecutive zig-zag waypoints. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "50.0", ClampMax = "2000.0"))
+	float MinWaypointSpacing = 350.0f;
+
+	/** Maximum segment distance in cm between consecutive zig-zag waypoints. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "50.0", ClampMax = "3000.0"))
+	float MaxWaypointSpacing = 650.0f;
+
+	/** Minimum distance in cm for the upward low-fuel thrust stage. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "100.0", ClampMax = "3000.0"))
+	float LowFuelThrustDistanceMin = 250.0f;
+
+	/** Maximum distance in cm for the upward low-fuel thrust stage. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "100.0", ClampMax = "3000.0"))
+	float LowFuelThrustDistanceMax = 450.0f;
+
+	/** Maximum distance in cm to trace downward to find the floor. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "1000.0", ClampMax = "50000.0"))
+	float FloorTraceMaxDistance = 20000.0f;
+
+	/** Maximum distance in cm for each ground bounce line trace. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "50.0", ClampMax = "1000.0"))
+	float BounceTraceMaxDistance = 300.0f;
+
+	/** Fixed spacing in cm between offset waypoints when bUseRandomWaypointSpacing is false. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "50.0", ClampMax = "1500.0"))
 	float WaypointSpacing = 300.0f;
 
-	/** Minimum lateral deviation in cm away from the straight baseline ray. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "5.0", ClampMax = "200.0"))
+	/** Minimum lateral (horizontal) deviation in cm away from the straight baseline ray. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "0.0", ClampMax = "500.0"))
 	float MinPathDeviation = 35.0f;
 
-	/** Maximum lateral deviation in cm away from the straight baseline ray (Yellow Circles in Image 1). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "10.0", ClampMax = "300.0"))
+	/** Maximum lateral (horizontal) deviation in cm away from the straight baseline ray (Yellow Circles in Image 1). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "10.0", ClampMax = "500.0"))
 	float MaxPathDeviation = 90.0f;
+
+	/** Minimum vertical deviation in cm away from the baseline (can be negative for downward wobble). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath && bEnable3DZigZag", ClampMin = "-500.0", ClampMax = "500.0"))
+	float MinVerticalDeviation = -30.0f;
+
+	/** Maximum vertical deviation in cm away from the baseline. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath && bEnable3DZigZag", ClampMin = "0.0", ClampMax = "1000.0"))
+	float MaxVerticalDeviation = 80.0f;
+
+	/** Spline tension multiplier for Hermite/Catmull-Rom tangents (0.0 = sharp linear corners, 0.5 = smooth Catmull-Rom, 1.0 = wide sweeping curves). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float SplineTension = 0.5f;
+
+	/** Smoothness factor for rounding corners and following offset points (0.0 = sharp corners, 0.5 = standard Catmull-Rom, 1.0 = wide sweeping curves). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float SplineCornerSmoothness = 0.65f;
+
+	/** Minimum distance in cm between consecutive intermediate offset points along the flight trajectory. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "100.0", ClampMax = "2000.0"))
+	float MinOffsetPointSpacing = 300.0f;
+
+	/** Maximum distance in cm between consecutive intermediate offset points along the flight trajectory. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "200.0", ClampMax = "3000.0"))
+	float MaxOffsetPointSpacing = 500.0f;
+
+	/** Corkscrew spiral revolutions per 1000cm when ZigZagMode is Corkscrew. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (EditCondition = "bEnableErraticPath", ClampMin = "0.1", ClampMax = "10.0"))
+	float CorkscrewPitchFrequency = 1.5f;
+
+	/** Maximum number of obstacle ricochets/bounces allowed during rocketing flight before cutting fuel and dropping. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight", meta = (ClampMin = "1", ClampMax = "32"))
+	int32 MaxFlightBounces = 16;
 
 	/** Frequency of cosmetic corkscrew wobble in Hz. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Flight")
@@ -298,6 +381,10 @@ struct FRocketLowFuelSettings
 	/** Multiplier applied to cosmetic wobble during low-fuel sputter. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|LowFuel", meta = (ClampMin = "1.0", ClampMax = "5.0"))
 	float WobbleMultiplier = 2.5f;
+
+	/** Downward vertical speed threshold (cm/s) at the apex. While downward speed is below this value, the bottle stays facing UP. When downward speed reaches or exceeds this value, it orients to falling velocity. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|LowFuel", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaintainUpDirectionThreshold = 50.0f;
 };
 
 /**
@@ -332,9 +419,37 @@ struct FRocketFallingSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (ClampMin = "0.1", ClampMax = "3.0"))
 	float SpentGravityScale = 1.0f;
 
+	/** Terminal downward velocity in cm/s when falling spent under gravity. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (ClampMin = "500.0", ClampMax = "8000.0"))
+	float TerminalVelocity = 2600.0f;
+
+	/** Brief duration in seconds the bottle stalls/hangs near-zero velocity at the apex before falling gravity accelerates it downward. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float ApexHangDuration = 0.12f;
+
+	/** Downward gravitational acceleration in cm/s^2 applied during the spent fall after the brief apex hang. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (ClampMin = "500.0", ClampMax = "10000.0"))
+	float FallAcceleration = 3000.0f;
+
 	/** If true, allows the bottle to bounce when spent until coming to rest. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling")
 	bool bBounceAfterFuelDepleted = true;
+
+	/** If true, uses FixedFallingBounces instead of dynamically scaling between MinFallingBounces and MaxFallingBounces based on fall height. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (EditCondition = "bBounceAfterFuelDepleted"))
+	bool bUseFixedFallingBounces = false;
+
+	/** Fixed number of bounces on the floor when bUseFixedFallingBounces is true. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (EditCondition = "bBounceAfterFuelDepleted && bUseFixedFallingBounces", ClampMin = "1", ClampMax = "15"))
+	int32 FixedFallingBounces = 4;
+
+	/** Minimum number of floor bounces when falling from low height. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (EditCondition = "bBounceAfterFuelDepleted && !bUseFixedFallingBounces", ClampMin = "1", ClampMax = "3"))
+	int32 MinFallingBounces = 1;
+
+	/** Maximum number of floor bounces when falling from high altitude (max 3 bounces). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (EditCondition = "bBounceAfterFuelDepleted && !bUseFixedFallingBounces", ClampMin = "1", ClampMax = "3"))
+	int32 MaxFallingBounces = 3;
 
 	/** Coefficient of restitution when spent so the bottle clatters and settles quickly. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket|Falling", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -475,6 +590,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "0.0", ClampMax = "2.0"))
 	float InFlightGravityScale = 0.15f;
 
+	/** Smoothness factor for rounding corners and following offset points (0.0 = sharp corners, 0.5 = standard Catmull-Rom, 1.0 = wide sweeping curves). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float SplineCornerSmoothness = 0.65f;
+
+	/** Minimum distance in cm between consecutive intermediate offset points along the flight trajectory. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "100.0", ClampMax = "2000.0"))
+	float MinOffsetPointSpacing = 300.0f;
+
+	/** Maximum distance in cm between consecutive intermediate offset points along the flight trajectory. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 3 - Rocketing", meta = (ClampMin = "200.0", ClampMax = "3000.0"))
+	float MaxOffsetPointSpacing = 500.0f;
+
 	/** If true, automatically switches to full Chaos physics simulation when fuel runs out rather than kinematic falling. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 5 - Falling")
 	bool bHandoffToPhysicsOnDepleted = false;
@@ -494,6 +621,10 @@ public:
 	/** Upward thrust impulse speed (cm/s) trying to lift the bottle as fizz vents. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 4 - Low Fuel Thrust", meta = (EditCondition = "bExhaustSputterNearEnd", ClampMin = "0.0", ClampMax = "1200.0"))
 	float ExhaustUpwardThrust = 450.0f;
+
+	/** Downward vertical speed threshold (cm/s) at the apex. While downward speed is below this value, the bottle stays facing UP. When downward speed reaches or exceeds this value, it orients to falling velocity. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 4 - Low Fuel Thrust", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaintainUpDirectionThreshold = 50.0f;
 
 	/** Multiplier applied to cosmetic wobble frequency and amplitude during the exhaust sputter. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket | State 4 - Low Fuel Thrust", meta = (EditCondition = "bExhaustSputterNearEnd", ClampMin = "1.0", ClampMax = "5.0"))
@@ -653,21 +784,21 @@ public:
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Configures rocket flight parameters (Fuel, Speed, Seed) prior to launch without launching (Two-Stage setup).
-	 * Sets and replicates the parameters so subsequent lightweight launches know their fuel/speed/seed.
+	 * Configures rocket flight parameters (Distance, Speed, Seed) prior to launch without launching (Two-Stage setup).
+	 * Sets and replicates the parameters so subsequent lightweight launches know their distance/speed/seed.
 	 * If bLaunchOnInitialized is true, calling this will also automatically launch the rocket immediately!
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Rocket")
-	void ConfigureRocket(float InFuelDuration = -1.0f, float InSpeed = -1.0f, uint8 InSeed = 0, FVector InLaunchDirection = FVector::ZeroVector);
+	void ConfigureRocket(float InDistance = -1.0f, float InSpeed = -1.0f, uint8 InSeed = 0, FVector InLaunchDirection = FVector::ZeroVector);
 
 	/**
 	 * Launches the rocket in the specified direction.
 	 *
 	 * @param InDirection Flight heading vector.
-	 * @param bHighAccuracy If true, uses All-In-One instant launch (bundles Location, Direction, Seed, Fuel, Speed in one packet, ~22 bytes).
+	 * @param bHighAccuracy If true, uses All-In-One instant launch (bundles Location, Direction, Seed, Distance, Speed in one packet, ~22 bytes).
 	 *                     If false (default), uses the ultra-efficient Two-Stage launch (Direction & Time only, ~7 bytes, no mid-air location snapping).
 	 * @param InSeed Optional custom seed override (0 = use pre-configured seed).
-	 * @param InFuelDuration Optional custom fuel duration override (-1 = use pre-configured fuel).
+	 * @param InDistance Optional custom distance override (-1 = use pre-configured distance).
 	 * @param InSpeed Optional custom base speed override (-1 = use pre-configured speed).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Rocket")
@@ -675,15 +806,15 @@ public:
 		FVector InDirection,
 		bool bHighAccuracy = false,
 		uint8 InSeed = 0,
-		float InFuelDuration = -1.0f,
+		float InDistance = -1.0f,
 		float InSpeed = -1.0f);
 
-	/** Explicit helper to launch with All-In-One high accuracy (includes initial Location, Direction, Seed, Fuel, and Speed). */
+	/** Explicit helper to launch with All-In-One high accuracy (includes initial Location, Direction, Seed, Distance, and Speed). */
 	UFUNCTION(BlueprintCallable, Category = "Rocket")
 	void LaunchRocketHighAccuracy(
 		FVector InDirection,
 		uint8 InSeed = 0,
-		float InFuelDuration = -1.0f,
+		float InDistance = -1.0f,
 		float InSpeed = -1.0f);
 
 	/**
@@ -744,6 +875,38 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Rocket|Debug")
 	void PrintRocketDebugInfo() const;
 
+	/** Sets the min and max bounce count for spent falling. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Falling")
+	void SetFallingBounceCount(int32 InMinBounces, int32 InMaxBounces);
+
+	/** Sets a fixed bounce count for spent falling. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Falling")
+	void SetFixedFallingBounces(int32 InFixedBounces);
+
+	/** Sets the maximum in-flight obstacle ricochets/bounces during rocketing before fuel cutoff. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Flight")
+	void SetMaxFlightBounces(int32 InMaxBounces);
+
+	/** Sets the Catmull-Rom spline tension for rocketing flight. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Flight")
+	void SetSplineTension(float InTension);
+
+	/** Sets the spline corner smoothness for following offset points (0.0 = sharp, 1.0 = wide sweeping curves). */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Flight")
+	void SetSplineCornerSmoothness(float InSmoothness);
+
+	/** Sets the spacing range in cm between consecutive intermediate offset points. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Flight")
+	void SetOffsetPointSpacing(float InMinSpacing, float InMaxSpacing);
+
+	/** Sets the downward speed threshold (cm/s) at apex below which the bottle faces up. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|LowFuel")
+	void SetMaintainUpDirectionThreshold(float InThreshold);
+
+	/** Configures 3D zig-zag erratic path settings for rocketing flight. */
+	UFUNCTION(BlueprintCallable, Category = "Rocket|Flight")
+	void ConfigureZigZag(ERocketZigZagMode InMode, bool bInEnable3D, bool bInRandomSpacing, float InMinSpacing, float InMaxSpacing, float InMinLatDev, float InMaxLatDev, float InMinVertDev, float InMaxVertDev);
+
 	/** Replicated random seed assigned once at spawn/initialization for deterministic simulation without MTU overhead. -1 = uninitialized. */
 	UPROPERTY(ReplicatedUsing = OnRep_LaunchSeed, EditAnywhere, BlueprintReadWrite, Category = "Rocket|Network")
 	int32 LaunchSeed = -1;
@@ -753,7 +916,7 @@ public:
 
 	/** Launches multiple rockets simultaneously in a single network batch. */
 	UFUNCTION(BlueprintCallable, Category = "Rocket")
-	static void LaunchRocketBatch(const TArray<URocketProjectileComponent*>& InRockets, const TArray<FVector>& InDirections, float InFuelDuration = -1.0f);
+	static void LaunchRocketBatch(const TArray<URocketProjectileComponent*>& InRockets, const TArray<FVector>& InDirections, float InDistance = -1.0f);
 
 	/** Applies client launch initialization without visual popping/snapping, using speed catch-up. */
 	void ApplyClientLaunch(
@@ -762,7 +925,7 @@ public:
 		bool bSetStartingLocation = false,
 		const FVector& InLaunchLocation = FVector::ZeroVector,
 		uint8 InSeed = 0,
-		float InFuelDuration = -1.0f,
+		float InDistance = -1.0f,
 		float InSpeed = -1.0f);
 
 	/** Returns network-synchronized server world time in seconds. */
@@ -844,6 +1007,7 @@ protected:
 	void DrawRocketDebugVisuals(float DeltaTime);
 
 	bool SweepAndMove(const FVector& MoveDelta, FHitResult& OutHit);
+	bool SweepAndMove(const FVector& MoveDelta, const FRotator& InRotation, FHitResult& OutHit);
 	void HandleRicochet(const FHitResult& Hit);
 
 	UFUNCTION(NetMulticast, Reliable)
@@ -854,36 +1018,101 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SettleRocket(FVector InRestLocation, FRotator InRestRotation);
 
+	/** Multicast RPC that synchronizes the spent falling state and glide target across all clients without visual popping. */
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StartSpentFalling(
+		FVector_NetQuantize FallingStartLocation,
+		FVector_NetQuantize FallingStartVelocity,
+		int32 InTargetBounces,
+		bool bInGliding,
+		FVector_NetQuantize InGlidingTarget);
+
+	/** Multicast RPC that synchronizes each bounce impact point and rebound velocity during spent falling. */
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_FallingBounce(
+		int32 InBounceCount,
+		FVector_NetQuantize InBounceLocation,
+		FVector_NetQuantize InBounceVelocity);
+
 	/** Direct, reliable multicast RPC that launches this individual rocket on all clients (Two-Stage: ~8 bytes, Time, Direction, Seed, no location snapping). */
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_LaunchRocket(float InServerLaunchTime, FVector_NetQuantizeNormal InLaunchDirection, uint8 InSeed);
 
-	/** All-In-One High-Accuracy launch multicast RPC (~22 bytes). Transmits Location, Direction, Seed, Fuel, and Speed. */
+	/** All-In-One High-Accuracy launch multicast RPC (~22 bytes). Transmits Location, Direction, Seed, Distance, and Speed. */
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_LaunchRocketFull(
 		float InServerLaunchTime,
 		FVector_NetQuantize InLaunchLocation,
 		FVector_NetQuantizeNormal InLaunchDirection,
 		uint8 InSeed,
-		float InFuelDuration,
+		float InDistance,
 		float InSpeed);
 
 	/** Multicast to configure rocket parameters on clients ahead of time (Two-Stage setup). */
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ConfigureRocket(float InFuelDuration, float InSpeed, uint8 InSeed);
+	void Multicast_ConfigureRocket(float InDistance, float InSpeed, uint8 InSeed);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_BatchLaunchRockets(float InServerLaunchTime, const TArray<FRocketBatchLaunchItem>& BatchItems);
+
+	/** Sends the full 3-part flight plan (RocketingLocations, LowFuelThrustLocation, ObstacleHit info, BounceLocations, and RestRotation). */
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SendFullFlightPlan(
+		const TArray<FVector_NetQuantize>& InRocketingLocations,
+		FVector_NetQuantize InLowFuelThrustLocation,
+		bool bInLowFuelHitObstacle,
+		FVector_NetQuantizeNormal InLowFuelHitNormal,
+		const TArray<FVector_NetQuantize>& InBounceLocations,
+		FRotator InRestRotation);
 
 	/** Secondary reliable multicast RPC sending the server's pre-traced multi-bounce flight plan (8-16 rounded integer waypoints). Sent as normal data, not in MTU launch packet. */
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SendFlightPlan(const TArray<FVector_NetQuantize>& InFlightNodes);
 
-	/** Pre-calculates 8-16 line-trace bounce and trace-end waypoints on the server, rounded to integer coordinates. */
+	/** Pre-calculates the 3-part flight plan on the server: base rocketing spline, low fuel upward thrust point, and ground bounce array. */
+	void GenerateServerFlightPlan(
+		TArray<FVector_NetQuantize>& OutRocketingLocations,
+		FVector_NetQuantize& OutLowFuelThrustLocation,
+		bool& bOutLowFuelHitObstacle,
+		FVector_NetQuantizeNormal& OutLowFuelHitNormal,
+		TArray<FVector_NetQuantize>& OutBounceLocations,
+		FRotator& OutRestRotation);
+
+	/** Backward-compatible overload without obstacle outputs. */
+	void GenerateServerFlightPlan(
+		TArray<FVector_NetQuantize>& OutRocketingLocations,
+		FVector_NetQuantize& OutLowFuelThrustLocation,
+		TArray<FVector_NetQuantize>& OutBounceLocations,
+		FRotator& OutRestRotation);
+
+	/** Backward-compatible overload that aggregates all nodes into a single array. */
 	void GenerateServerFlightPlan(TArray<FVector_NetQuantize>& OutNodes);
+
+	/** Activates the authoritative 3-part flight plan on server or client with obstacle reaction data. */
+	void SetAuthoritativeFullFlightPlan(
+		const TArray<FVector_NetQuantize>& InRocketingLocations,
+		FVector_NetQuantize InLowFuelThrustLocation,
+		bool bInLowFuelHitObstacle,
+		const FVector& InLowFuelHitNormal,
+		const TArray<FVector_NetQuantize>& InBounceLocations,
+		FRotator InRestRotation);
+
+	/** Backward-compatible overload without obstacle parameters. */
+	void SetAuthoritativeFullFlightPlan(
+		const TArray<FVector_NetQuantize>& InRocketingLocations,
+		FVector_NetQuantize InLowFuelThrustLocation,
+		const TArray<FVector_NetQuantize>& InBounceLocations,
+		FRotator InRestRotation);
 
 	/** Stores and activates the authoritative rounded waypoint array for rocketing on both server and client. */
 	void SetAuthoritativeFlightPlan(const TArray<FVector_NetQuantize>& InFlightNodes);
+
+	/** Generates deterministic intermediate offset points (red circles) between coarse waypoints (blue circles) using LaunchSeed. */
+	void SubdivideRocketingPathWithSeededOffsets(
+		const TArray<FVector>& InCoarsePoints,
+		uint8 InSeed,
+		TArray<FVector>& OutDetailedPoints,
+		TArray<bool>& OutIsCoarseFlags);
 
 	void LogDebug(const FString& Message, bool bOnScreen = false) const;
 
@@ -899,10 +1128,23 @@ protected:
 	/** Computes the oriented bounding extent along any world direction (SAT theorem) to detect the true leading edge. */
 	float GetProjectedExtentAlongDirection(const FVector& Direction) const;
 
+	/** Computes the oriented bounding extent along any world direction (SAT theorem) using a specific rotation to guarantee proper ground seating without clipping or floating. */
+	float GetProjectedExtentAlongDirectionWithRotation(const FVector& Direction, const FRotator& InRotation) const;
+
+	/** Prepares and initiates the SpentFalling state with a 15,000 cm floor trace, 3-5 bounce calculation, and reachable point glide. */
+	void InitializeSpentFalling();
+
 private:
 	FRandomStream RandomStream;
 	FVector TipOverLaunchHeading = FVector::ForwardVector;
 	float TipOverElapsedTime = 0.0f;
+
+	// Falling, Gliding & Ground Stickiness tracking
+	float InitialFallHeight = 0.0f;
+	int32 TargetFallingBounces = 3;
+	int32 FallingBounceCount = 0;
+	bool bIsGlidingToReachablePoint = false;
+	FVector GlidingTargetLocation = FVector::ZeroVector;
 
 	// Pivot & center-of-mass tracking
 	FVector CalculatedCenterOffset = FVector::ZeroVector;
@@ -997,6 +1239,26 @@ private:
 	TArray<FVector> AuthoritativeFlightNodes;
 	TArray<float> CumulativeFlightPlanDistances;
 	int32 CurrentFlightPlanNodeIndex = 0;
+
+	// 3-dataset flight plan tracking
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|Trajectory", meta = (AllowPrivateAccess = "true"))
+	TArray<FVector> RocketingLocations;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|Trajectory", meta = (AllowPrivateAccess = "true"))
+	FVector LowFuelThrustLocation = FVector::ZeroVector;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|Trajectory", meta = (AllowPrivateAccess = "true"))
+	TArray<FVector> BounceLocations;
+
+	int32 RocketingEndIndex = 0;
+	int32 LowFuelIndex = 0;
+	int32 FirstGroundHitIndex = 0;
+	float CurrentSegmentDistTraveled = 0.0f;
+	float CurrentBounceReboundSpeed = 0.0f;
+	float LastImpactSpeed = 0.0f;
+	TArray<bool> AuthoritativeNodeIsCoarse;
+	bool bLowFuelHitObstacle = false;
+	FVector LowFuelHitNormal = FVector::DownVector;
 
 	// State 5: Falling tracking (Image 2)
 	float FallingTumbleAngle = 0.0f;

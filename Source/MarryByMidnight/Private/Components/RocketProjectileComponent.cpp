@@ -8,6 +8,9 @@
 #include "TimerManager.h"
 #include "GameFramework/GameStateBase.h"
 #include "DrawDebugHelpers.h"
+#include "Props/InteractableProp.h"
+#include "Components/StaticMeshPhysicsSimulationComponent.h"
+#include "NavigationSystem.h"
 
 URocketProjectileComponent::URocketProjectileComponent()
 {
@@ -30,7 +33,7 @@ URocketProjectileComponent::URocketProjectileComponent()
 
 	BaseSpeed = 2400.0f;
 	MaxFuelDuration = 12.0f;
-	MaxFuelDistance = 15000.0f;
+	MaxFuelDistance = 5000.0f;
 	FlightBounceRandomDeflection = 45.0f;
 	TotalFlightDistanceTraveled = 0.0f;
 	TimeSpentFalling = 0.0f;
@@ -87,8 +90,18 @@ URocketProjectileComponent::URocketProjectileComponent()
 
 	// Synchronize struct movement settings with baseline property defaults
 	FlightSettings.BaseSpeed = BaseSpeed;
+	FlightSettings.BaseSplineLength = MaxFuelDistance;
 	FlightSettings.MaxFuelDuration = MaxFuelDuration;
 	FlightSettings.MaxFuelDistance = MaxFuelDistance;
+	FlightSettings.MinWaypointSpacing = 650.0f;
+	FlightSettings.MaxWaypointSpacing = 1200.0f;
+	FlightSettings.MinOffsetPointSpacing = MinOffsetPointSpacing;
+	FlightSettings.MaxOffsetPointSpacing = MaxOffsetPointSpacing;
+	FlightSettings.SplineCornerSmoothness = SplineCornerSmoothness;
+	FlightSettings.LowFuelThrustDistanceMin = 250.0f;
+	FlightSettings.LowFuelThrustDistanceMax = 450.0f;
+	FlightSettings.FloorTraceMaxDistance = 20000.0f;
+	FlightSettings.BounceTraceMaxDistance = 300.0f;
 	FlightSettings.FlightBounceRandomDeflection = FlightBounceRandomDeflection;
 	FlightSettings.GravityZ = GravityZ;
 	FlightSettings.InFlightGravityScale = InFlightGravityScale;
@@ -104,9 +117,14 @@ URocketProjectileComponent::URocketProjectileComponent()
 	LowFuelSettings.PitchUpAngle = ExhaustPitchUpAngle;
 	LowFuelSettings.UpwardThrustImpulse = ExhaustUpwardThrust;
 	LowFuelSettings.WobbleMultiplier = ExhaustWobbleMultiplier;
+	LowFuelSettings.MaintainUpDirectionThreshold = MaintainUpDirectionThreshold;
 
+	FallingSettings.ApexHangDuration = 0.12f;
+	FallingSettings.FallAcceleration = 3000.0f;
 	FallingSettings.bHandoffToPhysicsOnDepleted = bHandoffToPhysicsOnDepleted;
 	FallingSettings.bBounceAfterFuelDepleted = bBounceAfterFuelDepleted;
+	FallingSettings.MinFallingBounces = 1;
+	FallingSettings.MaxFallingBounces = 3;
 	FallingSettings.SpentBounciness = SpentBounciness;
 	FallingSettings.SpentFriction = SpentFriction;
 	FallingSettings.RicochetRandomDeflection = RicochetRandomDeflection;
@@ -314,29 +332,93 @@ void URocketProjectileComponent::InitializeFlightPath(const FVector& InStartLoc,
 	if (FlightSettings.bEnableErraticPath)
 	{
 		FRandomStream PathStream(InSeed > 0 ? InSeed : 1);
-		const float Spacing = FMath::Clamp(FlightSettings.WaypointSpacing, 100.0f, 800.0f);
-		const int32 NumSegments = FMath::FloorToInt(EffectiveBaselineLength / Spacing);
+		const float SpacingMin = FMath::Clamp(FMath::Min(FlightSettings.MinWaypointSpacing, FlightSettings.MaxWaypointSpacing), 50.0f, 2000.0f);
+		const float SpacingMax = FMath::Clamp(FMath::Max(FlightSettings.MinWaypointSpacing, FlightSettings.MaxWaypointSpacing), 50.0f, 3000.0f);
 
-		for (int32 i = 1; i <= NumSegments; ++i)
+		float CurrentDist = 0.0f;
+		int32 SegmentIndex = 0;
+
+		while (CurrentDist < EffectiveBaselineLength - SpacingMin * 0.4f)
 		{
-			const float Dist = i * Spacing;
-			const float SegmentProgress = Dist / EffectiveBaselineLength;
-			const FVector BasePt = FlightStartLocation + (FlightBaselineDir * Dist);
+			const float StepDist = FlightSettings.bUseRandomWaypointSpacing
+				? PathStream.FRandRange(SpacingMin, SpacingMax)
+				: (FlightSettings.WaypointSpacing > 0.0f ? FlightSettings.WaypointSpacing : 300.0f);
 
-			// Alternating lateral offsets primarily along horizontal PerpendicularU (Yellow circles in Image 1)
-			const float SideSign = (i % 2 == 1) ? 1.0f : -1.0f;
-			const float DevDist = PathStream.FRandRange(FlightSettings.MinPathDeviation, FlightSettings.MaxPathDeviation);
+			CurrentDist += StepDist;
+			if (CurrentDist >= EffectiveBaselineLength - SpacingMin * 0.3f)
+			{
+				break;
+			}
+			SegmentIndex++;
 
-			// Vertical wobble strictly upwards so it NEVER dives into the floor
-			const float VertOffset = PathStream.FRandRange(0.0f, DevDist * 0.30f);
+			const float SegmentProgress = CurrentDist / EffectiveBaselineLength;
+			const FVector BasePt = FlightStartLocation + (FlightBaselineDir * CurrentDist);
 
-			FVector Waypoint = BasePt + (PerpendicularU * (DevDist * SideSign)) + (FVector::UpVector * VertOffset);
+			FVector Offset = FVector::ZeroVector;
+
+			if (FlightSettings.ZigZagMode == ERocketZigZagMode::Random3D)
+			{
+				// Full 3D random wander in perpendicular plane
+				const float LatDev = PathStream.FRandRange(FlightSettings.MinPathDeviation, FlightSettings.MaxPathDeviation);
+				const float RandomAngle = PathStream.FRandRange(0.0f, 2.0f * PI);
+				const float LatOffset = FMath::Cos(RandomAngle) * LatDev;
+
+				Offset += PerpendicularU * LatOffset;
+
+				if (FlightSettings.bEnable3DZigZag)
+				{
+					const float VertDev = PathStream.FRandRange(FlightSettings.MinVerticalDeviation, FlightSettings.MaxVerticalDeviation);
+					const float VertOffset = FMath::Sin(RandomAngle) * FMath::Abs(VertDev) * (VertDev >= 0.0f ? 1.0f : -1.0f);
+					Offset += PerpendicularV * VertOffset;
+				}
+				else
+				{
+					// Slight upward wobble if 3D disabled
+					const float VertOffset = PathStream.FRandRange(0.0f, FMath::Abs(LatOffset) * 0.25f);
+					Offset += FVector::UpVector * VertOffset;
+				}
+			}
+			else if (FlightSettings.ZigZagMode == ERocketZigZagMode::Corkscrew)
+			{
+				// 3D Helical spiral corkscrew
+				const float Turns = (CurrentDist / 1000.0f) * FlightSettings.CorkscrewPitchFrequency;
+				const float Angle = Turns * 2.0f * PI;
+				const float RadiusU = PathStream.FRandRange(FlightSettings.MinPathDeviation, FlightSettings.MaxPathDeviation);
+				Offset += PerpendicularU * (FMath::Cos(Angle) * RadiusU);
+
+				if (FlightSettings.bEnable3DZigZag)
+				{
+					const float RadiusV = PathStream.FRandRange(FMath::Max(10.0f, FMath::Abs(FlightSettings.MinVerticalDeviation)), FlightSettings.MaxVerticalDeviation);
+					Offset += PerpendicularV * (FMath::Sin(Angle) * RadiusV);
+				}
+			}
+			else // ERocketZigZagMode::Alternating
+			{
+				// Alternating side-to-side and up-down
+				const float SideSign = (SegmentIndex % 2 == 1) ? 1.0f : -1.0f;
+				const float LatDev = PathStream.FRandRange(FlightSettings.MinPathDeviation, FlightSettings.MaxPathDeviation);
+				Offset += PerpendicularU * (LatDev * SideSign);
+
+				if (FlightSettings.bEnable3DZigZag)
+				{
+					const float VertSign = ((SegmentIndex / 2) % 2 == 1) ? 1.0f : -0.7f;
+					const float VertDev = PathStream.FRandRange(FMath::Abs(FlightSettings.MinVerticalDeviation), FlightSettings.MaxVerticalDeviation);
+					Offset += PerpendicularV * (VertDev * VertSign);
+				}
+				else
+				{
+					const float VertOffset = PathStream.FRandRange(0.0f, LatDev * 0.30f);
+					Offset += FVector::UpVector * VertOffset;
+				}
+			}
+
+			FVector Waypoint = BasePt + Offset;
 
 			// If nearing the end of an open-air leg with an upcoming turn, smoothly blend the waypoint towards the next direction
 			if (bHasUpcomingTurn && SegmentProgress > 0.65f)
 			{
 				const float TurnBlend = (SegmentProgress - 0.65f) / 0.35f;
-				const float TurnLeadDist = DevDist * TurnBlend * 0.8f;
+				const float TurnLeadDist = FlightSettings.MaxPathDeviation * TurnBlend * 0.8f;
 				Waypoint += UpcomingTurnDir * TurnLeadDist;
 			}
 
@@ -412,8 +494,9 @@ void URocketProjectileComponent::EvaluateFlightSpline(float Progress, FVector& O
 	const FVector P2 = FlightWaypoints[SegIndex + 1];
 	const FVector P3 = FlightWaypoints[FMath::Min(NumPts - 1, SegIndex + 2)];
 
-	const FVector T1 = 0.5f * (P2 - P0);
-	const FVector T2 = 0.5f * (P3 - P1);
+	const float SplineTension = FMath::Clamp(FlightSettings.SplineTension, 0.0f, 2.0f);
+	const FVector T1 = SplineTension * (P2 - P0);
+	const FVector T2 = SplineTension * (P3 - P1);
 
 	OutLocation = FMath::CubicInterp(P1, T1, P2, T2, LocalAlpha);
 	OutTangent = FMath::CubicInterpDerivative(P1, T1, P2, T2, LocalAlpha).GetSafeNormal();
@@ -543,6 +626,9 @@ void URocketProjectileComponent::TransitionToRocketing(const FVector& InLiftoffC
 	SetSimulationState(ERocketSimulationState::Rocketing);
 	ElapsedFlightTime = 0.0f;
 	CurrentFlightPlanNodeIndex = 0;
+	CurrentSegmentDistTraveled = 0.0f;
+	CurrentBounceReboundSpeed = 0.0f;
+	LastImpactSpeed = 0.0f;
 	FlightDistanceTraveled = 0.0f;
 
 	// Calculate liftoff heading directly towards first flight plan node if available, else LaunchTargetHitLocation
@@ -607,15 +693,47 @@ void URocketProjectileComponent::DrawRocketDebugVisuals(float DeltaTime)
 			DrawDebugPoint(GetWorld(), FlightWaypoints.Last(), 10.0f, FColor::Orange, false, 0.05f);
 		}
 
-		// Pre-calculated authoritative multi-bounce flight plan backbone
+		// Pre-calculated authoritative 3-part flight plan backbone
 		if (AuthoritativeFlightNodes.Num() >= 2)
 		{
 			for (int32 i = 0; i < AuthoritativeFlightNodes.Num() - 1; ++i)
 			{
-				DrawDebugLine(GetWorld(), AuthoritativeFlightNodes[i], AuthoritativeFlightNodes[i + 1], FColor::Yellow, false, 0.05f, 0, 1.8f);
-				DrawDebugPoint(GetWorld(), AuthoritativeFlightNodes[i], 8.0f, FColor::Yellow, false, 0.05f);
+				FColor SegmentColor = FColor::Yellow;
+				if (i >= RocketingEndIndex && i < LowFuelIndex)
+				{
+					SegmentColor = FColor::Magenta; // Low fuel upward thrust
+				}
+				else if (i >= LowFuelIndex && i < FirstGroundHitIndex)
+				{
+					SegmentColor = FColor::Blue; // Spent falling descent
+				}
+				else if (i >= FirstGroundHitIndex)
+				{
+					SegmentColor = FColor::Green; // Ground bounces
+				}
+
+				DrawDebugLine(GetWorld(), AuthoritativeFlightNodes[i], AuthoritativeFlightNodes[i + 1], SegmentColor, false, 0.05f, 0, 1.8f);
+
+				// Blue circles for coarse server waypoints, Red circles for intermediate seeded offset points (as in reference diagram)
+				const bool bIsCoarse = AuthoritativeNodeIsCoarse.IsValidIndex(i) ? AuthoritativeNodeIsCoarse[i] : true;
+				if (bIsCoarse)
+				{
+					DrawDebugSphere(GetWorld(), AuthoritativeFlightNodes[i], 8.0f, 8, FColor::Blue, false, 0.05f, 0, 1.6f);
+				}
+				else
+				{
+					DrawDebugSphere(GetWorld(), AuthoritativeFlightNodes[i], 5.0f, 6, FColor::Red, false, 0.05f, 0, 1.2f);
+				}
 			}
-			DrawDebugPoint(GetWorld(), AuthoritativeFlightNodes.Last(), 10.0f, FColor::Red, false, 0.05f);
+
+			// Draw LowFuelThrustLocation apex marker
+			if (!LowFuelThrustLocation.IsNearlyZero())
+			{
+				DrawDebugSphere(GetWorld(), LowFuelThrustLocation, 14.0f, 8, FColor::Magenta, false, 0.05f, 0, 1.5f);
+			}
+
+			// Draw final rest point
+			DrawDebugPoint(GetWorld(), AuthoritativeFlightNodes.Last(), 12.0f, FColor::Red, false, 0.05f);
 		}
 
 		// 3. Landmarks
@@ -877,31 +995,30 @@ void URocketProjectileComponent::FlushBatchLaunchForWorld(TWeakObjectPtr<UWorld>
 void URocketProjectileComponent::LaunchRocketBatch(
 	const TArray<URocketProjectileComponent*>& InRockets,
 	const TArray<FVector>& InDirections,
-	float InFuelDuration)
+	float InDistance)
 {
 	for (int32 i = 0; i < InRockets.Num(); ++i)
 	{
 		if (URocketProjectileComponent* Rocket = InRockets[i])
 		{
 			const FVector Dir = InDirections.IsValidIndex(i) ? InDirections[i] : FVector::ForwardVector;
-			Rocket->LaunchRocket(Dir, false, 0, InFuelDuration);
+			Rocket->LaunchRocket(Dir, false, 0, InDistance);
 		}
 	}
 }
 
 void URocketProjectileComponent::ConfigureRocket(
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed,
 	uint8 InSeed,
 	FVector InLaunchDirection)
 {
-	if (InFuelDuration > 0.0f)
+	if (InDistance > 0.0f)
 	{
-		MaxFuelDuration = InFuelDuration;
-		FlightSettings.MaxFuelDuration = InFuelDuration;
-		MaxFuelDistance = InFuelDuration * BaseSpeed;
-		FlightSettings.MaxFuelDistance = MaxFuelDistance;
-		FlightNetState.FuelDuration = MaxFuelDuration;
+		FlightSettings.BaseSplineLength = InDistance;
+		FlightSettings.MaxFuelDistance = InDistance;
+		MaxFuelDistance = InDistance;
+		FlightNetState.FuelDuration = InDistance / FMath::Max(BaseSpeed, 100.0f);
 	}
 	if (InSpeed > 0.0f)
 	{
@@ -922,30 +1039,29 @@ void URocketProjectileComponent::ConfigureRocket(
 
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		Multicast_ConfigureRocket(MaxFuelDuration, BaseSpeed, static_cast<uint8>(LaunchSeed & 0xFF));
+		Multicast_ConfigureRocket(MaxFuelDistance, BaseSpeed, static_cast<uint8>(LaunchSeed & 0xFF));
 	}
 
-	LogDebug(FString::Printf(TEXT("ConfigureRocket: MaxFuel=%.1f, Speed=%.1f, Seed=%d (bLaunchOnInitialized=%d)"),
-		MaxFuelDuration, BaseSpeed, LaunchSeed, bLaunchOnInitialized ? 1 : 0));
+	LogDebug(FString::Printf(TEXT("ConfigureRocket: Distance=%.1f cm, Speed=%.1f, Seed=%d (bLaunchOnInitialized=%d)"),
+		MaxFuelDistance, BaseSpeed, LaunchSeed, bLaunchOnInitialized ? 1 : 0));
 
 	if (bLaunchOnInitialized)
 	{
 		const FVector Dir = InLaunchDirection.IsNearlyZero() ? (GetOwner() ? GetOwner()->GetActorForwardVector() : FVector::ForwardVector) : InLaunchDirection;
-		LaunchRocket(Dir, bLaunchWithHighAccuracy, static_cast<uint8>(LaunchSeed & 0xFF), MaxFuelDuration, BaseSpeed);
+		LaunchRocket(Dir, bLaunchWithHighAccuracy, static_cast<uint8>(LaunchSeed & 0xFF), MaxFuelDistance, BaseSpeed);
 	}
 }
 
 void URocketProjectileComponent::Multicast_ConfigureRocket_Implementation(
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed,
 	uint8 InSeed)
 {
-	if (InFuelDuration > 0.0f)
+	if (InDistance > 0.0f)
 	{
-		MaxFuelDuration = InFuelDuration;
-		FlightSettings.MaxFuelDuration = InFuelDuration;
-		MaxFuelDistance = InFuelDuration * BaseSpeed;
-		FlightSettings.MaxFuelDistance = MaxFuelDistance;
+		FlightSettings.BaseSplineLength = InDistance;
+		FlightSettings.MaxFuelDistance = InDistance;
+		MaxFuelDistance = InDistance;
 	}
 	if (InSpeed > 0.0f)
 	{
@@ -956,8 +1072,8 @@ void URocketProjectileComponent::Multicast_ConfigureRocket_Implementation(
 	{
 		LaunchSeed = InSeed;
 	}
-	LogDebug(FString::Printf(TEXT("Multicast_ConfigureRocket on client: MaxFuel=%.1f, Speed=%.1f, Seed=%d"),
-		MaxFuelDuration, BaseSpeed, LaunchSeed));
+	LogDebug(FString::Printf(TEXT("Multicast_ConfigureRocket on client: Distance=%.1f cm, Speed=%.1f, Seed=%d"),
+		MaxFuelDistance, BaseSpeed, LaunchSeed));
 }
 
 void URocketProjectileComponent::Multicast_LaunchRocket_Implementation(
@@ -980,7 +1096,7 @@ void URocketProjectileComponent::Multicast_LaunchRocketFull_Implementation(
 	FVector_NetQuantize InLaunchLocation,
 	FVector_NetQuantizeNormal InLaunchDirection,
 	uint8 InSeed,
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed)
 {
 	// Server already launched locally on the frame it was called; only clients need to apply client-side launch!
@@ -990,7 +1106,7 @@ void URocketProjectileComponent::Multicast_LaunchRocketFull_Implementation(
 	}
 
 	// All-In-One Instant Launch: High-accuracy initial location and parameters
-	ApplyClientLaunch(InServerLaunchTime, InLaunchDirection, true, InLaunchLocation, InSeed, InFuelDuration, InSpeed);
+	ApplyClientLaunch(InServerLaunchTime, InLaunchDirection, true, InLaunchLocation, InSeed, InDistance, InSpeed);
 }
 
 void URocketProjectileComponent::Multicast_BatchLaunchRockets_Implementation(
@@ -1015,6 +1131,22 @@ void URocketProjectileComponent::Multicast_BatchLaunchRockets_Implementation(
 	}
 }
 
+void URocketProjectileComponent::Multicast_SendFullFlightPlan_Implementation(
+	const TArray<FVector_NetQuantize>& InRocketingLocations,
+	FVector_NetQuantize InLowFuelThrustLocation,
+	bool bInLowFuelHitObstacle,
+	FVector_NetQuantizeNormal InLowFuelHitNormal,
+	const TArray<FVector_NetQuantize>& InBounceLocations,
+	FRotator InRestRotation)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	SetAuthoritativeFullFlightPlan(InRocketingLocations, InLowFuelThrustLocation, bInLowFuelHitObstacle, InLowFuelHitNormal, InBounceLocations, InRestRotation);
+}
+
 void URocketProjectileComponent::Multicast_SendFlightPlan_Implementation(const TArray<FVector_NetQuantize>& InFlightNodes)
 {
 	// Server already generated and activated the flight plan locally before broadcasting; clients now receive and activate it
@@ -1026,9 +1158,21 @@ void URocketProjectileComponent::Multicast_SendFlightPlan_Implementation(const T
 	SetAuthoritativeFlightPlan(InFlightNodes);
 }
 
-void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuantize>& OutNodes)
+void URocketProjectileComponent::GenerateServerFlightPlan(
+	TArray<FVector_NetQuantize>& OutRocketingLocations,
+	FVector_NetQuantize& OutLowFuelThrustLocation,
+	bool& bOutLowFuelHitObstacle,
+	FVector_NetQuantizeNormal& OutLowFuelHitNormal,
+	TArray<FVector_NetQuantize>& OutBounceLocations,
+	FRotator& OutRestRotation)
 {
-	OutNodes.Empty();
+	OutRocketingLocations.Empty();
+	OutBounceLocations.Empty();
+	OutLowFuelThrustLocation = FVector_NetQuantize(FVector::ZeroVector);
+	bOutLowFuelHitObstacle = false;
+	OutLowFuelHitNormal = FVector_NetQuantizeNormal(FVector::DownVector);
+	OutRestRotation = FRotator::ZeroRotator;
+
 	if (!GetWorld())
 	{
 		return;
@@ -1050,47 +1194,59 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 		CurrentHeading.Normalize();
 	}
 
-	// Node 0: Initial liftoff location rounded to integer
-	OutNodes.Add(FVector_NetQuantize(LiftoffCenter));
+	// 3. Base spline rocketing trajectory
+	OutRocketingLocations.Add(FVector_NetQuantize(LiftoffCenter));
 
-	// Distance-based fuel budget (User: around 8 to 16 array of locations)
-	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
-	float RemainingBudget = FMath::Max(500.0f, EffectiveFuelDist);
-	const float MaxLegDistance = 2500.0f;
-	const int32 MaxNodesLimit = 16;
+	const float EffectiveBaseDist = FlightSettings.BaseSplineLength > 0.0f ? FlightSettings.BaseSplineLength : (FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : 5000.0f);
+	float RemainingBudget = EffectiveBaseDist;
+	const float EndDistThreshold = EffectiveBaseDist * 0.35f; // Last 35% of rocketing distance: fuel dying, gravity bends flight down
+	const float MinSpacing = FMath::Clamp(FlightSettings.MinWaypointSpacing, 50.0f, 2000.0f);
+	const float MaxSpacing = FMath::Clamp(FlightSettings.MaxWaypointSpacing, MinSpacing, 3000.0f);
+
 	FRandomStream PlanStream(LaunchSeed > 0 ? LaunchSeed : 1);
-
 	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(RocketServerFlightPlanTrace), false, GetOwner());
-	FVector CurrentLoc = LiftoffCenter;
 
-	while (RemainingBudget > 50.0f && OutNodes.Num() < MaxNodesLimit)
+	FVector CurrentLoc = LiftoffCenter;
+	int32 IterationCount = 0;
+	const int32 MaxIterations = 64;
+
+	while (RemainingBudget > 1.0f && IterationCount < MaxIterations)
 	{
-		const float StepDist = FMath::Min(MaxLegDistance, RemainingBudget);
-		const FVector TraceEnd = CurrentLoc + (CurrentHeading * StepDist);
+		IterationCount++;
+		const float RandomLength = PlanStream.FRandRange(MinSpacing, MaxSpacing);
+		const float TraceDist = FMath::Min(RandomLength, RemainingBudget);
+
+		// When approaching the end of fuel distance, gravity starts pulling the trajectory downward
+		if (RemainingBudget <= EndDistThreshold && EndDistThreshold > 0.0f)
+		{
+			const float EndRatio = 1.0f - FMath::Clamp(RemainingBudget / EndDistThreshold, 0.0f, 1.0f);
+			CurrentHeading.Z = FMath::Lerp(CurrentHeading.Z, -0.45f, EndRatio * 0.65f);
+			CurrentHeading.Normalize();
+		}
+
+		const FVector TraceEnd = CurrentLoc + (CurrentHeading * TraceDist);
 		FHitResult Hit;
 		const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CurrentLoc, TraceEnd, ECC_Visibility, TraceParams);
 
 		if (bHit)
 		{
-			// Store hit location rounded to whole integer
-			const FVector HitPoint = Hit.ImpactPoint;
-			const float LegDist = FVector::Dist(CurrentLoc, HitPoint);
-			RemainingBudget -= LegDist;
-			OutNodes.Add(FVector_NetQuantize(HitPoint));
+			const float HitDist = FVector::Dist(CurrentLoc, Hit.ImpactPoint);
+			RemainingBudget -= HitDist;
 
-			if (RemainingBudget <= 50.0f || OutNodes.Num() >= MaxNodesLimit)
+			const float Extent = GetProjectedExtentAlongDirection(Hit.Normal);
+			CurrentLoc = Hit.ImpactPoint + (Hit.Normal * (Extent + 2.0f));
+			OutRocketingLocations.Add(FVector_NetQuantize(CurrentLoc));
+
+			if (RemainingBudget <= 1.0f)
 			{
-				break; // Fuel exhausted on this obstacle hit!
+				break;
 			}
 
-			// Calculate reflection vector with enhanced bounce randomness
+			// Calculate reflection vector with randomized bounce angle
 			FVector Reflected = CurrentHeading - 2.0f * (CurrentHeading | Hit.Normal) * Hit.Normal;
-
-			// Enhanced chaotic bounce deflection (User: "add some randomness when bottel hit someting bouncing in to different location")
 			const float DeflectionDeg = FMath::Clamp(FlightSettings.FlightBounceRandomDeflection > 0.0f ? FlightSettings.FlightBounceRandomDeflection : FlightBounceRandomDeflection, 25.0f, 65.0f);
 			Reflected = PlanStream.VRandCone(Reflected.GetSafeNormal(), FMath::DegreesToRadians(DeflectionDeg));
 
-			// Anti-stick guard to ensure reflection points away from surface
 			const float NormalComp = Reflected | Hit.Normal;
 			if (NormalComp < 0.25f)
 			{
@@ -1098,42 +1254,530 @@ void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuan
 				Reflected.Normalize();
 			}
 
-			// If bouncing off floor/ground (upward normal), give it an upward bounce angle
 			if (Hit.Normal.Z > 0.5f && Reflected.Z < 0.15f)
 			{
 				Reflected.Z = PlanStream.FRandRange(0.20f, 0.55f);
 				Reflected.Normalize();
 			}
 
-			// Standoff offset for next trace start
-			const float Extent = GetProjectedExtentAlongDirection(Hit.Normal);
-			CurrentLoc = HitPoint + (Hit.Normal * (Extent + 2.0f));
 			CurrentHeading = Reflected.GetSafeNormal();
 		}
 		else
 		{
-			// No obstacle hit; store trace end location rounded to whole integer
-			OutNodes.Add(FVector_NetQuantize(TraceEnd));
-			RemainingBudget -= StepDist;
-			CurrentLoc = TraceEnd;
+			RemainingBudget -= TraceDist;
+			OutRocketingLocations.Add(FVector_NetQuantize(TraceEnd));
 
-			if (RemainingBudget <= 50.0f || OutNodes.Num() >= MaxNodesLimit)
+			if (RemainingBudget <= 1.0f)
 			{
-				break; // Fuel exhausted at this open-air location!
+				break;
 			}
 
-			// Smooth directional variation for open air
-			CurrentHeading = PlanStream.VRandCone(CurrentHeading, FMath::DegreesToRadians(45.0f));
-			if (CurrentHeading.Z < 0.05f)
+			CurrentHeading = PlanStream.VRandCone(CurrentHeading, FMath::DegreesToRadians(PlanStream.FRandRange(25.0f, 45.0f)));
+			// Only clamp Z upward if not in the final gravity-fall phase
+			if (RemainingBudget > EndDistThreshold)
 			{
-				CurrentHeading.Z = PlanStream.FRandRange(0.12f, 0.40f);
-				CurrentHeading.Normalize();
+				if (CurrentHeading.Z < 0.05f)
+				{
+					CurrentHeading.Z = PlanStream.FRandRange(0.12f, 0.40f);
+					CurrentHeading.Normalize();
+				}
+			}
+			CurrentLoc = TraceEnd;
+		}
+	}
+
+	// 4. Low fuel thrust stage: thrust points DOWN pushing the bottle UP against gravity over a short, intense climb
+	const FVector FinalRocketingLoc = FVector(OutRocketingLocations.Last().X, OutRocketingLocations.Last().Y, OutRocketingLocations.Last().Z);
+
+	FVector ForwardDir = FVector(CurrentHeading.X, CurrentHeading.Y, 0.0f).GetSafeNormal();
+	if (ForwardDir.IsNearlyZero())
+	{
+		ForwardDir = FVector(TipOverLaunchHeading.X, TipOverLaunchHeading.Y, 0.0f).GetSafeNormal();
+	}
+	if (ForwardDir.IsNearlyZero())
+	{
+		ForwardDir = FVector::ForwardVector;
+	}
+
+	FVector LowFuelHeading = (ForwardDir * 0.20f + FVector::UpVector * 0.95f).GetSafeNormal();
+	const float UpwardConeDeg = PlanStream.FRandRange(5.0f, 15.0f);
+	LowFuelHeading = PlanStream.VRandCone(LowFuelHeading, FMath::DegreesToRadians(UpwardConeDeg));
+	LowFuelHeading.Z = FMath::Clamp(LowFuelHeading.Z, 0.70f, 0.98f);
+	LowFuelHeading.Normalize();
+
+	const float LowFuelDist = PlanStream.FRandRange(FlightSettings.LowFuelThrustDistanceMin, FlightSettings.LowFuelThrustDistanceMax);
+	const FVector LowFuelTraceEnd = FinalRocketingLoc + (LowFuelHeading * LowFuelDist);
+
+	FHitResult LowFuelHit;
+	bOutLowFuelHitObstacle = false;
+	OutLowFuelHitNormal = FVector_NetQuantizeNormal(FVector::DownVector);
+	bLowFuelHitObstacle = false;
+	LowFuelHitNormal = FVector::DownVector;
+
+	FVector ReboundVelocityDir = FVector::DownVector;
+
+	if (GetWorld()->LineTraceSingleByChannel(LowFuelHit, FinalRocketingLoc, LowFuelTraceEnd, ECC_Visibility, TraceParams))
+	{
+		// Struck obstacle (ceiling, wall, beam, prop, etc.) while losing thrust!
+		bOutLowFuelHitObstacle = true;
+		OutLowFuelHitNormal = FVector_NetQuantizeNormal(LowFuelHit.Normal);
+		bLowFuelHitObstacle = true;
+		LowFuelHitNormal = LowFuelHit.Normal;
+
+		const float LowFuelExtent = GetProjectedExtentAlongDirection(LowFuelHit.Normal);
+		OutLowFuelThrustLocation = FVector_NetQuantize(LowFuelHit.ImpactPoint + (LowFuelHit.Normal * (LowFuelExtent + 2.0f)));
+
+		// Reflect off obstacle and blend with downward gravity
+		FVector Reflected = LowFuelHeading - 2.0f * (LowFuelHeading | LowFuelHit.Normal) * LowFuelHit.Normal;
+		ReboundVelocityDir = (Reflected * 0.40f + FVector::DownVector * 0.75f).GetSafeNormal();
+
+		LogDebug(FString::Printf(TEXT("GenerateServerFlightPlan: LowFuel struck obstacle at %s! Normal=%s, ReboundDir=%s"),
+			*LowFuelHit.ImpactPoint.ToString(), *LowFuelHit.Normal.ToString(), *ReboundVelocityDir.ToString()), true);
+	}
+	else
+	{
+		// Unobstructed low-fuel climb to apex
+		bOutLowFuelHitObstacle = false;
+		OutLowFuelHitNormal = FVector_NetQuantizeNormal(FVector::DownVector);
+		bLowFuelHitObstacle = false;
+		LowFuelHitNormal = FVector::DownVector;
+
+		OutLowFuelThrustLocation = FVector_NetQuantize(LowFuelTraceEnd);
+
+		// Natural forward-downward gravity arc from apex
+		ReboundVelocityDir = (ForwardDir * 0.30f + FVector::DownVector * 0.85f).GetSafeNormal();
+	}
+
+	// 5. Floor line trace: traces from LowFuelApex along ReboundVelocityDir down to the ground
+	const FVector LowFuelApex = FVector(OutLowFuelThrustLocation.X, OutLowFuelThrustLocation.Y, OutLowFuelThrustLocation.Z);
+	const float FloorTraceDist = FlightSettings.FloorTraceMaxDistance > 0.0f ? FlightSettings.FloorTraceMaxDistance : 20000.0f;
+	const FVector FloorTraceEnd = LowFuelApex + (ReboundVelocityDir * FloorTraceDist);
+
+	FHitResult FloorHit;
+	const bool bHitFloor = GetWorld()->LineTraceSingleByChannel(FloorHit, LowFuelApex, FloorTraceEnd, ECC_Visibility, TraceParams);
+
+	FVector GroundContactLoc = FVector::ZeroVector;
+	FVector GroundContactNormal = FVector::UpVector;
+
+	if (bHitFloor)
+	{
+		const float GroundExtent = GetProjectedExtentAlongDirection(FloorHit.Normal);
+		GroundContactLoc = FloorHit.ImpactPoint + (FloorHit.Normal * (GroundExtent + 1.5f));
+		GroundContactNormal = FloorHit.Normal;
+	}
+	else
+	{
+		// Fallback straight down check if angled trace didn't hit
+		FHitResult StraightDownHit;
+		if (GetWorld()->LineTraceSingleByChannel(StraightDownHit, LowFuelApex, LowFuelApex - FVector(0.0f, 0.0f, FloorTraceDist), ECC_Visibility, TraceParams))
+		{
+			const float GroundExtent = GetProjectedExtentAlongDirection(StraightDownHit.Normal);
+			GroundContactLoc = StraightDownHit.ImpactPoint + (StraightDownHit.Normal * (GroundExtent + 1.5f));
+			GroundContactNormal = StraightDownHit.Normal;
+		}
+		else
+		{
+			bool bFoundReachable = false;
+			if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
+			{
+				FNavLocation ReachableNavLoc;
+				if (NavSys->GetRandomReachablePointInRadius(LowFuelApex, FloorTraceDist, ReachableNavLoc))
+				{
+					const float ReachableExtent = GetProjectedExtentAlongDirection(FVector::UpVector);
+					GroundContactLoc = ReachableNavLoc.Location + FVector(0.0f, 0.0f, ReachableExtent + 1.5f);
+					GroundContactNormal = FVector::UpVector;
+					bFoundReachable = true;
+				}
+			}
+
+			if (!bFoundReachable)
+			{
+				float ClosestDistSq = MAX_flt;
+				for (int32 AngleDeg = 0; AngleDeg < 360; AngleDeg += 45)
+				{
+					const float Rad = FMath::DegreesToRadians(static_cast<float>(AngleDeg));
+					const FVector TraceDir = FVector(FMath::Cos(Rad) * 0.707f, FMath::Sin(Rad) * 0.707f, -0.707f).GetSafeNormal();
+					FHitResult AngledHit;
+					if (GetWorld()->LineTraceSingleByChannel(AngledHit, LowFuelApex, LowFuelApex + (TraceDir * FloorTraceDist), ECC_Visibility, TraceParams))
+					{
+						const float DistSq = FVector::DistSquared(LowFuelApex, AngledHit.ImpactPoint);
+						if (DistSq < ClosestDistSq)
+						{
+							ClosestDistSq = DistSq;
+							const float HitExtent = GetProjectedExtentAlongDirection(AngledHit.Normal);
+							GroundContactLoc = AngledHit.ImpactPoint + (AngledHit.Normal * (HitExtent + 1.5f));
+							GroundContactNormal = AngledHit.Normal;
+							bFoundReachable = true;
+						}
+					}
+				}
+			}
+
+			if (!bFoundReachable)
+			{
+				GroundContactLoc = FloorTraceEnd;
 			}
 		}
 	}
 
-	LogDebug(FString::Printf(TEXT("GenerateServerFlightPlan complete: Generated %d nodes (FuelDist=%.0f cm, Seed=%d)"),
-		OutNodes.Num(), EffectiveFuelDist, LaunchSeed), true);
+	// 6. Ground contact & bounces array (max 3 bounces, max 300 distance each)
+	OutBounceLocations.Add(FVector_NetQuantize(GroundContactLoc));
+
+	FVector CurrentGroundPoint = GroundContactLoc;
+	FVector CurrentNormal = GroundContactNormal;
+	FVector InboundDir = (GroundContactLoc - LowFuelApex).GetSafeNormal();
+
+	const int32 NumBounces = FMath::Clamp(FallingSettings.MaxFallingBounces > 0 ? FallingSettings.MaxFallingBounces : 3, 1, 3);
+
+	for (int32 b = 0; b < NumBounces; ++b)
+	{
+		FVector BounceHeading = InboundDir - 2.0f * (InboundDir | CurrentNormal) * CurrentNormal;
+		BounceHeading.Z = FMath::Max(FMath::Abs(BounceHeading.Z), 0.60f);
+		BounceHeading = PlanStream.VRandCone(BounceHeading.GetSafeNormal(), FMath::DegreesToRadians(PlanStream.FRandRange(10.0f, 25.0f)));
+		BounceHeading.Normalize();
+
+		const float XYLength = FVector(BounceHeading.X, BounceHeading.Y, 0.0f).Size();
+		const float ZLength = FMath::Abs(BounceHeading.Z);
+		const float CurrentMaxBounceDist = FlightSettings.BounceTraceMaxDistance > 0.0f ? FlightSettings.BounceTraceMaxDistance : 300.0f;
+		float BounceStepDist = PlanStream.FRandRange(CurrentMaxBounceDist * 0.5f, CurrentMaxBounceDist) * FMath::Pow(0.65f, b);
+
+		if (XYLength > ZLength)
+		{
+			BounceHeading.X *= 0.50f;
+			BounceHeading.Y *= 0.50f;
+			BounceHeading.Normalize();
+			BounceStepDist *= 0.70f;
+		}
+		else
+		{
+			BounceHeading.Z = FMath::Max(BounceHeading.Z, 0.75f);
+			BounceHeading.Normalize();
+		}
+
+		const FVector ApexStart = CurrentGroundPoint + (CurrentNormal * 2.0f);
+		const FVector ApexEnd = ApexStart + (BounceHeading * (BounceStepDist * 0.5f));
+		FHitResult ApexHit;
+		FVector ApexPoint = ApexEnd;
+		if (GetWorld()->LineTraceSingleByChannel(ApexHit, ApexStart, ApexEnd, ECC_Visibility, TraceParams))
+		{
+			const float ApexExtent = GetProjectedExtentAlongDirection(ApexHit.Normal);
+			ApexPoint = ApexHit.ImpactPoint + (ApexHit.Normal * (ApexExtent + 1.5f));
+		}
+		OutBounceLocations.Add(FVector_NetQuantize(ApexPoint));
+
+		const FVector DescentDir = FVector(BounceHeading.X * 0.5f, BounceHeading.Y * 0.5f, -1.0f).GetSafeNormal();
+		const FVector LandEnd = ApexPoint + (DescentDir * (BounceStepDist * 0.75f + 150.0f));
+		FHitResult LandHit;
+		FVector NextGroundPoint = LandEnd;
+		if (GetWorld()->LineTraceSingleByChannel(LandHit, ApexPoint, LandEnd, ECC_Visibility, TraceParams))
+		{
+			CurrentNormal = LandHit.Normal;
+			const float LandExtent = GetProjectedExtentAlongDirection(CurrentNormal);
+			NextGroundPoint = LandHit.ImpactPoint + (CurrentNormal * (LandExtent + 1.5f));
+		}
+		else
+		{
+			NextGroundPoint.Z = CurrentGroundPoint.Z;
+		}
+
+		OutBounceLocations.Add(FVector_NetQuantize(NextGroundPoint));
+		CurrentGroundPoint = NextGroundPoint;
+		InboundDir = (NextGroundPoint - ApexPoint).GetSafeNormal();
+	}
+
+	OutRestRotation = ComputeGroundRestRotation(CurrentNormal, PlanStream.FRandRange(0.0f, 360.0f));
+	if (OutBounceLocations.Num() > 0)
+	{
+		const float RestExtent = GetProjectedExtentAlongDirectionWithRotation(CurrentNormal, OutRestRotation);
+		FVector FinalRestLoc = CurrentGroundPoint;
+		FHitResult FinalFloorCheck;
+		if (GetWorld()->LineTraceSingleByChannel(FinalFloorCheck, CurrentGroundPoint + (CurrentNormal * 20.0f), CurrentGroundPoint - (CurrentNormal * 50.0f), ECC_Visibility, TraceParams))
+		{
+			FinalRestLoc = FinalFloorCheck.ImpactPoint + (FinalFloorCheck.Normal * RestExtent);
+		}
+		OutBounceLocations.Last() = FVector_NetQuantize(FinalRestLoc);
+	}
+
+	LogDebug(FString::Printf(TEXT("GenerateServerFlightPlan complete: %d rocketing nodes, LowFuel apex at %s (Obstacle=%d), %d bounce nodes. Seed=%d"),
+		OutRocketingLocations.Num(), *OutLowFuelThrustLocation.ToString(), bOutLowFuelHitObstacle ? 1 : 0, OutBounceLocations.Num(), LaunchSeed), true);
+}
+
+void URocketProjectileComponent::GenerateServerFlightPlan(
+	TArray<FVector_NetQuantize>& OutRocketingLocations,
+	FVector_NetQuantize& OutLowFuelThrustLocation,
+	TArray<FVector_NetQuantize>& OutBounceLocations,
+	FRotator& OutRestRotation)
+{
+	bool bHitObstacle = false;
+	FVector_NetQuantizeNormal HitNormal = FVector::DownVector;
+	GenerateServerFlightPlan(OutRocketingLocations, OutLowFuelThrustLocation, bHitObstacle, HitNormal, OutBounceLocations, OutRestRotation);
+}
+
+void URocketProjectileComponent::GenerateServerFlightPlan(TArray<FVector_NetQuantize>& OutNodes)
+{
+	TArray<FVector_NetQuantize> Rocketing;
+	FVector_NetQuantize LowFuel;
+	TArray<FVector_NetQuantize> Bounces;
+	FRotator RestRot;
+
+	GenerateServerFlightPlan(Rocketing, LowFuel, Bounces, RestRot);
+
+	OutNodes.Empty(Rocketing.Num() + 1 + Bounces.Num());
+	for (const FVector_NetQuantize& Loc : Rocketing)
+	{
+		OutNodes.Add(Loc);
+	}
+	OutNodes.Add(LowFuel);
+	for (const FVector_NetQuantize& Loc : Bounces)
+	{
+		OutNodes.Add(Loc);
+	}
+}
+
+void URocketProjectileComponent::SubdivideRocketingPathWithSeededOffsets(
+	const TArray<FVector>& InCoarsePoints,
+	uint8 InSeed,
+	TArray<FVector>& OutDetailedPoints,
+	TArray<bool>& OutIsCoarseFlags)
+{
+	OutDetailedPoints.Empty();
+	OutIsCoarseFlags.Empty();
+
+	if (InCoarsePoints.Num() == 0)
+	{
+		return;
+	}
+
+	if (InCoarsePoints.Num() == 1)
+	{
+		OutDetailedPoints.Add(InCoarsePoints[0]);
+		OutIsCoarseFlags.Add(true);
+		return;
+	}
+
+	const float MaxDeviation = FMath::Clamp(FlightSettings.MaxPathDeviation > 0.0f ? FlightSettings.MaxPathDeviation : 50.0f, 20.0f, 100.0f);
+	const float MinSpacing = FMath::Clamp(FlightSettings.MinOffsetPointSpacing > 0.0f ? FlightSettings.MinOffsetPointSpacing : 300.0f, 150.0f, 1000.0f);
+	const float MaxSpacing = FMath::Clamp(FlightSettings.MaxOffsetPointSpacing >= MinSpacing ? FlightSettings.MaxOffsetPointSpacing : 500.0f, MinSpacing, 2000.0f);
+	const float TargetSpacing = (MinSpacing + MaxSpacing) * 0.5f;
+
+	for (int32 i = 0; i < InCoarsePoints.Num() - 1; ++i)
+	{
+		const FVector A = InCoarsePoints[i];
+		const FVector B = InCoarsePoints[i + 1];
+		const FVector AB = B - A;
+		const float SegLength = AB.Size();
+
+		// Add start coarse blue point
+		OutDetailedPoints.Add(A);
+		OutIsCoarseFlags.Add(true);
+
+		if (SegLength < MinSpacing * 1.2f)
+		{
+			// Segment is too short to insert intermediate points without violating the 300-500cm distance requirement
+			continue;
+		}
+
+		const FVector Tangent = AB / SegLength;
+
+		// Orthonormal 3D frame perpendicular to Tangent
+		FVector UpRef = FVector::UpVector;
+		if (FMath::Abs(Tangent | UpRef) > 0.85f)
+		{
+			UpRef = FVector::RightVector;
+		}
+		const FVector U = (Tangent ^ UpRef).GetSafeNormal();
+		const FVector V = (U ^ Tangent).GetSafeNormal();
+
+		// Determine number of subsegments so consecutive points are spaced ~300 to 500 cm apart
+		int32 NumSubsegments = FMath::Clamp(FMath::RoundToInt(SegLength / TargetSpacing), 2, 8);
+		while (NumSubsegments > 1 && (SegLength / static_cast<float>(NumSubsegments)) < MinSpacing)
+		{
+			NumSubsegments--;
+		}
+		while ((SegLength / static_cast<float>(NumSubsegments)) > MaxSpacing && (SegLength / static_cast<float>(NumSubsegments + 1)) >= MinSpacing)
+		{
+			NumSubsegments++;
+		}
+
+		if (NumSubsegments <= 1)
+		{
+			continue;
+		}
+
+		// Deterministic seed per segment ensures identical points on server and client
+		FRandomStream SegStream(static_cast<int32>(InSeed) * 1013 + i * 7919);
+		const float BaseAngle = SegStream.FRandRange(0.0f, TWO_PI);
+		const float OffsetMag = FMath::Min(MaxDeviation, SegLength * 0.18f);
+
+		for (int32 k = 1; k < NumSubsegments; ++k)
+		{
+			const float t = static_cast<float>(k) / static_cast<float>(NumSubsegments);
+
+			// Alternate side of the path for each offset point (waving trajectory as in user reference diagram)
+			const float AlternateAngle = (k % 2 == 1) ? 0.0f : PI;
+			const float Jitter = SegStream.FRandRange(-0.35f, 0.35f);
+			const float Angle = BaseAngle + AlternateAngle + Jitter;
+
+			const FVector OffsetDir = (U * FMath::Cos(Angle) + V * FMath::Sin(Angle)).GetSafeNormal();
+			FVector RedPoint = FMath::Lerp(A, B, t) + (OffsetDir * OffsetMag);
+
+			// Prevent dipping below ground level
+			const float MinZ = FMath::Min(A.Z, B.Z);
+			RedPoint.Z = FMath::Max(RedPoint.Z, MinZ + 4.0f);
+
+			OutDetailedPoints.Add(RedPoint);
+			OutIsCoarseFlags.Add(false);
+		}
+	}
+
+	// Add final coarse blue point
+	OutDetailedPoints.Add(InCoarsePoints.Last());
+	OutIsCoarseFlags.Add(true);
+}
+
+void URocketProjectileComponent::SetAuthoritativeFullFlightPlan(
+	const TArray<FVector_NetQuantize>& InRocketingLocations,
+	FVector_NetQuantize InLowFuelThrustLocation,
+	bool bInLowFuelHitObstacle,
+	const FVector& InLowFuelHitNormal,
+	const TArray<FVector_NetQuantize>& InBounceLocations,
+	FRotator InRestRotation)
+{
+	bLowFuelHitObstacle = bInLowFuelHitObstacle;
+	LowFuelHitNormal = InLowFuelHitNormal;
+
+	RocketingLocations.Empty(InRocketingLocations.Num());
+	for (const FVector_NetQuantize& Loc : InRocketingLocations)
+	{
+		RocketingLocations.Add(FVector(Loc.X, Loc.Y, Loc.Z));
+	}
+
+	LowFuelThrustLocation = FVector(InLowFuelThrustLocation.X, InLowFuelThrustLocation.Y, InLowFuelThrustLocation.Z);
+
+	BounceLocations.Empty(InBounceLocations.Num());
+	for (const FVector_NetQuantize& Loc : InBounceLocations)
+	{
+		BounceLocations.Add(FVector(Loc.X, Loc.Y, Loc.Z));
+	}
+
+	DeterministicRestRotation = InRestRotation;
+	bTargetRestRotationInitialized = true;
+
+	// Subdivide coarse rocketing waypoints into detailed spline points using LaunchSeed
+	TArray<FVector> DetailedRocketingPoints;
+	TArray<bool> IsCoarseFlags;
+	SubdivideRocketingPathWithSeededOffsets(RocketingLocations, LaunchSeed, DetailedRocketingPoints, IsCoarseFlags);
+
+	AuthoritativeFlightNodes.Empty(DetailedRocketingPoints.Num() + 3 + InBounceLocations.Num());
+	AuthoritativeNodeIsCoarse.Empty(AuthoritativeFlightNodes.Max());
+	CumulativeFlightPlanDistances.Empty(AuthoritativeFlightNodes.Max());
+
+	for (int32 i = 0; i < DetailedRocketingPoints.Num(); ++i)
+	{
+		AuthoritativeFlightNodes.Add(DetailedRocketingPoints[i]);
+		AuthoritativeNodeIsCoarse.Add(IsCoarseFlags[i]);
+	}
+	RocketingEndIndex = FMath::Max(0, AuthoritativeFlightNodes.Num() - 1);
+
+	// Generate intermediate offset point(s) for the Low Fuel Upward Climb according to bounding distance
+	const FVector FinalRocketingLoc = AuthoritativeFlightNodes[RocketingEndIndex];
+	const FVector LowFuelApexLoc = LowFuelThrustLocation;
+	const float LowFuelDist = FVector::Dist(FinalRocketingLoc, LowFuelApexLoc);
+
+	if (LowFuelDist >= 350.0f)
+	{
+		const FVector LowFuelDir = (LowFuelApexLoc - FinalRocketingLoc) / LowFuelDist;
+		FVector LowFuelPerp = (FVector::UpVector - (LowFuelDir * (FVector::UpVector | LowFuelDir))).GetSafeNormal();
+		if (LowFuelPerp.IsNearlyZero())
+		{
+			LowFuelPerp = (LowFuelDir ^ FVector::RightVector).GetSafeNormal();
+		}
+
+		float LowFuelOffsetMag = 0.0f;
+		if (bLowFuelHitObstacle)
+		{
+			// If an obstacle was struck at apex, keep offsets conservative and oriented along hit normal away from obstruction
+			LowFuelOffsetMag = FMath::Clamp(LowFuelDist * 0.04f, 5.0f, 25.0f);
+			LowFuelPerp = LowFuelHitNormal;
+		}
+		else
+		{
+			// Offset magnitude scaled by mesh bounding dimensions and segment distance
+			const float BoundsScale = MeshBoundsExtent.Size() > 0.0f ? MeshBoundsExtent.Size() : 35.0f;
+			LowFuelOffsetMag = FMath::Clamp(BoundsScale * 0.8f + LowFuelDist * 0.08f, 25.0f, 95.0f);
+		}
+
+		if (LowFuelDist < 700.0f)
+		{
+			// 1 intermediate offset point at midpoint
+			const FVector LowFuelMid = FMath::Lerp(FinalRocketingLoc, LowFuelApexLoc, 0.5f) + (LowFuelPerp * LowFuelOffsetMag);
+			AuthoritativeFlightNodes.Add(LowFuelMid);
+			AuthoritativeNodeIsCoarse.Add(false);
+		}
+		else
+		{
+			// 2 intermediate offset points spaced ~300-500cm
+			const FVector Mid1 = FMath::Lerp(FinalRocketingLoc, LowFuelApexLoc, 0.33f) + (LowFuelPerp * LowFuelOffsetMag * 0.75f);
+			const FVector Mid2 = FMath::Lerp(FinalRocketingLoc, LowFuelApexLoc, 0.67f) + (LowFuelPerp * LowFuelOffsetMag);
+			AuthoritativeFlightNodes.Add(Mid1);
+			AuthoritativeNodeIsCoarse.Add(false);
+			AuthoritativeFlightNodes.Add(Mid2);
+			AuthoritativeNodeIsCoarse.Add(false);
+		}
+	}
+
+	AuthoritativeFlightNodes.Add(LowFuelThrustLocation);
+	AuthoritativeNodeIsCoarse.Add(true);
+	LowFuelIndex = AuthoritativeFlightNodes.Num() - 1;
+
+	FirstGroundHitIndex = AuthoritativeFlightNodes.Num();
+	for (const FVector& Loc : BounceLocations)
+	{
+		AuthoritativeFlightNodes.Add(Loc);
+		AuthoritativeNodeIsCoarse.Add(true);
+	}
+
+	float RunningDist = 0.0f;
+	for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
+	{
+		if (i > 0)
+		{
+			RunningDist += FVector::Dist(AuthoritativeFlightNodes[i - 1], AuthoritativeFlightNodes[i]);
+		}
+		CumulativeFlightPlanDistances.Add(RunningDist);
+	}
+
+	CurrentFlightPlanNodeIndex = 0;
+	CurrentSegmentDistTraveled = 0.0f;
+	CurrentBounceReboundSpeed = 0.0f;
+	LastImpactSpeed = 0.0f;
+
+	LogDebug(FString::Printf(TEXT("SetAuthoritativeFullFlightPlan: %d rocketing nodes (%d detailed spline nodes), LowFuel apex: %s (ObstacleHit=%d, Normal=%s), %d bounce nodes. Total path: %.1f cm (RocketingEnd=%d, LowFuel=%d, FirstHit=%d, FinalRest=%d)"),
+		RocketingLocations.Num(), DetailedRocketingPoints.Num(), *LowFuelThrustLocation.ToString(), bLowFuelHitObstacle ? 1 : 0, *LowFuelHitNormal.ToString(), BounceLocations.Num(), RunningDist,
+		RocketingEndIndex, LowFuelIndex, FirstGroundHitIndex, AuthoritativeFlightNodes.Num() - 1), true);
+
+	if (bEnableDebugLogs || bShowOnScreenDebug)
+	{
+		for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
+		{
+			FString StageTag = TEXT("Rocketing");
+			if (i == LowFuelIndex) StageTag = TEXT("LowFuelThrust");
+			else if (i == FirstGroundHitIndex) StageTag = TEXT("GroundHit");
+			else if (i > FirstGroundHitIndex) StageTag = TEXT("Bounce");
+
+			LogDebug(FString::Printf(TEXT("  FlightPlanNode[%d/%d] (%s): Loc=%s, DistFromStart=%.0f cm"),
+				i, AuthoritativeFlightNodes.Num(), *StageTag, *AuthoritativeFlightNodes[i].ToString(), CumulativeFlightPlanDistances[i]));
+		}
+	}
+}
+
+void URocketProjectileComponent::SetAuthoritativeFullFlightPlan(
+	const TArray<FVector_NetQuantize>& InRocketingLocations,
+	FVector_NetQuantize InLowFuelThrustLocation,
+	const TArray<FVector_NetQuantize>& InBounceLocations,
+	FRotator InRestRotation)
+{
+	SetAuthoritativeFullFlightPlan(InRocketingLocations, InLowFuelThrustLocation, false, FVector::DownVector, InBounceLocations, InRestRotation);
 }
 
 void URocketProjectileComponent::SetAuthoritativeFlightPlan(const TArray<FVector_NetQuantize>& InFlightNodes)
@@ -1154,36 +1798,16 @@ void URocketProjectileComponent::SetAuthoritativeFlightPlan(const TArray<FVector
 		CumulativeFlightPlanDistances.Add(RunningDist);
 	}
 
-	if (CurrentState == ERocketSimulationState::Rocketing && CumulativeFlightPlanDistances.Num() > 1 && TotalFlightDistanceTraveled > 0.0f)
-	{
-		// If received while already rocketing, match current leg to traveled distance
-		int32 FoundIndex = 0;
-		for (int32 i = 0; i < CumulativeFlightPlanDistances.Num() - 1; ++i)
-		{
-			if (TotalFlightDistanceTraveled >= CumulativeFlightPlanDistances[i] && TotalFlightDistanceTraveled < CumulativeFlightPlanDistances[i + 1])
-			{
-				FoundIndex = i;
-				break;
-			}
-		}
-		CurrentFlightPlanNodeIndex = FoundIndex;
-	}
-	else
-	{
-		CurrentFlightPlanNodeIndex = 0;
-	}
+	CurrentFlightPlanNodeIndex = 0;
+	CurrentSegmentDistTraveled = 0.0f;
+	CurrentBounceReboundSpeed = 0.0f;
+	LastImpactSpeed = 0.0f;
+	RocketingEndIndex = FMath::Max(0, AuthoritativeFlightNodes.Num() - 1);
+	LowFuelIndex = RocketingEndIndex;
+	FirstGroundHitIndex = RocketingEndIndex;
 
-	LogDebug(FString::Printf(TEXT("SetAuthoritativeFlightPlan: Stored %d rounded nodes, TotalPathDistance=%.1f cm (CurrentNode=%d)"),
-		AuthoritativeFlightNodes.Num(), RunningDist, CurrentFlightPlanNodeIndex), true);
-
-	if (bEnableDebugLogs || bShowOnScreenDebug)
-	{
-		for (int32 i = 0; i < AuthoritativeFlightNodes.Num(); ++i)
-		{
-			LogDebug(FString::Printf(TEXT("  FlightPlanNode[%d/%d]: Loc=%s, DistFromStart=%.0f cm"),
-				i, AuthoritativeFlightNodes.Num(), *AuthoritativeFlightNodes[i].ToString(), CumulativeFlightPlanDistances[i]));
-		}
-	}
+	LogDebug(FString::Printf(TEXT("SetAuthoritativeFlightPlan: Stored %d rounded nodes, TotalPathDistance=%.1f cm"),
+		AuthoritativeFlightNodes.Num(), RunningDist), true);
 }
 
 void URocketProjectileComponent::OnRep_LaunchSeed()
@@ -1203,7 +1827,7 @@ void URocketProjectileComponent::ApplyClientLaunch(
 	bool bSetStartingLocation,
 	const FVector& InLaunchLocation,
 	uint8 InSeed,
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed)
 {
 	if (InServerLaunchTime <= LastReplicatedServerLaunchTime + 0.001f && InServerLaunchTime > 0.0f)
@@ -1224,12 +1848,11 @@ void URocketProjectileComponent::ApplyClientLaunch(
 		LaunchSeed = 1;
 	}
 
-	if (InFuelDuration > 0.0f)
+	if (InDistance > 0.0f)
 	{
-		MaxFuelDuration = InFuelDuration;
-		FlightSettings.MaxFuelDuration = InFuelDuration;
-		MaxFuelDistance = InFuelDuration * BaseSpeed;
-		FlightSettings.MaxFuelDistance = MaxFuelDistance;
+		FlightSettings.BaseSplineLength = InDistance;
+		FlightSettings.MaxFuelDistance = InDistance;
+		MaxFuelDistance = InDistance;
 	}
 	if (InSpeed > 0.0f)
 	{
@@ -1258,11 +1881,30 @@ void URocketProjectileComponent::ApplyClientLaunch(
 		GetOwner()->SetReplicateMovement(false);
 		GetOwner()->SetActorTickEnabled(true);
 
+		// If attached to a player pawn or socket, detach so it flies freely
+		if (GetOwner()->GetAttachParentActor() || (GetOwner()->GetRootComponent() && GetOwner()->GetRootComponent()->GetAttachParent()))
+		{
+			GetOwner()->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		}
+
+		if (AActivePropActor* PropActor = Cast<AActivePropActor>(GetOwner()))
+		{
+			PropActor->SetHeld(false);
+			PropActor->SetInMotion(true);
+			PropActor->State = EPropState::InMotion;
+		}
+
 		// Suspend any PhysicsSimComponent while the rocket is in flight so it does not interfere or freeze the mesh
 		for (UActorComponent* Comp : GetOwner()->GetComponents())
 		{
 			if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 			{
+				if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+				{
+					SimComp->SetHeld(false);
+					SimComp->SetInMotion(true);
+					SimComp->SetStateInMotion();
+				}
 				Comp->SetComponentTickEnabled(false);
 			}
 		}
@@ -1326,6 +1968,9 @@ void URocketProjectileComponent::ApplyClientLaunch(
 	FlightWaypoints.Empty();
 	FlightDistanceTraveled = 0.0f;
 	CurrentFlightPlanNodeIndex = 0;
+	CurrentSegmentDistTraveled = 0.0f;
+	CurrentBounceReboundSpeed = 0.0f;
+	LastImpactSpeed = 0.0f;
 	LastDebugTrailLocation = GetWorldCenterLocation();
 
 	TipOverLaunchHeading = InLaunchDirection.GetSafeNormal();
@@ -1439,32 +2084,35 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 			const float LinSpeed = TargetPrimitive->GetPhysicsLinearVelocity().Size();
 			const float AngSpeed = TargetPrimitive->GetPhysicsAngularVelocityInDegrees().Size();
 
-			// If nearly motionless for 0.25s, settle the rocket authoritatively
+			// If nearly motionless, verify ground contact before settling (never freeze in mid-air!)
 			if (LinSpeed < 25.0f && AngSpeed < 25.0f)
 			{
-				PhysicsSettledTimeAccumulated += DeltaTime;
-				if (PhysicsSettledTimeAccumulated >= 0.25f)
+				FHitResult GroundCheck;
+				FCollisionQueryParams QP(SCENE_QUERY_STAT(RocketGroundCheckBeforeSettle), false, GetOwner());
+				const FVector CenterLoc = TargetPrimitive->GetComponentLocation();
+				const bool bNearGround = GetWorld() && GetWorld()->LineTraceSingleByChannel(GroundCheck, CenterLoc, CenterLoc - FVector(0.0f, 0.0f, 150.0f), ECC_WorldStatic, QP);
+
+				if (bNearGround)
 				{
-					const FVector FinalLoc = TargetPrimitive->GetComponentLocation();
-					const FRotator FinalRot = TargetPrimitive->GetComponentRotation();
-					LogDebug(FString::Printf(TEXT("Physics body settled! LinSpeed=%.1f, AngSpeed=%.1f. Broadcasting Multicast_SettleRocket."), LinSpeed, AngSpeed));
-					Multicast_SettleRocket(FinalLoc, FinalRot);
-					return;
+					PhysicsSettledTimeAccumulated += DeltaTime;
+					if (PhysicsSettledTimeAccumulated >= 0.25f)
+					{
+						const FVector FinalLoc = TargetPrimitive->GetComponentLocation();
+						const FRotator FinalRot = TargetPrimitive->GetComponentRotation();
+						LogDebug(FString::Printf(TEXT("Physics body settled on surface! LinSpeed=%.1f, AngSpeed=%.1f. Broadcasting Multicast_SettleRocket."), LinSpeed, AngSpeed));
+						Multicast_SettleRocket(FinalLoc, FinalRot);
+						return;
+					}
+				}
+				else
+				{
+					// Floating/falling in mid air: do not accumulate settled time, keep falling!
+					PhysicsSettledTimeAccumulated = 0.0f;
 				}
 			}
 			else
 			{
 				PhysicsSettledTimeAccumulated = 0.0f;
-			}
-
-			// Fallback timeout: after 3.0s of physics tumble, force settle
-			if (TotalAirTime >= MaxFuelDuration + 3.0f)
-			{
-				const FVector FinalLoc = TargetPrimitive->GetComponentLocation();
-				const FRotator FinalRot = TargetPrimitive->GetComponentRotation();
-				LogDebug(TEXT("Physics body reached fallback timeout. Forcing Multicast_SettleRocket."));
-				Multicast_SettleRocket(FinalLoc, FinalRot);
-				return;
 			}
 		}
 		return;
@@ -1472,6 +2120,23 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 	if (!IsActive() || CurrentState == ERocketSimulationState::Idle || CurrentState == ERocketSimulationState::AtRest)
 	{
+		if (CurrentState == ERocketSimulationState::AtRest && !ClientReconciliationOffset.IsNearlyZero())
+		{
+			// Seamless visual slide to rest location: no snap!
+			ClientReconciliationOffset = FMath::VInterpTo(ClientReconciliationOffset, FVector::ZeroVector, DeltaTime, 12.0f);
+			if (ClientReconciliationOffset.SizeSquared() < 0.25f)
+			{
+				ClientReconciliationOffset = FVector::ZeroVector;
+				SetComponentTickEnabled(false);
+			}
+			else if (TargetPrimitive)
+			{
+				const FVector RestCenter = FlightNetState.RestLocation.IsNearlyZero() ? GetWorldCenterLocation() : FlightNetState.RestLocation;
+				SetTargetTransformAroundCenter(RestCenter, FlightNetState.RestRotation);
+			}
+			return;
+		}
+
 		SetComponentTickEnabled(false);
 		return;
 	}
@@ -1495,32 +2160,53 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	float StepDeltaTime = DeltaTime;
 
 	// Client dead-reckoning catch-up calculated from InServerLaunchTime:
-	// Client smoothly accelerates its 60Hz physics sub-stepping loop until its TotalAirTime matches ServerElapsedSinceLaunch!
+	// Client dead-reckoning catch-up calculated from InServerLaunchTime:
+	// Only accelerates during powered rocketing flight! Never accelerates during spent falling, at rest, or when slow-motion is active!
 	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
+	const float GlobalDilation = (GetWorld() && GetWorld()->GetWorldSettings()) ? GetWorld()->GetWorldSettings()->TimeDilation : 1.0f;
+	const float ActorDilation = GetOwner() ? GetOwner()->CustomTimeDilation : 1.0f;
+	const bool bIsSlowMotionActive = (GlobalDilation < 0.95f) || (ActorDilation < 0.95f);
+
 	if (!bIsServer && LastReplicatedServerLaunchTime > 0.0f)
 	{
-		const float ServerWorldTime = GetSynchronizedServerTime();
-		const float ServerElapsedSinceLaunch = FMath::Max(0.0f, ServerWorldTime - LastReplicatedServerLaunchTime);
-		const float SimulationLag = ServerElapsedSinceLaunch - TotalAirTime;
-
-		if (SimulationLag > 0.005f)
+		if (bIsSlowMotionActive || CurrentState == ERocketSimulationState::SpentFalling || CurrentState == ERocketSimulationState::AtRest)
 		{
-			// Speed up simulation to catch up to server world time smoothly without skipping steps
-			ClientCatchupSpeedMultiplier = FMath::Clamp(1.0f + (SimulationLag * 3.5f), 1.05f, 3.0f);
-			StepDeltaTime = DeltaTime * ClientCatchupSpeedMultiplier;
+			// When slow-motion is active or projectile is spent/resting, never force catch-up so slow-motion remains silky smooth!
+			ClientCatchupSpeedMultiplier = 1.0f;
 		}
 		else
 		{
-			ClientCatchupSpeedMultiplier = 1.0f;
+			const float ServerWorldTime = GetSynchronizedServerTime();
+			const float ServerElapsedSinceLaunch = FMath::Max(0.0f, ServerWorldTime - LastReplicatedServerLaunchTime);
+			const float SimulationLag = ServerElapsedSinceLaunch - TotalAirTime;
+
+			if (SimulationLag > 0.005f)
+			{
+				// Speed up simulation to catch up to server world time smoothly without skipping steps
+				ClientCatchupSpeedMultiplier = FMath::Clamp(1.0f + (SimulationLag * 3.5f), 1.05f, 3.0f);
+				StepDeltaTime = DeltaTime * ClientCatchupSpeedMultiplier;
+			}
+			else
+			{
+				ClientCatchupSpeedMultiplier = 1.0f;
+			}
 		}
 	}
 	else if (!bIsServer && ClientCatchupTimeRemaining > 0.0f)
 	{
-		StepDeltaTime = DeltaTime * ClientCatchupSpeedMultiplier;
-		ClientCatchupTimeRemaining -= DeltaTime;
-		if (ClientCatchupTimeRemaining <= 0.0f)
+		if (bIsSlowMotionActive || CurrentState == ERocketSimulationState::SpentFalling || CurrentState == ERocketSimulationState::AtRest)
 		{
 			ClientCatchupSpeedMultiplier = 1.0f;
+			ClientCatchupTimeRemaining = 0.0f;
+		}
+		else
+		{
+			StepDeltaTime = DeltaTime * ClientCatchupSpeedMultiplier;
+			ClientCatchupTimeRemaining -= DeltaTime;
+			if (ClientCatchupTimeRemaining <= 0.0f)
+			{
+				ClientCatchupSpeedMultiplier = 1.0f;
+			}
 		}
 	}
 
@@ -1534,22 +2220,31 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		}
 	}
 
-	// Fixed-interval deterministic physics sub-stepping (60 Hz)
-	// Ensures identical trajectory, bounce reflection, and landing location regardless of client/server frame rate
-	constexpr float FixedStep = 1.0f / 60.0f;
-	SimulationTimeAccumulator += StepDeltaTime;
-
-	int32 SubStepCount = 0;
-	while (SimulationTimeAccumulator >= FixedStep && SubStepCount < 8)
+	// Continuous sub-stepping that supports arbitrary slow-motion & high frame rates:
+	// In slow-motion (e.g. DeltaTime = 0.0016s), steps directly each frame with no accumulation delay.
+	// For large frame times (> 33ms hitch), splits into smaller sub-steps up to a max limit.
+	constexpr float MaxSubStepDelta = 1.0f / 60.0f;
+	if (StepDeltaTime <= MaxSubStepDelta)
 	{
-		PerformSimulationStep(FixedStep);
-		SimulationTimeAccumulator -= FixedStep;
-		SubStepCount++;
-
-		if (CurrentState == ERocketSimulationState::AtRest || CurrentState == ERocketSimulationState::Idle)
+		// Normal, high-refresh, or slow-motion: advance smoothly every single frame!
+		PerformSimulationStep(StepDeltaTime);
+	}
+	else
+	{
+		// Large delta time hitch: sub-step to prevent jumping over waypoints
+		float RemainingTime = StepDeltaTime;
+		int32 SubStepCount = 0;
+		while (RemainingTime > 0.0001f && SubStepCount < 8)
 		{
-			SimulationTimeAccumulator = 0.0f;
-			break;
+			const float SubStep = FMath::Min(RemainingTime, MaxSubStepDelta);
+			PerformSimulationStep(SubStep);
+			RemainingTime -= SubStep;
+			SubStepCount++;
+
+			if (CurrentState == ERocketSimulationState::AtRest || CurrentState == ERocketSimulationState::Idle)
+			{
+				break;
+			}
 		}
 	}
 
@@ -1653,6 +2348,9 @@ void URocketProjectileComponent::ResetRocketSimulation()
 	AuthoritativeFlightNodes.Empty();
 	CumulativeFlightPlanDistances.Empty();
 	CurrentFlightPlanNodeIndex = 0;
+	CurrentSegmentDistTraveled = 0.0f;
+	CurrentBounceReboundSpeed = 0.0f;
+	LastImpactSpeed = 0.0f;
 	FallingTumbleAngle = 0.0f;
 	bTargetRestRotationInitialized = false;
 	DeterministicRestRotation = FRotator::ZeroRotator;
@@ -1690,28 +2388,31 @@ void URocketProjectileComponent::Deactivate()
 void URocketProjectileComponent::LaunchRocketHighAccuracy(
 	FVector InDirection,
 	uint8 InSeed,
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed)
 {
-	LaunchRocket(InDirection, true, InSeed, InFuelDuration, InSpeed);
+	LaunchRocket(InDirection, true, InSeed, InDistance, InSpeed);
 }
 
 void URocketProjectileComponent::LaunchRocket(
 	FVector InDirection,
 	bool bHighAccuracy,
 	uint8 InSeed,
-	float InFuelDuration,
+	float InDistance,
 	float InSpeed)
 {
-	const bool bUseAllInOne = bHighAccuracy || bLaunchWithHighAccuracy || (bLaunchOnInitialized && InSeed != 0 && InFuelDuration > 0.0f);
+	const bool bUseAllInOne = bHighAccuracy || bLaunchWithHighAccuracy || (bLaunchOnInitialized && InSeed != 0 && InDistance > 0.0f);
 
-	if (InFuelDuration > 0.0f)
+	if (InDistance > 0.0f)
 	{
-		MaxFuelDuration = InFuelDuration;
+		FlightSettings.BaseSplineLength = InDistance;
+		FlightSettings.MaxFuelDistance = InDistance;
+		MaxFuelDistance = InDistance;
 	}
 	if (InSpeed > 0.0f)
 	{
 		BaseSpeed = InSpeed;
+		FlightSettings.BaseSpeed = InSpeed;
 	}
 
 	SavePrimitiveSettings();
@@ -1753,11 +2454,30 @@ void URocketProjectileComponent::LaunchRocket(
 				OwnerActor->SetNetUpdateFrequency(60.0f);
 			}
 
+			// If attached to a player pawn or socket, detach so it flies freely
+			if (OwnerActor->GetAttachParentActor() || (OwnerActor->GetRootComponent() && OwnerActor->GetRootComponent()->GetAttachParent()))
+			{
+				OwnerActor->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			}
+
+			if (AActivePropActor* PropActor = Cast<AActivePropActor>(OwnerActor))
+			{
+				PropActor->SetHeld(false);
+				PropActor->SetInMotion(true);
+				PropActor->State = EPropState::InMotion;
+			}
+
 			// Suspend any PhysicsSimComponent while the rocket is in flight so it does not interfere or freeze the mesh
 			for (UActorComponent* Comp : OwnerActor->GetComponents())
 			{
 				if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 				{
+					if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+					{
+						SimComp->SetHeld(false);
+						SimComp->SetInMotion(true);
+						SimComp->SetStateInMotion();
+					}
 					Comp->SetComponentTickEnabled(false);
 				}
 			}
@@ -1802,12 +2522,6 @@ void URocketProjectileComponent::LaunchRocket(
 	FallingTumbleAngle = 0.0f;
 	FlightWaypoints.Empty();
 	FlightDistanceTraveled = 0.0f;
-
-	if (InFuelDuration > 0.0f)
-	{
-		MaxFuelDistance = InFuelDuration * BaseSpeed;
-		FlightSettings.MaxFuelDistance = MaxFuelDistance;
-	}
 
 	// Resolve launch heading (Orange arrow in Images 1-5)
 	FVector CleanHeading = InDirection.GetSafeNormal();
@@ -1868,13 +2582,13 @@ void URocketProjectileComponent::LaunchRocket(
 		FlightNetState.ServerLaunchTime = ServerTime;
 		if (bUseAllInOne)
 		{
-			// All-In-One Instant Launch (High Accuracy): Transmits Location, Direction, Seed, Fuel, Speed (~22 bytes)
+			// All-In-One Instant Launch (High Accuracy): Transmits Location, Direction, Seed, Distance, Speed (~22 bytes)
 			Multicast_LaunchRocketFull(
 				ServerTime,
 				FlightNetState.LaunchLocation,
 				FlightNetState.LaunchDirection,
 				FlightNetState.LaunchSeed,
-				FlightNetState.FuelDuration,
+				MaxFuelDistance,
 				FlightNetState.Speed
 			);
 		}
@@ -1884,22 +2598,28 @@ void URocketProjectileComponent::LaunchRocket(
 			Multicast_LaunchRocket(ServerTime, FlightNetState.LaunchDirection, FlightNetState.LaunchSeed);
 		}
 
-		// 1. Pre-calculate 8-16 multi-bounce flight plan on server
-		TArray<FVector_NetQuantize> ServerFlightPlan;
-		GenerateServerFlightPlan(ServerFlightPlan);
+		// 1. Pre-calculate 3-part flight plan on server: rocketing locations, low fuel upward thrust point, obstacle hit info, and ground bounce array
+		TArray<FVector_NetQuantize> ServerRocketingLocations;
+		FVector_NetQuantize ServerLowFuelThrustLocation;
+		TArray<FVector_NetQuantize> ServerBounceLocations;
+		FRotator ServerRestRotation;
+		bool bServerLowFuelHitObstacle = false;
+		FVector_NetQuantizeNormal ServerLowFuelHitNormal = FVector::DownVector;
 
-		// 2. Server ALSO uses the exact rounded vector array for rocketing!
-		SetAuthoritativeFlightPlan(ServerFlightPlan);
+		GenerateServerFlightPlan(ServerRocketingLocations, ServerLowFuelThrustLocation, bServerLowFuelHitObstacle, ServerLowFuelHitNormal, ServerBounceLocations, ServerRestRotation);
 
-		// 3. Broadcast the rounded flight plan to clients as normal reliable data (NOT in MTU)
-		Multicast_SendFlightPlan(ServerFlightPlan);
+		// 2. Server activates the 3-part authoritative flight plan immediately
+		SetAuthoritativeFullFlightPlan(ServerRocketingLocations, ServerLowFuelThrustLocation, bServerLowFuelHitObstacle, ServerLowFuelHitNormal, ServerBounceLocations, ServerRestRotation);
+
+		// 3. Broadcast the datasets to all clients
+		Multicast_SendFullFlightPlan(ServerRocketingLocations, ServerLowFuelThrustLocation, bServerLowFuelHitObstacle, ServerLowFuelHitNormal, ServerBounceLocations, ServerRestRotation);
 	}
 
 	SetActive(true);
 	SetComponentTickEnabled(true);
 
-	LogDebug(FString::Printf(TEXT("LaunchRocket SUCCESS! Heading: %s, Speed: %.1f, Seed: %d, MaxFuel: %.1f s, Mode=%s"),
-		*TipOverLaunchHeading.ToString(), CurrentVelocity.Size(), InSeed, MaxFuelDuration, bUseAllInOne ? TEXT("AllInOne_HighAccuracy") : TEXT("TwoStage_Compact")));
+	LogDebug(FString::Printf(TEXT("LaunchRocket SUCCESS! Heading: %s, Speed: %.1f, Seed: %d, Distance: %.1f cm, Mode=%s"),
+		*TipOverLaunchHeading.ToString(), CurrentVelocity.Size(), InSeed, MaxFuelDistance, bUseAllInOne ? TEXT("AllInOne_HighAccuracy") : TEXT("TwoStage_Compact")));
 
 	OnRocketLaunched.Broadcast();
 }
@@ -1995,32 +2715,51 @@ void URocketProjectileComponent::ApplyPhysicsHandoff(const FVector& FinalLinearV
 		// On both Server and Client: engage physics simulation and gravity so the bottle tumbles to the ground naturally!
 		TargetPrimitive->SetSimulatePhysics(true);
 		TargetPrimitive->SetEnableGravity(true);
+		TargetPrimitive->WakeAllRigidBodies();
 		TargetPrimitive->SetPhysicsLinearVelocity(FinalLinearVelocity);
 		if (!FinalAngularVelocity.IsNearlyZero())
 		{
 			TargetPrimitive->SetPhysicsAngularVelocityInDegrees(FinalAngularVelocity);
 		}
-
-		// Keep tick enabled on both server and client to monitor settling and safety timeouts
-		SetComponentTickEnabled(true);
-		SetActive(true);
 	}
 
-	// 3. Keep Actor collision enabled but movement replication OFF during tumble to prevent teleport fighting
+	// 3. Keep Actor collision enabled and transition Prop Actor & PhysicsSimComponent into Unsettled state
 	if (AActor* OwnerActor = GetOwner())
 	{
 		OwnerActor->SetActorEnableCollision(true);
+		// Keep replicate movement false during tumbling so network movement replication does not fight local Chaos physics
 		OwnerActor->SetReplicateMovement(false);
 
-		// Ensure PhysicsSimComponent remains suspended so it cannot freeze physics or zero velocities
+		if (AActivePropActor* PropActor = Cast<AActivePropActor>(OwnerActor))
+		{
+			PropActor->SetHeld(false);
+			PropActor->SetInMotion(false);
+			PropActor->bIsHeld = false;
+			PropActor->bIsInMotion = false;
+			PropActor->SetGrabbable(true);
+			PropActor->InteractionState = EPropInteractionLockState::Free;
+			PropActor->InteractionOwner = nullptr;
+		}
+
+		// Hand off to PhysicsSimComponent and set it in Unsettled state so the bottle continues simulating until it reaches the floor!
 		for (UActorComponent* Comp : OwnerActor->GetComponents())
 		{
 			if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 			{
-				Comp->SetComponentTickEnabled(false);
+				if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+				{
+					SimComp->SetComponentTickEnabled(true);
+					SimComp->SetHeld(false);
+					SimComp->SetInMotion(false);
+					SimComp->SetStateUnsettled();
+					LogDebug(TEXT("ApplyPhysicsHandoff: Transitioned PhysicsSimComponent into Unsettled state!"), true);
+				}
 			}
 		}
 	}
+
+	// 4. Disable RocketProjectileComponent tick so its internal timers never prematurely freeze the physics simulation in mid-air
+	SetComponentTickEnabled(false);
 
 	LogDebug(FString::Printf(TEXT("ApplyPhysicsHandoff complete! IsServer: %d, LinearVel: %s, AngularVel: %s"),
 		bIsServer ? 1 : 0, *FinalLinearVelocity.ToString(), *FinalAngularVelocity.ToString()));
@@ -2033,11 +2772,13 @@ void URocketProjectileComponent::Multicast_SettleRocket_Implementation(FVector I
 	// 1. Update internal state
 	CurrentVelocity = FVector::ZeroVector;
 	SimulationTimeAccumulator = 0.0f;
+	ClientCatchupSpeedMultiplier = 1.0f;
 	FlightNetState.bPhysicsSimulating = false;
 	FlightNetState.RestLocation = InRestLocation;
 	FlightNetState.RestRotation = InRestRotation;
 	SetSimulationState(ERocketSimulationState::AtRest);
-	SetComponentTickEnabled(false);
+
+	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
 
 	// 2. Lock TargetPrimitive flush to rest transform and zero velocities
 	if (TargetPrimitive)
@@ -2047,39 +2788,197 @@ void URocketProjectileComponent::Multicast_SettleRocket_Implementation(FVector I
 		TargetPrimitive->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		TargetPrimitive->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 
-		// Place mesh flush at rest location if valid
+		// Place mesh flush at rest location
 		if (!InRestLocation.IsNearlyZero())
 		{
-			TargetPrimitive->SetWorldLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+			if (!bIsServer)
+			{
+				const FVector CurrentLoc = TargetPrimitive->GetComponentLocation();
+				const float DistToRest = FVector::Dist(CurrentLoc, InRestLocation);
+
+				if (DistToRest > 0.5f && DistToRest < 150.0f)
+				{
+					// Seamless visual slide to rest location: no snap!
+					ClientReconciliationOffset = CurrentLoc - InRestLocation;
+					TargetPrimitive->SetWorldLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::None);
+					SetComponentTickEnabled(true);
+				}
+				else
+				{
+					ClientReconciliationOffset = FVector::ZeroVector;
+					TargetPrimitive->SetWorldLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+					SetComponentTickEnabled(false);
+				}
+			}
+			else
+			{
+				ClientReconciliationOffset = FVector::ZeroVector;
+				TargetPrimitive->SetWorldLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+				SetComponentTickEnabled(false);
+			}
+		}
+		else
+		{
+			SetComponentTickEnabled(false);
 		}
 	}
+	else
+	{
+		SetComponentTickEnabled(false);
+	}
 
-	// 3. Ensure Owner location and collision
+	// 3. Ensure Owner location and collision, clear Held and InMotion states
 	if (AActor* OwnerActor = GetOwner())
 	{
 		if (!InRestLocation.IsNearlyZero())
 		{
-			OwnerActor->SetActorLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+			OwnerActor->SetActorLocationAndRotation(InRestLocation, InRestRotation, false, nullptr, ETeleportType::None);
 		}
 		OwnerActor->SetActorEnableCollision(true);
 
-		// Re-enable any PhysicsSimComponent that was suspended during rocket flight
+		if (AActivePropActor* PropActor = Cast<AActivePropActor>(OwnerActor))
+		{
+			PropActor->SetInMotion(false);
+			PropActor->SetHeld(false);
+			PropActor->State = EPropState::AtRest;
+			PropActor->bIsHeld = false;
+			PropActor->bIsInMotion = false;
+			PropActor->SetGrabbable(true);
+			PropActor->InteractionState = EPropInteractionLockState::Free;
+			PropActor->InteractionOwner = nullptr;
+		}
+
+		// Re-enable any PhysicsSimComponent that was suspended during rocket flight and put it at rest
 		for (UActorComponent* Comp : OwnerActor->GetComponents())
 		{
 			if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 			{
+				if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+				{
+					SimComp->SetHeld(false);
+					SimComp->SetInMotion(false);
+					SimComp->SetStateAtRest();
+				}
 				Comp->SetComponentTickEnabled(true);
 			}
 		}
 	}
 
-	// 4. Restore original settings (mobility, collision profile/responses/enabled, physics simulation, replicate movement)
+	// 4. Restore original settings (mobility, collision profile/responses/enabled, replicate movement)
+	// Ensure physics simulation remains false at rest so the bottle sticks to the ground firmly
+	bSavedSimulatePhysics = false;
+	bSavedEnableGravity = false;
 	RestorePrimitiveSettings();
 
 	LogDebug(FString::Printf(TEXT("Multicast_SettleRocket: Locked at Loc: %s, Rot: %s"),
 		*InRestLocation.ToString(), *InRestRotation.ToString()), true);
 
 	OnRocketSettled.Broadcast();
+}
+
+void URocketProjectileComponent::Multicast_StartSpentFalling_Implementation(
+	FVector_NetQuantize FallingStartLocation,
+	FVector_NetQuantize FallingStartVelocity,
+	int32 InTargetBounces,
+	bool bInGliding,
+	FVector_NetQuantize InGlidingTarget)
+{
+	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
+	if (bIsServer || AuthoritativeFlightNodes.Num() >= 2)
+	{
+		return;
+	}
+
+	AutoResolveTargetPrimitive();
+
+	// Smoothly reconcile starting location without visual popping:
+	const FVector CurrentCenter = GetWorldCenterLocation();
+	const float Dist = FVector::Dist(CurrentCenter, FallingStartLocation);
+
+	if (Dist > 1.0f && Dist < 250.0f)
+	{
+		// Smoothly absorb any small flight endpoint difference:
+		ClientReconciliationOffset = CurrentCenter - FallingStartLocation;
+		SetTargetTransformAroundCenter(FallingStartLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+	}
+	else if (Dist >= 250.0f)
+	{
+		ClientReconciliationOffset = FVector::ZeroVector;
+		SetTargetTransformAroundCenter(FallingStartLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+	}
+
+	CurrentVelocity = FallingStartVelocity;
+	TargetFallingBounces = InTargetBounces;
+	bIsGlidingToReachablePoint = bInGliding;
+	GlidingTargetLocation = InGlidingTarget;
+	FallingBounceCount = 0;
+	TimeSpentFalling = 0.0f;
+	ClientCatchupSpeedMultiplier = 1.0f;
+	bTargetRestRotationInitialized = false;
+
+	if (CurrentState != ERocketSimulationState::SpentFalling)
+	{
+		const ERocketSimulationState PrevState = CurrentState;
+		CurrentState = ERocketSimulationState::SpentFalling;
+		OnRocketStateChanged.Broadcast(CurrentState, PrevState);
+		OnRocketFuelDepleted.Broadcast();
+	}
+
+	if (TargetPrimitive)
+	{
+		TargetPrimitive->SetMobility(EComponentMobility::Movable);
+		TargetPrimitive->SetSimulatePhysics(false);
+		TargetPrimitive->SetEnableGravity(false);
+		TargetPrimitive->SetCollisionProfileName(UCollisionProfile::BlockAllDynamic_ProfileName);
+		TargetPrimitive->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		TargetPrimitive->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		TargetPrimitive->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+		TargetPrimitive->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+		TargetPrimitive->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	}
+
+	SetActive(true);
+	SetComponentTickEnabled(true);
+
+	LogDebug(FString::Printf(TEXT("Multicast_StartSpentFalling: Client synced start. StartLoc=%s (Dist=%.1f), StartVel=%s, TargetBounces=%d, Gliding=%d"),
+		*FallingStartLocation.ToString(), Dist, *FallingStartVelocity.ToString(), TargetFallingBounces, bInGliding ? 1 : 0), true);
+}
+
+void URocketProjectileComponent::Multicast_FallingBounce_Implementation(
+	int32 InBounceCount,
+	FVector_NetQuantize InBounceLocation,
+	FVector_NetQuantize InBounceVelocity)
+{
+	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
+	if (bIsServer || AuthoritativeFlightNodes.Num() >= 2)
+	{
+		return;
+	}
+
+	AutoResolveTargetPrimitive();
+
+	const FVector CurrentCenter = GetWorldCenterLocation();
+	const float Dist = FVector::Dist(CurrentCenter, InBounceLocation);
+
+	if (Dist > 1.0f && Dist < 250.0f)
+	{
+		// Smoothly absorb difference so bounce visually transitions without a teleport snap:
+		ClientReconciliationOffset = CurrentCenter - InBounceLocation;
+		SetTargetTransformAroundCenter(InBounceLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+	}
+	else if (Dist >= 250.0f)
+	{
+		ClientReconciliationOffset = FVector::ZeroVector;
+		SetTargetTransformAroundCenter(InBounceLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+	}
+
+	CurrentVelocity = InBounceVelocity;
+	FallingBounceCount = InBounceCount;
+	TimeSinceLastBounce = 0.0f;
+	bIsGlidingToReachablePoint = false;
+
+	LogDebug(FString::Printf(TEXT("Multicast_FallingBounce: Client synced Bounce %d/%d at %s (Dist=%.1f), Vel=%s"),
+		FallingBounceCount, TargetFallingBounces, *InBounceLocation.ToString(), Dist, *InBounceVelocity.ToString()), true);
 }
 
 float URocketProjectileComponent::GetNormalizedRemainingFuel() const
@@ -2114,6 +3013,10 @@ void URocketProjectileComponent::SetSimulationState(ERocketSimulationState NewSt
 
 	if (NewState == ERocketSimulationState::SpentFalling)
 	{
+		if (AuthoritativeFlightNodes.Num() < 2)
+		{
+			InitializeSpentFalling();
+		}
 		OnRocketFuelDepleted.Broadcast();
 	}
 	else if (NewState == ERocketSimulationState::AtRest)
@@ -2144,7 +3047,14 @@ void URocketProjectileComponent::PerformSimulationStep(float DeltaTime)
 		ProcessRocketStep(DeltaTime);
 		break;
 	case ERocketSimulationState::SpentFalling:
-		ProcessSpentFallingStep(DeltaTime);
+		if (AuthoritativeFlightNodes.Num() >= 2)
+		{
+			ProcessRocketStep(DeltaTime);
+		}
+		else
+		{
+			ProcessSpentFallingStep(DeltaTime);
+		}
 		break;
 	default:
 		break;
@@ -2276,10 +3186,461 @@ void URocketProjectileComponent::ProcessDraggingStep(float DeltaTime)
 	}
 }
 
+static void ComputeNormalizedCatmullRomTangents(
+	const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3,
+	float Smoothness, FVector& OutT1, FVector& OutT2)
+{
+	const float Chord01 = FMath::Max(FVector::Dist(P0, P1), 1.0f);
+	const float Chord12 = FMath::Max(FVector::Dist(P1, P2), 1.0f);
+	const float Chord23 = FMath::Max(FVector::Dist(P2, P3), 1.0f);
+
+	const FVector D01 = (P1 - P0) / Chord01;
+	const FVector D12 = (P2 - P1) / Chord12;
+	const FVector D23 = (P3 - P2) / Chord23;
+
+	const float Tension = FMath::Lerp(0.15f, 0.85f, FMath::Clamp(Smoothness, 0.0f, 1.0f));
+
+	const FVector TangentDir1 = (D01 + D12).GetSafeNormal();
+	const FVector TangentDir2 = (D12 + D23).GetSafeNormal();
+
+	OutT1 = TangentDir1 * (Chord12 * Tension);
+	OutT2 = TangentDir2 * (Chord12 * Tension);
+}
+
+static FVector EvaluateCatmullRom(const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3, float t, float Smoothness = 0.65f)
+{
+	FVector T1, T2;
+	ComputeNormalizedCatmullRomTangents(P0, P1, P2, P3, Smoothness, T1, T2);
+	return FMath::CubicInterp(P1, T1, P2, T2, t);
+}
+
+static FVector EvaluateCatmullRomTangent(const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3, float t, float Smoothness = 0.65f)
+{
+	FVector T1, T2;
+	ComputeNormalizedCatmullRomTangents(P0, P1, P2, P3, Smoothness, T1, T2);
+	return FMath::CubicInterpDerivative(P1, T1, P2, T2, t);
+}
+
 void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 {
 	ElapsedFlightTime += DeltaTime;
 	TotalAirTime += DeltaTime;
+
+	// Check if unified pre-calculated 3-part flight plan is active
+	if (AuthoritativeFlightNodes.Num() >= 2)
+	{
+		// 1. Check if we already reached the final destination node
+		if (CurrentFlightPlanNodeIndex >= AuthoritativeFlightNodes.Num() - 1)
+		{
+			const FVector FinalRestLoc = AuthoritativeFlightNodes.Last();
+			const FRotator FinalRestRot = DeterministicRestRotation;
+			SetTargetTransformAroundCenter(FinalRestLoc, FinalRestRot);
+			if (!GetOwner() || GetOwner()->HasAuthority())
+			{
+				const FVector FinalPivotLoc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : FinalRestLoc;
+				Multicast_SettleRocket(FinalPivotLoc, FinalRestRot);
+			}
+			return;
+		}
+
+		const int32 CurrentIdx = CurrentFlightPlanNodeIndex;
+		const int32 NextIdx = CurrentFlightPlanNodeIndex + 1;
+		const FVector StartNode = AuthoritativeFlightNodes[CurrentIdx];
+		const FVector TargetNode = AuthoritativeFlightNodes[NextIdx];
+		const FVector CurrentCenter = GetWorldCenterLocation();
+		const float SegmentLength = FMath::Max(FVector::Dist(StartNode, TargetNode), 1.0f);
+
+		// 2. Determine target speed by stage
+		float TargetSpeed = FlightSettings.BaseSpeed;
+
+		if (CurrentIdx < RocketingEndIndex)
+		{
+			// Region 1 (Pink Box): Rocketing State
+			if (CurrentState != ERocketSimulationState::Rocketing)
+			{
+				SetSimulationState(ERocketSimulationState::Rocketing);
+			}
+
+			const float RocketingTotalDist = CumulativeFlightPlanDistances.IsValidIndex(RocketingEndIndex) ? CumulativeFlightPlanDistances[RocketingEndIndex] : (FlightSettings.BaseSplineLength > 0.0f ? FlightSettings.BaseSplineLength : 5000.0f);
+			const float CurrentDist = (CumulativeFlightPlanDistances.IsValidIndex(CurrentIdx) ? CumulativeFlightPlanDistances[CurrentIdx] : 0.0f) + CurrentSegmentDistTraveled;
+			const float NormFuel = FMath::Clamp(CurrentDist / FMath::Max(RocketingTotalDist, 1.0f), 0.0f, 1.0f);
+
+			if (FuelThrustCurve)
+			{
+				TargetSpeed *= FuelThrustCurve->GetFloatValue(NormFuel);
+			}
+			else
+			{
+				// In the final 35% of distance: fuel is running low, movement slows down smoothly towards low-fuel transition
+				if (NormFuel >= 0.65f)
+				{
+					const float EndAlpha = (NormFuel - 0.65f) / 0.35f;
+					const float SpeedDecay = FMath::Lerp(1.0f, 0.40f, FMath::SmoothStep(0.0f, 1.0f, EndAlpha));
+					TargetSpeed *= SpeedDecay;
+				}
+			}
+		}
+		else if (CurrentIdx >= RocketingEndIndex && CurrentIdx < LowFuelIndex)
+		{
+			// Region 2 (Red Box): Low Fuel Upward Climb (Two forces: forward thrust degrades, gravity increases)
+			if (CurrentState != ERocketSimulationState::LowFuelSputter)
+			{
+				SetSimulationState(ERocketSimulationState::LowFuelSputter);
+				OnRocketFuelDepleted.Broadcast();
+			}
+
+			// Starts with residual speed from end of rocketing (~900 cm/s) and bleeds to apex stall (~60 cm/s)
+			const float V_start = FMath::Max(FlightSettings.BaseSpeed * 0.40f, 900.0f);
+			const float V_apex = 60.0f;
+
+			const float Region2StartDist = CumulativeFlightPlanDistances.IsValidIndex(RocketingEndIndex) ? CumulativeFlightPlanDistances[RocketingEndIndex] : 0.0f;
+			const float Region2EndDist = CumulativeFlightPlanDistances.IsValidIndex(LowFuelIndex) ? CumulativeFlightPlanDistances[LowFuelIndex] : (Region2StartDist + SegmentLength);
+			const float Region2TotalDist = FMath::Max(Region2EndDist - Region2StartDist, 1.0f);
+			const float CurrentClimbDist = ((CumulativeFlightPlanDistances.IsValidIndex(CurrentIdx) ? CumulativeFlightPlanDistances[CurrentIdx] : Region2StartDist) - Region2StartDist) + CurrentSegmentDistTraveled;
+			const float ClimbAlpha = FMath::Clamp(CurrentClimbDist / Region2TotalDist, 0.0f, 1.0f);
+
+			// Forward thrust degrades smoothly while gravity decelerates the bottle to near stop at apex
+			TargetSpeed = FMath::Lerp(V_start, V_apex, FMath::Pow(ClimbAlpha, 1.35f));
+		}
+		else if (CurrentIdx == LowFuelIndex)
+		{
+			// Region 3 (Brown Box): Spent Falling Drop (Gravitational acceleration from apex / obstacle hit)
+			if (CurrentState != ERocketSimulationState::SpentFalling)
+			{
+				SetSimulationState(ERocketSimulationState::SpentFalling);
+				FallingBounceCount = 0;
+				TimeSpentFalling = 0.0f;
+			}
+
+			TimeSpentFalling += DeltaTime;
+
+			const float ApexHang = bLowFuelHitObstacle ? 0.0f : (FallingSettings.ApexHangDuration > 0.0f ? FallingSettings.ApexHangDuration : 0.12f);
+			const float V_terminal = FMath::Clamp(FallingSettings.TerminalVelocity > 0.0f ? FallingSettings.TerminalVelocity : 2600.0f, 1800.0f, 3200.0f);
+			const float FallAccel = FallingSettings.FallAcceleration > 0.0f ? FallingSettings.FallAcceleration : 3000.0f;
+
+			if (TimeSpentFalling <= ApexHang && ApexHang > 0.0f)
+			{
+				// Brief time frame to show apex stall / zero-g crest (gentle rollover from 60 to 180 cm/s)
+				const float HangAlpha = FMath::Clamp(TimeSpentFalling / ApexHang, 0.0f, 1.0f);
+				TargetSpeed = FMath::Lerp(60.0f, 180.0f, FMath::SmoothStep(0.0f, 1.0f, HangAlpha));
+			}
+			else
+			{
+				// Rapidly add falling velocity downward under gravity!
+				const float ActiveFallTime = TimeSpentFalling - ApexHang;
+				const float GravitySpeed = 180.0f + (FallAccel * ActiveFallTime);
+				TargetSpeed = FMath::Min(GravitySpeed, V_terminal);
+			}
+		}
+		else
+		{
+			// Region 4 (Black Box): Ground Bounces (Parabolic ascent & descent)
+			if (CurrentState != ERocketSimulationState::SpentFalling)
+			{
+				SetSimulationState(ERocketSimulationState::SpentFalling);
+			}
+
+			const int32 RelativeIdx = CurrentIdx - FirstGroundHitIndex;
+			const float BounceAlpha = FMath::Clamp(CurrentSegmentDistTraveled / SegmentLength, 0.0f, 1.0f);
+
+			if (RelativeIdx % 2 == 0)
+			{
+				// Ascent Leg: Rebounds from ground and decelerates until speed is almost zero at apex
+				if (CurrentBounceReboundSpeed < 200.0f)
+				{
+					CurrentBounceReboundSpeed = FMath::Max(FlightSettings.BaseSpeed * 0.40f, 500.0f);
+				}
+				TargetSpeed = FMath::Lerp(CurrentBounceReboundSpeed, 20.0f, FMath::Sqrt(BounceAlpha));
+			}
+			else
+			{
+				// Descent Leg: From apex (near-zero speed) accelerates downward to next impact
+				const float ExpectedImpactSpeed = FMath::Max(CurrentBounceReboundSpeed * 0.95f, 250.0f);
+				TargetSpeed = FMath::Lerp(20.0f, ExpectedImpactSpeed, FMath::Sqrt(BounceAlpha));
+			}
+		}
+
+		// 3. Step forward along trajectory
+		const float StepDist = TargetSpeed * DeltaTime;
+		CurrentSegmentDistTraveled += StepDist;
+		TotalFlightDistanceTraveled += StepDist;
+		const float SegmentAlpha = FMath::Clamp(CurrentSegmentDistTraveled / SegmentLength, 0.0f, 1.0f);
+
+		// 4. Compute 3D position and rotation according to each region
+		FVector NewCenter = CurrentCenter;
+		FRotator TargetRot = TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator;
+
+		if (CurrentIdx < RocketingEndIndex)
+		{
+			// Region 1 (Pink Box): Catmull-Rom spline curving smoothly through seeded red offset points and blue waypoints
+			const FVector P1 = StartNode;
+			const FVector P2 = TargetNode;
+			const FVector P0 = (CurrentIdx > 0) ? AuthoritativeFlightNodes[CurrentIdx - 1] : (P1 - (P2 - P1));
+			const FVector P3 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx + 2) ? AuthoritativeFlightNodes[CurrentIdx + 2] : (P2 + (P2 - P1));
+
+			const FVector SplinePos = EvaluateCatmullRom(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness);
+			FVector SplineTangent = EvaluateCatmullRomTangent(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness).GetSafeNormal();
+			if (SplineTangent.IsNearlyZero())
+			{
+				SplineTangent = (P2 - P1).GetSafeNormal();
+			}
+
+			NewCenter = SplinePos;
+
+			if (FlightSettings.bAlignRotationToVelocity)
+			{
+				TargetRot = ComputeTargetRotation(SplineTangent, DeltaTime);
+			}
+		}
+		else if (CurrentIdx >= RocketingEndIndex && CurrentIdx < LowFuelIndex)
+		{
+			// Region 2 (Red Box): Low Fuel Upward Climb to Apex
+			const FVector P1 = StartNode;
+			const FVector P2 = TargetNode;
+			const FVector P0 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx - 1) ? AuthoritativeFlightNodes[CurrentIdx - 1] : (P1 - (P2 - P1));
+			const FVector P3 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx + 2) ? AuthoritativeFlightNodes[CurrentIdx + 2] : (P2 + (P2 - P1));
+
+			const FVector SplinePos = EvaluateCatmullRom(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness);
+			FVector SplineTangent = EvaluateCatmullRomTangent(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness).GetSafeNormal();
+			if (SplineTangent.IsNearlyZero())
+			{
+				SplineTangent = (P2 - P1).GetSafeNormal();
+			}
+			NewCenter = SplinePos;
+
+			// Continuously check Z position / vertical velocity to determine ascending vs descending
+			const float VerticalVelocity = (NewCenter.Z - CurrentCenter.Z) / FMath::Max(DeltaTime, 0.0001f);
+			const float UpThreshold = LowFuelSettings.MaintainUpDirectionThreshold > 0.0f ? LowFuelSettings.MaintainUpDirectionThreshold : 50.0f;
+
+			if (VerticalVelocity >= 0.0f)
+			{
+				// Ascending: Make thrust point straight DOWN, pushing the bottle UP against gravity!
+				// Smoothly pitch upright from rocketing flight into steep UpVector over first 35% of climb
+				const float PitchUpAlpha = FMath::SmoothStep(0.0f, 1.0f, FMath::Min(SegmentAlpha * 3.0f, 1.0f));
+				const FVector ThrustDownPushUpDir = FMath::Lerp(SplineTangent, FVector::UpVector, PitchUpAlpha).GetSafeNormal();
+				TargetRot = ComputeTargetRotation(ThrustDownPushUpDir, DeltaTime);
+			}
+			else
+			{
+				// Descending / cresting (Z begins to go negative):
+				const float DownwardSpeed = -VerticalVelocity;
+				if (DownwardSpeed < UpThreshold)
+				{
+					// Downward speed < 50 cm/s: maintain bottle facing UP (thrust pointing down)
+					TargetRot = ComputeTargetRotation(FVector::UpVector, DeltaTime);
+				}
+				else
+				{
+					// Downward speed >= 50 cm/s: tip over and orient to downward velocity
+					const float TipAlpha = FMath::Clamp((DownwardSpeed - UpThreshold) / 100.0f, 0.0f, 1.0f);
+					const FVector TipDir = FMath::Lerp(FVector::UpVector, SplineTangent, FMath::SmoothStep(0.0f, 1.0f, TipAlpha)).GetSafeNormal();
+					TargetRot = ComputeTargetRotation(TipDir, DeltaTime);
+				}
+			}
+
+			// Add intense dying fizz sputter flutter while thrusting down
+			const float SputterFrequency = 36.0f;
+			const float SputterMag = LowFuelSettings.WobbleMultiplier * 3.0f;
+			TargetRot.Pitch += FMath::Sin(ElapsedFlightTime * SputterFrequency) * SputterMag;
+			TargetRot.Roll += FMath::Cos(ElapsedFlightTime * (SputterFrequency * 1.25f)) * (SputterMag * 1.2f);
+		}
+		else if (CurrentIdx == LowFuelIndex)
+		{
+			// Region 3 (Brown Box): Gravitational Falling Drop from apex
+			const FVector P1 = StartNode;
+			const FVector P2 = TargetNode;
+			const FVector P0 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx - 1) ? AuthoritativeFlightNodes[CurrentIdx - 1] : (P1 - (P2 - P1));
+			const FVector P3 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx + 2) ? AuthoritativeFlightNodes[CurrentIdx + 2] : (P2 + (P2 - P1));
+
+			const FVector SplinePos = EvaluateCatmullRom(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness);
+			FVector SplineTangent = EvaluateCatmullRomTangent(P0, P1, P2, P3, SegmentAlpha, FlightSettings.SplineCornerSmoothness).GetSafeNormal();
+			if (SplineTangent.IsNearlyZero())
+			{
+				SplineTangent = (P2 - P1).GetSafeNormal();
+			}
+			NewCenter = SplinePos;
+
+			// Immediate post-apex hang: monitor downward velocity and smoothly blend into falling tumble
+			const float VerticalVelocity = (NewCenter.Z - CurrentCenter.Z) / FMath::Max(DeltaTime, 0.0001f);
+			const float DownwardSpeed = -VerticalVelocity;
+			const float UpThreshold = LowFuelSettings.MaintainUpDirectionThreshold > 0.0f ? LowFuelSettings.MaintainUpDirectionThreshold : 50.0f;
+
+			if (DownwardSpeed < UpThreshold)
+			{
+				if (bLowFuelHitObstacle)
+				{
+					// Rebound away from obstacle surface immediately
+					const FVector ReboundOrient = (LowFuelHitNormal * 0.7f + SplineTangent * 0.3f).GetSafeNormal();
+					TargetRot = ComputeTargetRotation(ReboundOrient, DeltaTime);
+				}
+				else
+				{
+					// Near-zero downward speed right at apex: maintain UpVector (thrust pointing down)
+					TargetRot = ComputeTargetRotation(FVector::UpVector, DeltaTime);
+				}
+			}
+			else
+			{
+				// Downward speed >= UpThreshold: smoothly transition from UpVector into downward velocity + tumble
+				FallingTumbleAngle += FallingSettings.TumbleRate * DeltaTime;
+
+				// Blend factor from 0.0 (at 50 cm/s) to 1.0 (at 180 cm/s) for silky-smooth rotation handoff
+				const float FallBlend = FMath::Clamp((DownwardSpeed - UpThreshold) / 130.0f, 0.0f, 1.0f);
+				const float SmoothBlend = FMath::SmoothStep(0.0f, 1.0f, FallBlend);
+
+				const FVector FallOrientDir = FMath::Lerp(FVector::UpVector, SplineTangent, SmoothBlend).GetSafeNormal();
+				const FRotator BaseOrientRot = ComputeTargetRotation(FallOrientDir, DeltaTime);
+
+				const float DistToGround = FVector::Dist(NewCenter, P2);
+				if (DistToGround < FallingSettings.GroundInterpDistance && FallingSettings.GroundInterpDistance > 0.0f)
+				{
+					const float GroundAlpha = 1.0f - FMath::Clamp(DistToGround / FallingSettings.GroundInterpDistance, 0.0f, 1.0f);
+					const FRotator TumbleRot = BaseOrientRot + FRotator(FMath::Sin(FMath::DegreesToRadians(FallingTumbleAngle)) * (25.0f * SmoothBlend), 0.0f, 0.0f);
+					TargetRot = FMath::Lerp(TumbleRot, DeterministicRestRotation, FMath::SmoothStep(0.0f, 1.0f, GroundAlpha));
+				}
+				else
+				{
+					const float TumblePitch = FMath::Sin(FMath::DegreesToRadians(FallingTumbleAngle)) * (35.0f * SmoothBlend);
+					const float TumbleRoll = FallingTumbleAngle * SmoothBlend;
+					TargetRot = BaseOrientRot + FRotator(TumblePitch, 0.0f, TumbleRoll);
+				}
+			}
+		}
+		else
+		{
+			// Region 4 (Black Box): Parabolic Bounces
+			const int32 RelativeIdx = CurrentIdx - FirstGroundHitIndex;
+			FVector Ground1 = FVector::ZeroVector;
+			FVector Apex = FVector::ZeroVector;
+			FVector Ground2 = FVector::ZeroVector;
+			float ParabolicT = 0.0f;
+
+			if (RelativeIdx % 2 == 0)
+			{
+				// Ascent Leg (Ground -> Apex)
+				Ground1 = StartNode;
+				Apex = TargetNode;
+				Ground2 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx + 2) ? AuthoritativeFlightNodes[CurrentIdx + 2] : Ground1;
+				ParabolicT = 0.5f * SegmentAlpha;
+			}
+			else
+			{
+				// Descent Leg (Apex -> Ground)
+				Ground1 = AuthoritativeFlightNodes.IsValidIndex(CurrentIdx - 1) ? AuthoritativeFlightNodes[CurrentIdx - 1] : StartNode;
+				Apex = StartNode;
+				Ground2 = TargetNode;
+				ParabolicT = 0.5f + (0.5f * SegmentAlpha);
+			}
+
+			const FVector ApexControl = (2.0f * Apex) - (0.5f * (Ground1 + Ground2));
+			const float OneMinusT = 1.0f - ParabolicT;
+			const FVector ParabolicPos = (OneMinusT * OneMinusT * Ground1) + (2.0f * OneMinusT * ParabolicT * ApexControl) + (ParabolicT * ParabolicT * Ground2);
+			FVector ParabolicTangent = (2.0f * OneMinusT * (ApexControl - Ground1) + 2.0f * ParabolicT * (Ground2 - ApexControl)).GetSafeNormal();
+			if (ParabolicTangent.IsNearlyZero())
+			{
+				ParabolicTangent = (TargetNode - StartNode).GetSafeNormal();
+			}
+
+			NewCenter = ParabolicPos;
+			const float TotalBounceProgress = static_cast<float>(CurrentIdx - FirstGroundHitIndex) / FMath::Max(1.0f, static_cast<float>(AuthoritativeFlightNodes.Num() - 1 - FirstGroundHitIndex));
+			TargetRot = FMath::Lerp(ComputeTargetRotation(ParabolicTangent, DeltaTime), DeterministicRestRotation, FMath::Clamp(TotalBounceProgress, 0.0f, 1.0f));
+		}
+
+		// 5. Update velocity and transform
+		CurrentVelocity = (NewCenter - CurrentCenter) / FMath::Max(DeltaTime, 0.0001f);
+		SetTargetTransformAroundCenter(NewCenter, TargetRot);
+
+		// 6. Check segment completion
+		if (CurrentSegmentDistTraveled >= SegmentLength)
+		{
+			CurrentSegmentDistTraveled = FMath::Max(0.0f, CurrentSegmentDistTraveled - SegmentLength);
+			CurrentFlightPlanNodeIndex++;
+
+			// If completing LowFuel climb (arrived at apex / obstacle hit point):
+			if (CurrentFlightPlanNodeIndex == LowFuelIndex)
+			{
+				if (bLowFuelHitObstacle)
+				{
+					// Hit obstacle during low fuel upward climb!
+					FHitResult ObstacleHit;
+					ObstacleHit.ImpactPoint = TargetNode;
+					ObstacleHit.ImpactNormal = LowFuelHitNormal;
+					ObstacleHit.Normal = LowFuelHitNormal;
+
+					const FVector InboundVel = CurrentVelocity;
+					const FVector ReboundVel = (InboundVel - 2.0f * (InboundVel | LowFuelHitNormal) * LowFuelHitNormal) * 0.40f;
+					CurrentVelocity = ReboundVel;
+
+					OnRocketRicochet.Broadcast(ObstacleHit, ReboundVel);
+					LogDebug(FString::Printf(TEXT("ProcessRocketStep: LowFuel struck obstacle! Normal=%s, ReboundSpeed=%.1f"),
+						*LowFuelHitNormal.ToString(), ReboundVel.Size()), true);
+				}
+			}
+
+			// Ricochet events on ground impacts
+			if (CurrentFlightPlanNodeIndex == FirstGroundHitIndex)
+			{
+				LastImpactSpeed = TargetSpeed;
+				const float Restitution = FMath::Clamp(FallingSettings.SpentBounciness > 0.0f ? FallingSettings.SpentBounciness : 0.45f, 0.25f, 0.65f);
+				CurrentBounceReboundSpeed = LastImpactSpeed * Restitution;
+				CurrentBounceCount = 1;
+
+				FHitResult SyntheticHit;
+				SyntheticHit.ImpactPoint = TargetNode;
+				SyntheticHit.ImpactNormal = FVector::UpVector;
+				OnRocketRicochet.Broadcast(SyntheticHit, CurrentVelocity);
+			}
+			else if (CurrentFlightPlanNodeIndex > FirstGroundHitIndex)
+			{
+				const int32 CompletedRelativeIdx = (CurrentFlightPlanNodeIndex - 1) - FirstGroundHitIndex;
+				if (CompletedRelativeIdx % 2 == 1)
+				{
+					LastImpactSpeed = TargetSpeed;
+					const float Restitution = FMath::Clamp(FallingSettings.SpentBounciness > 0.0f ? FallingSettings.SpentBounciness : 0.45f, 0.25f, 0.65f);
+					CurrentBounceReboundSpeed = LastImpactSpeed * Restitution;
+					CurrentBounceCount++;
+
+					FHitResult SyntheticHit;
+					SyntheticHit.ImpactPoint = TargetNode;
+					SyntheticHit.ImpactNormal = FVector::UpVector;
+					OnRocketRicochet.Broadcast(SyntheticHit, CurrentVelocity);
+				}
+			}
+
+			// Check if full flight plan completed
+			if (CurrentFlightPlanNodeIndex >= AuthoritativeFlightNodes.Num() - 1)
+			{
+				const FVector FinalRestLoc = AuthoritativeFlightNodes.Last();
+				const FRotator FinalRestRot = DeterministicRestRotation;
+				SetTargetTransformAroundCenter(FinalRestLoc, FinalRestRot);
+				if (!GetOwner() || GetOwner()->HasAuthority())
+				{
+					const FVector FinalPivotLoc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : FinalRestLoc;
+					Multicast_SettleRocket(FinalPivotLoc, FinalRestRot);
+				}
+				return;
+			}
+		}
+
+		// Travel history logging
+		if (bEnableDebugLogs || bShowOnScreenDebug)
+		{
+			TravelHistoryLogTimer += DeltaTime;
+			if (TravelHistoryLogTimer >= 0.25f)
+			{
+				TravelHistoryLogTimer = 0.0f;
+				const FString StageName = (CurrentIdx < RocketingEndIndex) ? TEXT("Rocketing") :
+					(CurrentIdx == RocketingEndIndex) ? TEXT("LowFuelThrust") :
+					(CurrentIdx == LowFuelIndex) ? TEXT("FallingDrop") :
+					((CurrentIdx - FirstGroundHitIndex) % 2 == 0 ? TEXT("BounceAscent") : TEXT("BounceDescent"));
+
+				LogDebug(FString::Printf(TEXT("TravelHistory: Air=%.2fs, Stage=%s, Node=%d/%d, Loc=%s, Spd=%.0f, Alpha=%.2f, Dist=%.0f cm, Catchup=%.2fx"),
+					TotalAirTime, *StageName, CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), *NewCenter.ToString(), CurrentVelocity.Size(), SegmentAlpha, TotalFlightDistanceTraveled, ClientCatchupSpeedMultiplier));
+			}
+		}
+
+		return;
+	}
 
 	const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
 
@@ -2498,6 +3859,131 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 	}
 }
 
+void URocketProjectileComponent::InitializeSpentFalling()
+{
+	FallingBounceCount = 0;
+	TimeSpentFalling = 0.0f;
+	bTargetRestRotationInitialized = false;
+	FallingTumbleAngle = 0.0f;
+
+	const FVector CurrentCenter = GetWorldCenterLocation();
+	const float FloorTraceDistance = 15000.0f;
+	const FVector TraceDown = CurrentCenter - FVector(0.0f, 0.0f, FloorTraceDistance);
+
+	FHitResult FloorHit;
+	FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(RocketFallingFloorTrace), false, GetOwner());
+	const bool bHitFloor = GetWorld() && GetWorld()->LineTraceSingleByChannel(FloorHit, CurrentCenter, TraceDown, CollisionChannel, FloorParams);
+
+	if (bHitFloor)
+	{
+		InitialFallHeight = FloorHit.Distance;
+		bIsGlidingToReachablePoint = false;
+		GlidingTargetLocation = FVector::ZeroVector;
+
+		// Calculate bounces depending on settings and falling height
+		if (FallingSettings.bUseFixedFallingBounces)
+		{
+			TargetFallingBounces = FMath::Clamp(FallingSettings.FixedFallingBounces, 1, 15);
+		}
+		else
+		{
+			const int32 MinB = FMath::Min(FallingSettings.MinFallingBounces, FallingSettings.MaxFallingBounces);
+			const int32 MaxB = FMath::Max(FallingSettings.MinFallingBounces, FallingSettings.MaxFallingBounces);
+
+			if (InitialFallHeight < 400.0f)
+			{
+				TargetFallingBounces = MinB;
+			}
+			else if (InitialFallHeight < 1500.0f)
+			{
+				TargetFallingBounces = FMath::Clamp(MinB + 1, MinB, MaxB);
+			}
+			else
+			{
+				TargetFallingBounces = MaxB;
+			}
+		}
+
+		LogDebug(FString::Printf(TEXT("InitializeSpentFalling: Floor detected at %.1f cm down (Impact: %s). TargetBounces=%d"),
+			InitialFallHeight, *FloorHit.ImpactPoint.ToString(), TargetFallingBounces));
+	}
+	else
+	{
+		// Floor not hit within 15,000 cm straight down! Find closest reachable point to glide to
+		bool bFoundReachable = false;
+		FVector FoundTarget = FVector::ZeroVector;
+
+		if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
+		{
+			FNavLocation ReachableNavLoc;
+			if (NavSys->GetRandomReachablePointInRadius(CurrentCenter, 8000.0f, ReachableNavLoc))
+			{
+				FoundTarget = ReachableNavLoc.Location;
+				bFoundReachable = true;
+			}
+		}
+
+		if (!bFoundReachable && GetWorld())
+		{
+			float ClosestDistSq = MAX_flt;
+			for (int32 AngleDeg = 0; AngleDeg < 360; AngleDeg += 45)
+			{
+				const float Rad = FMath::DegreesToRadians(static_cast<float>(AngleDeg));
+				const FVector TraceDir = FVector(FMath::Cos(Rad) * 0.707f, FMath::Sin(Rad) * 0.707f, -0.707f).GetSafeNormal();
+				FHitResult AngledHit;
+				if (GetWorld()->LineTraceSingleByChannel(AngledHit, CurrentCenter, CurrentCenter + (TraceDir * FloorTraceDistance), CollisionChannel, FloorParams))
+				{
+					const float DistSq = FVector::DistSquared(CurrentCenter, AngledHit.ImpactPoint);
+					if (DistSq < ClosestDistSq)
+					{
+						ClosestDistSq = DistSq;
+						FoundTarget = AngledHit.ImpactPoint;
+						bFoundReachable = true;
+					}
+				}
+			}
+		}
+
+		if (bFoundReachable)
+		{
+			bIsGlidingToReachablePoint = true;
+			GlidingTargetLocation = FoundTarget;
+			InitialFallHeight = FMath::Max(FVector::Dist(CurrentCenter, FoundTarget), 1500.0f);
+			TargetFallingBounces = FallingSettings.bUseFixedFallingBounces
+				? FMath::Clamp(FallingSettings.FixedFallingBounces, 1, 15)
+				: FMath::Clamp(FallingSettings.MaxFallingBounces - 1, FallingSettings.MinFallingBounces, FallingSettings.MaxFallingBounces);
+
+			LogDebug(FString::Printf(TEXT("InitializeSpentFalling: No floor below within 15,000 cm! Gliding to reachable point at %s (Dist=%.1f cm, TargetBounces=%d)"),
+				*GlidingTargetLocation.ToString(), InitialFallHeight, TargetFallingBounces));
+		}
+		else
+		{
+			bIsGlidingToReachablePoint = false;
+			GlidingTargetLocation = FVector::ZeroVector;
+			InitialFallHeight = FloorTraceDistance;
+			TargetFallingBounces = FallingSettings.bUseFixedFallingBounces
+				? FMath::Clamp(FallingSettings.FixedFallingBounces, 1, 15)
+				: FallingSettings.MaxFallingBounces;
+
+			LogDebug(FString::Printf(TEXT("InitializeSpentFalling: No floor or reachable point found within 15,000 cm. Natural descent with %d bounces."), TargetFallingBounces));
+		}
+	}
+
+	ClientCatchupSpeedMultiplier = 1.0f;
+
+	const bool bIsServer = GetOwner() ? GetOwner()->HasAuthority() : false;
+	if (bIsServer)
+	{
+		FlightNetState.State = ERocketSimulationState::SpentFalling;
+		FlightNetState.LastBounceLocation = CurrentCenter;
+		FlightNetState.LastBounceVelocity = CurrentVelocity;
+		FlightNetState.RestLocation = GlidingTargetLocation;
+		FlightNetState.BounceCount = static_cast<uint8>(TargetFallingBounces & 0xFF);
+
+		Multicast_StartSpentFalling(CurrentCenter, CurrentVelocity, TargetFallingBounces, bIsGlidingToReachablePoint, GlidingTargetLocation);
+	}
+}
+
 void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 {
 	// Option 1: Full Chaos physics simulation handoff (Image 2 - option 1)
@@ -2518,56 +4004,95 @@ void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 	TotalAirTime += DeltaTime;
 	TimeSpentFalling += DeltaTime;
 
-	// Ballistic drop under gravity
-	CurrentVelocity.Z += FlightSettings.GravityZ * FallingSettings.SpentGravityScale * DeltaTime;
-
-	// Air drag
-	CurrentVelocity *= FMath::Clamp(1.0f - (0.4f * DeltaTime), 0.0f, 1.0f);
-
 	const FVector CurrentCenter = GetWorldCenterLocation();
 
-	// Line trace downward to measure height above the ground (Image 2)
-	FHitResult GroundCheckHit;
-	FCollisionQueryParams GroundParams(SCENE_QUERY_STAT(RocketFallingGroundCheck), false, GetOwner());
-	const float CheckDistance = FMath::Max(FallingSettings.GroundInterpDistance * 2.5f, 800.0f);
-	const FVector TraceDown = CurrentCenter - FVector(0.0f, 0.0f, CheckDistance);
-	const bool bFoundFloor = GetWorld() && GetWorld()->LineTraceSingleByChannel(GroundCheckHit, CurrentCenter, TraceDown, ECC_WorldStatic, GroundParams);
-
-	if (bFoundFloor)
+	if (bIsGlidingToReachablePoint && !GlidingTargetLocation.IsNearlyZero())
 	{
-		// Compute deterministic rest rotation from LaunchSeed and ground normal so server and client match identically
-		if (!bTargetRestRotationInitialized)
+		const FVector ToTarget = GlidingTargetLocation - CurrentCenter;
+		const FVector ToTarget2D = FVector(ToTarget.X, ToTarget.Y, 0.0f);
+		const float Dist2D = ToTarget2D.Size();
+
+		if (Dist2D > 60.0f)
 		{
-			const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
-			DeterministicRestRotation = ComputeGroundRestRotation(GroundCheckHit.Normal, SeedYaw);
-			bTargetRestRotationInitialized = true;
+			const FVector DesiredVel2D = ToTarget2D.GetSafeNormal() * 650.0f;
+			CurrentVelocity.X = FMath::FInterpTo(CurrentVelocity.X, DesiredVel2D.X, DeltaTime, 3.5f);
+			CurrentVelocity.Y = FMath::FInterpTo(CurrentVelocity.Y, DesiredVel2D.Y, DeltaTime, 3.5f);
+		}
+		else
+		{
+			CurrentVelocity.X *= FMath::Clamp(1.0f - (2.0f * DeltaTime), 0.0f, 1.0f);
+			CurrentVelocity.Y *= FMath::Clamp(1.0f - (2.0f * DeltaTime), 0.0f, 1.0f);
 		}
 
-		const float DistToGround = GroundCheckHit.Distance;
-		if (DistToGround <= FallingSettings.GroundInterpDistance && TargetPrimitive)
+		// Smooth, controlled glide descent
+		const float TargetDescentSpeed = -450.0f;
+		CurrentVelocity.Z = FMath::FInterpTo(CurrentVelocity.Z, TargetDescentSpeed, DeltaTime, 2.5f);
+
+		// Align bottle smoothly with glide heading
+		if (TargetPrimitive && !CurrentVelocity.IsNearlyZero())
 		{
-			// When nearing the ground, smoothly interpolate from tumble towards the deterministic landing rotation
-			const float InterpAlpha = 1.0f - FMath::Clamp(DistToGround / FallingSettings.GroundInterpDistance, 0.0f, 1.0f);
+			const FRotator GlideRot = FRotationMatrix::MakeFromX(CurrentVelocity.GetSafeNormal()).Rotator();
 			const FRotator CurrentRot = TargetPrimitive->GetComponentRotation();
-			const FRotator SmoothRot = FMath::RInterpTo(CurrentRot, DeterministicRestRotation, DeltaTime, 6.0f + (InterpAlpha * 14.0f));
+			const FRotator SmoothRot = FMath::RInterpTo(CurrentRot, GlideRot, DeltaTime, 6.0f);
 			SetTargetTransformAroundCenter(CurrentCenter, SmoothRot);
+		}
+
+		// Check if ground is now directly below within 1500 cm
+		FHitResult RecheckHit;
+		FCollisionQueryParams RecheckParams(SCENE_QUERY_STAT(RocketGlideGroundCheck), false, GetOwner());
+		if (GetWorld() && GetWorld()->LineTraceSingleByChannel(RecheckHit, CurrentCenter, CurrentCenter - FVector(0.0f, 0.0f, 1500.0f), CollisionChannel, RecheckParams))
+		{
+			bIsGlidingToReachablePoint = false;
+		}
+	}
+	else
+	{
+		// Ballistic drop under gravity
+		CurrentVelocity.Z += FlightSettings.GravityZ * FallingSettings.SpentGravityScale * DeltaTime;
+
+		// Air drag
+		CurrentVelocity *= FMath::Clamp(1.0f - (0.4f * DeltaTime), 0.0f, 1.0f);
+
+		// Line trace downward to measure height above the ground
+		FHitResult GroundCheckHit;
+		FCollisionQueryParams GroundParams(SCENE_QUERY_STAT(RocketFallingGroundCheck), false, GetOwner());
+		const float CheckDistance = FMath::Max(FallingSettings.GroundInterpDistance * 2.5f, 800.0f);
+		const FVector TraceDown = CurrentCenter - FVector(0.0f, 0.0f, CheckDistance);
+		const bool bFoundFloor = GetWorld() && GetWorld()->LineTraceSingleByChannel(GroundCheckHit, CurrentCenter, TraceDown, CollisionChannel, GroundParams);
+
+		if (bFoundFloor)
+		{
+			if (!bTargetRestRotationInitialized)
+			{
+				const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
+				DeterministicRestRotation = ComputeGroundRestRotation(GroundCheckHit.Normal, SeedYaw);
+				bTargetRestRotationInitialized = true;
+			}
+
+			const float DistToGround = GroundCheckHit.Distance;
+			// Only smoothly align to rest rotation on the final bounce when near ground
+			if (FallingBounceCount >= (TargetFallingBounces - 1) && DistToGround <= FallingSettings.GroundInterpDistance && TargetPrimitive)
+			{
+				const float InterpAlpha = 1.0f - FMath::Clamp(DistToGround / FallingSettings.GroundInterpDistance, 0.0f, 1.0f);
+				const FRotator CurrentRot = TargetPrimitive->GetComponentRotation();
+				const FRotator SmoothRot = FMath::RInterpTo(CurrentRot, DeterministicRestRotation, DeltaTime, 6.0f + (InterpAlpha * 14.0f));
+				SetTargetTransformAroundCenter(CurrentCenter, SmoothRot);
+			}
+			else if (TargetPrimitive && !CurrentVelocity.IsNearlyZero())
+			{
+				FallingTumbleAngle += FallingSettings.TumbleRate * DeltaTime;
+				const FRotator TumbleDelta(FallingSettings.TumbleRate * DeltaTime, FallingSettings.TumbleRate * 1.33f * DeltaTime, 0.0f);
+				const FRotator NewRot = (FRotationMatrix(TumbleDelta) * FRotationMatrix(TargetPrimitive->GetComponentRotation())).Rotator();
+				SetTargetTransformAroundCenter(CurrentCenter, NewRot);
+			}
 		}
 		else if (TargetPrimitive && !CurrentVelocity.IsNearlyZero())
 		{
-			// High in the air: continuous visual tumble
 			FallingTumbleAngle += FallingSettings.TumbleRate * DeltaTime;
 			const FRotator TumbleDelta(FallingSettings.TumbleRate * DeltaTime, FallingSettings.TumbleRate * 1.33f * DeltaTime, 0.0f);
 			const FRotator NewRot = (FRotationMatrix(TumbleDelta) * FRotationMatrix(TargetPrimitive->GetComponentRotation())).Rotator();
 			SetTargetTransformAroundCenter(CurrentCenter, NewRot);
 		}
-	}
-	else if (TargetPrimitive && !CurrentVelocity.IsNearlyZero())
-	{
-		// High in the air without ground in trace range: tumble
-		FallingTumbleAngle += FallingSettings.TumbleRate * DeltaTime;
-		const FRotator TumbleDelta(FallingSettings.TumbleRate * DeltaTime, FallingSettings.TumbleRate * 1.33f * DeltaTime, 0.0f);
-		const FRotator NewRot = (FRotationMatrix(TumbleDelta) * FRotationMatrix(TargetPrimitive->GetComponentRotation())).Rotator();
-		SetTargetTransformAroundCenter(CurrentCenter, NewRot);
 	}
 
 	// Move bottle with continuous physics sweep
@@ -2576,52 +4101,23 @@ void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 	if (SweepAndMove(MoveDelta, Hit))
 	{
 		HandleRicochet(Hit);
-
-		// If velocity drops below rest threshold against an upward surface, settle flush
-		if (CurrentVelocity.Size() < AtRestSettings.RestVelocityThreshold && Hit.Normal.Z > 0.6f)
-		{
-			if (!bTargetRestRotationInitialized)
-			{
-				const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
-				DeterministicRestRotation = ComputeGroundRestRotation(Hit.Normal, SeedYaw);
-				bTargetRestRotationInitialized = true;
-			}
-
-			const float GroundExtent = GetProjectedExtentAlongDirection(Hit.Normal);
-			const FVector RestCenter = Hit.ImpactPoint + (Hit.Normal * (GroundExtent + 0.2f));
-			SetTargetTransformAroundCenter(RestCenter, DeterministicRestRotation);
-
-			if (!GetOwner() || GetOwner()->HasAuthority())
-			{
-				const FVector FinalLoc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : RestCenter;
-				Multicast_SettleRocket(FinalLoc, DeterministicRestRotation);
-			}
-			else
-			{
-				SetSimulationState(ERocketSimulationState::AtRest);
-			}
-			return;
-		}
 	}
 
-	// Safety timeout: if falling for more than 4.0s without settling, trace straight down to find the floor and settle flush
-	if (TimeSpentFalling >= 4.0f || TotalAirTime >= MaxFuelDuration + 5.0f)
+	// Safety fallback timeout: only after 30.0s of continuous falling (failsafe for void drops)
+	if (TimeSpentFalling >= 30.0f)
 	{
 		FHitResult FloorHit;
 		FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(RocketFloorTrace), false, GetOwner());
 		const FVector CenterLoc = GetWorldCenterLocation();
-		const FVector TraceDownFallback = CenterLoc - FVector(0.0f, 0.0f, 3000.0f);
+		const FVector TraceDownFallback = CenterLoc - FVector(0.0f, 0.0f, 15000.0f);
 		if (GetWorld() && GetWorld()->LineTraceSingleByChannel(FloorHit, CenterLoc, TraceDownFallback, CollisionChannel, FloorParams))
 		{
-			if (!bTargetRestRotationInitialized)
-			{
-				const float SeedYaw = static_cast<float>((LaunchSeed * 67) % 360);
-				DeterministicRestRotation = ComputeGroundRestRotation(FloorHit.Normal, SeedYaw);
-				bTargetRestRotationInitialized = true;
-			}
+			const float SeedYaw = static_cast<float>((LaunchSeed * 67) % 360);
+			DeterministicRestRotation = ComputeGroundRestRotation(FloorHit.Normal, SeedYaw);
+			bTargetRestRotationInitialized = true;
 
-			const float GroundExtent = GetProjectedExtentAlongDirection(FloorHit.Normal);
-			const FVector RestCenter = FloorHit.ImpactPoint + (FloorHit.Normal * (GroundExtent + 0.2f));
+			const float GroundExtent = GetProjectedExtentAlongDirectionWithRotation(FloorHit.Normal, DeterministicRestRotation);
+			const FVector RestCenter = FloorHit.ImpactPoint + (FloorHit.Normal * GroundExtent);
 			SetTargetTransformAroundCenter(RestCenter, DeterministicRestRotation);
 
 			if (!GetOwner() || GetOwner()->HasAuthority())
@@ -2633,12 +4129,11 @@ void URocketProjectileComponent::ProcessSpentFallingStep(float DeltaTime)
 			{
 				SetSimulationState(ERocketSimulationState::AtRest);
 			}
-			return;
 		}
 	}
 }
 
-bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, FHitResult& OutHit)
+bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, const FRotator& InRotation, FHitResult& OutHit)
 {
 	if (!TargetPrimitive)
 	{
@@ -2652,7 +4147,7 @@ bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, FHitResu
 	}
 
 	const FVector CurrentCenter = GetWorldCenterLocation();
-	const float LeadingExtent = GetProjectedExtentAlongDirection(MoveDir);
+	const float LeadingExtent = GetProjectedExtentAlongDirectionWithRotation(MoveDir, InRotation);
 
 	// Sweep starts safely at CurrentCenter (which is guaranteed outside collision geometry)
 	// and extends forward to encompass the travel distance plus the leading extent of the mesh.
@@ -2667,7 +4162,7 @@ bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, FHitResu
 		OutHit,
 		SweepStart,
 		SweepEnd,
-		TargetPrimitive->GetComponentQuat(),
+		InRotation.Quaternion(),
 		CollisionChannel,
 		SphereShape,
 		QueryParams
@@ -2679,25 +4174,35 @@ bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, FHitResu
 		{
 			// Immediate graceful depenetration if sweep initiated inside geometry
 			const FVector DepenDir = OutHit.Normal.IsNearlyZero() ? -MoveDir : OutHit.Normal;
-			const float ExtentAlongNormal = GetProjectedExtentAlongDirection(DepenDir);
+			const float ExtentAlongNormal = (CurrentState == ERocketSimulationState::SpentFalling)
+				? FMath::Max(SweepRadius, 4.0f)
+				: GetProjectedExtentAlongDirectionWithRotation(DepenDir, InRotation);
 			const FVector DepenCenter = CurrentCenter + (DepenDir * (OutHit.PenetrationDepth + ExtentAlongNormal + 1.5f));
-			SetTargetTransformAroundCenter(DepenCenter, TargetPrimitive->GetComponentRotation());
+			SetTargetTransformAroundCenter(DepenCenter, InRotation);
 			return true;
 		}
 
 		// Calculate safe non-penetrating center: push center back out along surface normal by the mesh extent along that normal
-		const float ExtentAlongNormal = GetProjectedExtentAlongDirection(OutHit.Normal);
+		const float ExtentAlongNormal = (CurrentState == ERocketSimulationState::SpentFalling)
+			? FMath::Max(SweepRadius, 4.0f)
+			: GetProjectedExtentAlongDirectionWithRotation(OutHit.Normal, InRotation);
 		const FVector SafeCenter = OutHit.ImpactPoint + (OutHit.Normal * (ExtentAlongNormal + 1.5f));
 
-		SetTargetTransformAroundCenter(SafeCenter, TargetPrimitive->GetComponentRotation());
+		SetTargetTransformAroundCenter(SafeCenter, InRotation);
 		return true;
 	}
 	else
 	{
 		const FVector EndCenter = CurrentCenter + MoveDelta;
-		SetTargetTransformAroundCenter(EndCenter, TargetPrimitive->GetComponentRotation());
+		SetTargetTransformAroundCenter(EndCenter, InRotation);
 		return false;
 	}
+}
+
+bool URocketProjectileComponent::SweepAndMove(const FVector& MoveDelta, FHitResult& OutHit)
+{
+	const FRotator CurrentRot = TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator;
+	return SweepAndMove(MoveDelta, CurrentRot, OutHit);
 }
 
 void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
@@ -2710,7 +4215,9 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	if (bSameComponent && bSimilarNormal && TimeSinceLastBounce < DebounceTime)
 	{
 		// Safely adjust standoff distance so it doesn't stay stuck/penetrating
-		const float ExtentAlongNormal = GetProjectedExtentAlongDirection(Hit.Normal);
+		const float ExtentAlongNormal = (CurrentState == ERocketSimulationState::SpentFalling)
+			? FMath::Max(SweepRadius, 4.0f)
+			: GetProjectedExtentAlongDirection(Hit.Normal);
 		const FVector SafeCenter = Hit.ImpactPoint + (Hit.Normal * (ExtentAlongNormal + 1.5f));
 		SetTargetTransformAroundCenter(SafeCenter, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
 		return;
@@ -2731,14 +4238,16 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	const FVector Incident = CurrentVelocity;
 	FVector Reflected = Incident - 2.0f * (Incident | Hit.Normal) * Hit.Normal;
 
-	// Add chaotic random deflection cone
+	// Add chaotic random deflection cone using deterministic seed-based stream so clients match server
 	const float DeflectionDeg = (CurrentState == ERocketSimulationState::Rocketing)
 		? (FlightSettings.FlightBounceRandomDeflection > 0.0f ? FlightSettings.FlightBounceRandomDeflection : FlightBounceRandomDeflection)
 		: FMath::Max(FallingSettings.RicochetRandomDeflection, RicochetRandomDeflection);
 	if (DeflectionDeg > 0.0f)
 	{
 		const float DeflectionRad = FMath::DegreesToRadians(DeflectionDeg);
-		Reflected = RandomStream.VRandCone(Reflected.GetSafeNormal(), DeflectionRad);
+		const int32 DeflectionSeed = LaunchSeed * 1013 + CurrentBounceCount * 37 + FallingBounceCount * 179;
+		FRandomStream BounceDeflectionStream(DeflectionSeed > 0 ? DeflectionSeed : 1);
+		Reflected = BounceDeflectionStream.VRandCone(Reflected.GetSafeNormal(), DeflectionRad);
 	}
 
 	// ANTI-STICK GUARD: Enforce that the reflected trajectory points decisively away from the wall
@@ -2752,7 +4261,9 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	// If reflecting off floor/ground while rocketing, bounce upward into the air
 	if (CurrentState == ERocketSimulationState::Rocketing && Hit.Normal.Z > 0.5f && Reflected.Z < 0.15f)
 	{
-		Reflected.Z = RandomStream.FRandRange(0.20f, 0.55f);
+		const int32 UpwardSeed = LaunchSeed * 701 + CurrentBounceCount * 53;
+		FRandomStream UpwardStream(UpwardSeed > 0 ? UpwardSeed : 1);
+		Reflected.Z = UpwardStream.FRandRange(0.20f, 0.55f);
 		Reflected.Normalize();
 	}
 
@@ -2762,21 +4273,32 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 
 	if (CurrentState == ERocketSimulationState::SpentFalling)
 	{
-		// If user configured the bottle not to bounce after fuel is gone, immediately settle flush on surface
-		const bool bCanBounce = FallingSettings.bBounceAfterFuelDepleted && bBounceAfterFuelDepleted;
-		if (!bCanBounce)
-		{
-			if (!bTargetRestRotationInitialized)
-			{
-				const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
-				DeterministicRestRotation = ComputeGroundRestRotation(Hit.Normal, SeedYaw);
-				bTargetRestRotationInitialized = true;
-			}
+		FallingBounceCount++;
+		bIsGlidingToReachablePoint = false; // Physical impact occurred; glide completed
 
-			const float ExtentAlongNormal = GetProjectedExtentAlongDirection(Hit.Normal);
-			const FVector RestCenter = Hit.ImpactPoint + (Hit.Normal * (ExtentAlongNormal + 0.1f));
+		if (TargetFallingBounces < 3)
+		{
+			TargetFallingBounces = 3;
+		}
+
+		const bool bCanSettle = (FallingBounceCount >= TargetFallingBounces);
+
+		// If minimum bounce count (3 to 5 based on falling height) is fulfilled and surface faces upward: settle flush!
+		if (bCanSettle && (IncidentSpeed < AtRestSettings.RestVelocityThreshold * 2.0f || FallingBounceCount >= (TargetFallingBounces + 1)) && Hit.Normal.Z > 0.5f)
+		{
+			const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
+			DeterministicRestRotation = ComputeGroundRestRotation(Hit.Normal, SeedYaw);
+			bTargetRestRotationInitialized = true;
+
+			// Stick to ground properly using DeterministicRestRotation extent
+			const float GroundExtent = GetProjectedExtentAlongDirectionWithRotation(Hit.Normal, DeterministicRestRotation);
+			const FVector RestCenter = Hit.ImpactPoint + (Hit.Normal * GroundExtent);
 			SetTargetTransformAroundCenter(RestCenter, DeterministicRestRotation);
 			CurrentVelocity = FVector::ZeroVector;
+
+			LogDebug(FString::Printf(TEXT("SpentFalling: Completed %d bounces (Target: %d). Settling flush to ground at: %s"),
+				FallingBounceCount, TargetFallingBounces, *RestCenter.ToString()));
+
 			if (!GetOwner() || GetOwner()->HasAuthority())
 			{
 				const FVector FinalLoc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : RestCenter;
@@ -2789,43 +4311,29 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 			return;
 		}
 
-		// Lower bounce impulse according to velocity: as velocity drops, bounce impulse decays sharply
-		const float SpeedDamping = FMath::Clamp(IncidentSpeed / 500.0f, 0.12f, 1.0f);
-		const float EffectiveRestitution = FallingSettings.SpentBounciness * SpeedDamping;
+		// Calculate bounce rebound:
+		// Progressive restitution decay across remaining bounces (3 to 5)
+		const float RemainingRatio = FMath::Clamp(float(TargetFallingBounces - FallingBounceCount + 1) / float(TargetFallingBounces), 0.15f, 1.0f);
+		const float EffectiveRestitution = FMath::Clamp(0.50f * RemainingRatio, 0.18f, 0.55f);
+		const float EffectiveFriction = FMath::Clamp(0.65f - (0.25f * (1.0f - RemainingRatio)), 0.35f, 0.70f);
 
-		// Decompose velocity into normal bounce and tangential ground friction
 		const FVector NormalVelocity = (Incident | Hit.Normal) * Hit.Normal;
 		const FVector TangentVelocity = Incident - NormalVelocity;
 
-		Reflected = (-NormalVelocity * EffectiveRestitution) + (TangentVelocity * FallingSettings.SpentFriction);
+		Reflected = (-NormalVelocity * EffectiveRestitution) + (TangentVelocity * EffectiveFriction);
 
-		// If velocity after bounce drops below rest threshold on an upward-facing surface, settle flush
-		if (Reflected.Size() < AtRestSettings.RestVelocityThreshold && Hit.Normal.Z > 0.6f)
+		// Ensure clear upward bounce off floors
+		if (Hit.Normal.Z > 0.5f)
 		{
-			if (!bTargetRestRotationInitialized)
-			{
-				const float SeedYaw = static_cast<float>((LaunchSeed * 67 + CurrentBounceCount * 13) % 360);
-				DeterministicRestRotation = ComputeGroundRestRotation(Hit.Normal, SeedYaw);
-				bTargetRestRotationInitialized = true;
-			}
-
-			const float ExtentAlongNormal = GetProjectedExtentAlongDirection(Hit.Normal);
-			const FVector RestCenter = Hit.ImpactPoint + (Hit.Normal * (ExtentAlongNormal + 0.1f));
-			SetTargetTransformAroundCenter(RestCenter, DeterministicRestRotation);
-			CurrentVelocity = FVector::ZeroVector;
-			if (!GetOwner() || GetOwner()->HasAuthority())
-			{
-				const FVector FinalLoc = TargetPrimitive ? TargetPrimitive->GetComponentLocation() : RestCenter;
-				Multicast_SettleRocket(FinalLoc, DeterministicRestRotation);
-			}
-			else
-			{
-				SetSimulationState(ERocketSimulationState::AtRest);
-			}
-			return;
+			const float MinUpwardVel = 120.0f + (240.0f * RemainingRatio);
+			Reflected.Z = FMath::Max(Reflected.Z, MinUpwardVel);
 		}
 
 		NewSpeed = Reflected.Size();
+		CurrentVelocity = Reflected;
+
+		LogDebug(FString::Printf(TEXT("SpentFalling: Bounce %d/%d (Total Bounces: %d): IncidentSpeed=%.0f, ReboundSpeed=%.0f, UpwardZ=%.0f"),
+			FallingBounceCount, TargetFallingBounces, CurrentBounceCount, IncidentSpeed, NewSpeed, CurrentVelocity.Z));
 	}
 	else if (CurrentState == ERocketSimulationState::Rocketing)
 	{
@@ -2842,8 +4350,18 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 	CurrentVelocity = Reflected.GetSafeNormal() * NewSpeed;
 
 	// Instantly place bottle at a safe standoff distance off the wall along normal to prevent start-penetration on next tick
-	const float ExtentAlongNormal = GetProjectedExtentAlongDirection(Hit.Normal);
+	const float ExtentAlongNormal = (CurrentState == ERocketSimulationState::SpentFalling)
+		? FMath::Max(SweepRadius, 4.0f)
+		: GetProjectedExtentAlongDirection(Hit.Normal);
 	const FVector SafeCenter = Hit.ImpactPoint + (Hit.Normal * (ExtentAlongNormal + 1.5f));
+
+	if (CurrentState == ERocketSimulationState::SpentFalling)
+	{
+		if (!GetOwner() || GetOwner()->HasAuthority())
+		{
+			Multicast_FallingBounce(FallingBounceCount, SafeCenter, CurrentVelocity);
+		}
+	}
 
 	// Re-initialize flight spline for the bounce leg!
 	if (CurrentState == ERocketSimulationState::Rocketing)
@@ -2853,12 +4371,14 @@ void URocketProjectileComponent::HandleRicochet(const FHitResult& Hit)
 
 		const float EffectiveFuelDist = FlightSettings.MaxFuelDistance > 0.0f ? FlightSettings.MaxFuelDistance : MaxFuelDistance;
 
-		// Check if we completed all flight plan nodes OR if fuel distance is reached
+		// Check if we completed all flight plan nodes OR if fuel distance is reached OR max flight bounces reached
 		if ((AuthoritativeFlightNodes.Num() > 0 && CurrentFlightPlanNodeIndex >= AuthoritativeFlightNodes.Num() - 1)
-			|| TotalFlightDistanceTraveled >= EffectiveFuelDist)
+			|| TotalFlightDistanceTraveled >= EffectiveFuelDist
+			|| CurrentBounceCount >= FlightSettings.MaxFlightBounces)
 		{
-			LogDebug(FString::Printf(TEXT("Flight plan completed on ricochet! Node %d/%d (FuelDist=%.0f/%.0f cm). Falling..."),
-				CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist), true);
+			LogDebug(FString::Printf(TEXT("Flight plan completed on ricochet! Node %d/%d (FuelDist=%.0f/%.0f cm, Bounces=%d/%d). Falling..."),
+				CurrentFlightPlanNodeIndex, AuthoritativeFlightNodes.Num(), TotalFlightDistanceTraveled, EffectiveFuelDist,
+				CurrentBounceCount, FlightSettings.MaxFlightBounces), true);
 
 			bTargetRestRotationInitialized = false;
 			FallingTumbleAngle = 0.0f;
@@ -2957,6 +4477,22 @@ FRotator URocketProjectileComponent::ComputeTargetRotation(const FVector& Flight
 		}
 	}
 
+	if (CurrentState != ERocketSimulationState::LowFuelSputter)
+	{
+		// Wobble dampens directly with velocity during normal flight: slows and reduces to zero as the bottle decelerates
+		const float CurrentSpeed = CurrentVelocity.Size();
+		const float BaseSpeedRef = FMath::Max(FlightSettings.BaseSpeed * 0.65f, 250.0f);
+		const float VelocityWobbleScale = FMath::Clamp(CurrentSpeed / BaseSpeedRef, 0.0f, 1.0f);
+		WobbleDeg *= VelocityWobbleScale;
+		WobbleFreq *= FMath::Lerp(0.20f, 1.0f, VelocityWobbleScale);
+	}
+	else
+	{
+		// During LowFuelSputter, dying fizz causes violent, rapid jitter
+		WobbleDeg *= LowFuelSettings.WobbleMultiplier;
+		WobbleFreq *= 1.5f;
+	}
+
 	if (WobbleFreq > 0.0f && WobbleDeg > 0.0f)
 	{
 		const float Time = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
@@ -3028,7 +4564,7 @@ FVector URocketProjectileComponent::GetWorldCenterLocation() const
 	return TargetPrimitive->GetComponentTransform().TransformPosition(LocalOffset);
 }
 
-float URocketProjectileComponent::GetProjectedExtentAlongDirection(const FVector& Direction) const
+float URocketProjectileComponent::GetProjectedExtentAlongDirectionWithRotation(const FVector& Direction, const FRotator& InRotation) const
 {
 	if (!TargetPrimitive)
 	{
@@ -3043,11 +4579,10 @@ float URocketProjectileComponent::GetProjectedExtentAlongDirection(const FVector
 
 	const FVector Scale = TargetPrimitive->GetComponentScale();
 	const FVector ScaledExtent = MeshBoundsExtent * Scale;
-	const FRotator CurrentRot = TargetPrimitive->GetComponentRotation();
 
-	const FVector AxisX = CurrentRot.RotateVector(FVector::ForwardVector);
-	const FVector AxisY = CurrentRot.RotateVector(FVector::RightVector);
-	const FVector AxisZ = CurrentRot.RotateVector(FVector::UpVector);
+	const FVector AxisX = InRotation.RotateVector(FVector::ForwardVector);
+	const FVector AxisY = InRotation.RotateVector(FVector::RightVector);
+	const FVector AxisZ = InRotation.RotateVector(FVector::UpVector);
 
 	const float Extent =
 		FMath::Abs(AxisX | NormalizedDir) * ScaledExtent.X +
@@ -3055,6 +4590,11 @@ float URocketProjectileComponent::GetProjectedExtentAlongDirection(const FVector
 		FMath::Abs(AxisZ | NormalizedDir) * ScaledExtent.Z;
 
 	return FMath::Max(Extent, SweepRadius);
+}
+
+float URocketProjectileComponent::GetProjectedExtentAlongDirection(const FVector& Direction) const
+{
+	return GetProjectedExtentAlongDirectionWithRotation(Direction, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
 }
 
 void URocketProjectileComponent::SetTargetTransformAroundCenter(const FVector& NewCenterLocation, const FRotator& NewRotation)
@@ -3109,6 +4649,7 @@ void URocketProjectileComponent::OnRep_FlightNetState()
 	{
 		CurrentVelocity = FVector::ZeroVector;
 		FlightNetState.bPhysicsSimulating = false;
+		bIsGlidingToReachablePoint = false;
 		if (TargetPrimitive)
 		{
 			TargetPrimitive->SetSimulatePhysics(false);
@@ -3124,8 +4665,40 @@ void URocketProjectileComponent::OnRep_FlightNetState()
 		{
 			GetOwner()->SetActorLocationAndRotation(FlightNetState.RestLocation, FlightNetState.RestRotation, false, nullptr, ETeleportType::TeleportPhysics);
 		}
+
+		if (AActivePropActor* PropActor = Cast<AActivePropActor>(GetOwner()))
+		{
+			PropActor->SetInMotion(false);
+			PropActor->SetHeld(false);
+			PropActor->State = EPropState::AtRest;
+			PropActor->bIsHeld = false;
+			PropActor->bIsInMotion = false;
+			PropActor->SetGrabbable(true);
+			PropActor->InteractionState = EPropInteractionLockState::Free;
+			PropActor->InteractionOwner = nullptr;
+		}
+
+		if (GetOwner())
+		{
+			for (UActorComponent* Comp : GetOwner()->GetComponents())
+			{
+				if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
+				{
+					if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+					{
+						SimComp->SetHeld(false);
+						SimComp->SetInMotion(false);
+						SimComp->SetStateAtRest();
+					}
+					Comp->SetComponentTickEnabled(true);
+				}
+			}
+		}
+
 		SetSimulationState(ERocketSimulationState::AtRest);
 		SetComponentTickEnabled(false);
+		bSavedSimulatePhysics = false;
+		bSavedEnableGravity = false;
 		RestorePrimitiveSettings();
 		OnRocketSettled.Broadcast();
 		return;
@@ -3190,14 +4763,45 @@ void URocketProjectileComponent::OnRep_FlightNetState()
 
 			SetActive(true);
 			SetComponentTickEnabled(true);
+			ClientCatchupSpeedMultiplier = 1.0f;
 
-			if (!FlightNetState.LastBounceVelocity.IsNearlyZero())
+			if (AuthoritativeFlightNodes.Num() < 2)
 			{
-				CurrentVelocity = FlightNetState.LastBounceVelocity;
+				if (!FlightNetState.LastBounceLocation.IsNearlyZero())
+				{
+					const FVector CurrentCenter = GetWorldCenterLocation();
+					const float Dist = FVector::Dist(CurrentCenter, FlightNetState.LastBounceLocation);
+					if (Dist > 1.0f && Dist < 250.0f)
+					{
+						ClientReconciliationOffset = CurrentCenter - FlightNetState.LastBounceLocation;
+						SetTargetTransformAroundCenter(FlightNetState.LastBounceLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+					}
+					else if (Dist >= 250.0f)
+					{
+						ClientReconciliationOffset = FVector::ZeroVector;
+						SetTargetTransformAroundCenter(FlightNetState.LastBounceLocation, TargetPrimitive ? TargetPrimitive->GetComponentRotation() : FRotator::ZeroRotator);
+					}
+				}
+
+				if (!FlightNetState.LastBounceVelocity.IsNearlyZero())
+				{
+					CurrentVelocity = FlightNetState.LastBounceVelocity;
+				}
+				else if (CurrentVelocity.IsNearlyZero())
+				{
+					CurrentVelocity = FVector(0.0f, 0.0f, -50.0f);
+				}
+
+				if (FlightNetState.BounceCount > 0)
+				{
+					TargetFallingBounces = FlightNetState.BounceCount;
+				}
 			}
-			else if (CurrentVelocity.IsNearlyZero())
+
+			if (!FlightNetState.RestLocation.IsNearlyZero())
 			{
-				CurrentVelocity = FVector(0.0f, 0.0f, -50.0f);
+				bIsGlidingToReachablePoint = true;
+				GlidingTargetLocation = FlightNetState.RestLocation;
 			}
 
 			OnRocketFuelDepleted.Broadcast();
@@ -3213,4 +4817,70 @@ void URocketProjectileComponent::OnRep_FlightNetState()
 	{
 		BaseSpeed = FlightNetState.Speed;
 	}
+}
+
+void URocketProjectileComponent::SetFallingBounceCount(int32 InMinBounces, int32 InMaxBounces)
+{
+	FallingSettings.bUseFixedFallingBounces = false;
+	FallingSettings.MinFallingBounces = FMath::Clamp(FMath::Min(InMinBounces, InMaxBounces), 1, 15);
+	FallingSettings.MaxFallingBounces = FMath::Clamp(FMath::Max(InMinBounces, InMaxBounces), 1, 15);
+}
+
+void URocketProjectileComponent::SetFixedFallingBounces(int32 InFixedBounces)
+{
+	FallingSettings.bUseFixedFallingBounces = true;
+	FallingSettings.FixedFallingBounces = FMath::Clamp(InFixedBounces, 1, 15);
+}
+
+void URocketProjectileComponent::SetMaxFlightBounces(int32 InMaxBounces)
+{
+	FlightSettings.MaxFlightBounces = FMath::Clamp(InMaxBounces, 1, 32);
+}
+
+void URocketProjectileComponent::SetSplineTension(float InTension)
+{
+	FlightSettings.SplineTension = FMath::Clamp(InTension, 0.0f, 2.0f);
+}
+
+void URocketProjectileComponent::SetSplineCornerSmoothness(float InSmoothness)
+{
+	SplineCornerSmoothness = FMath::Clamp(InSmoothness, 0.0f, 1.0f);
+	FlightSettings.SplineCornerSmoothness = SplineCornerSmoothness;
+}
+
+void URocketProjectileComponent::SetOffsetPointSpacing(float InMinSpacing, float InMaxSpacing)
+{
+	MinOffsetPointSpacing = FMath::Clamp(InMinSpacing, 100.0f, 2000.0f);
+	MaxOffsetPointSpacing = FMath::Clamp(InMaxSpacing, MinOffsetPointSpacing, 3000.0f);
+	FlightSettings.MinOffsetPointSpacing = MinOffsetPointSpacing;
+	FlightSettings.MaxOffsetPointSpacing = MaxOffsetPointSpacing;
+}
+
+void URocketProjectileComponent::SetMaintainUpDirectionThreshold(float InThreshold)
+{
+	MaintainUpDirectionThreshold = FMath::Clamp(InThreshold, 5.0f, 500.0f);
+	LowFuelSettings.MaintainUpDirectionThreshold = MaintainUpDirectionThreshold;
+}
+
+void URocketProjectileComponent::ConfigureZigZag(
+	ERocketZigZagMode InMode,
+	bool bInEnable3D,
+	bool bInRandomSpacing,
+	float InMinSpacing,
+	float InMaxSpacing,
+	float InMinLatDev,
+	float InMaxLatDev,
+	float InMinVertDev,
+	float InMaxVertDev)
+{
+	FlightSettings.bEnableErraticPath = true;
+	FlightSettings.ZigZagMode = InMode;
+	FlightSettings.bEnable3DZigZag = bInEnable3D;
+	FlightSettings.bUseRandomWaypointSpacing = bInRandomSpacing;
+	FlightSettings.MinWaypointSpacing = FMath::Clamp(FMath::Min(InMinSpacing, InMaxSpacing), 50.0f, 2000.0f);
+	FlightSettings.MaxWaypointSpacing = FMath::Clamp(FMath::Max(InMinSpacing, InMaxSpacing), 50.0f, 3000.0f);
+	FlightSettings.MinPathDeviation = FMath::Clamp(FMath::Min(InMinLatDev, InMaxLatDev), 0.0f, 500.0f);
+	FlightSettings.MaxPathDeviation = FMath::Clamp(FMath::Max(InMinLatDev, InMaxLatDev), 0.0f, 1000.0f);
+	FlightSettings.MinVerticalDeviation = FMath::Clamp(InMinVertDev, -500.0f, 500.0f);
+	FlightSettings.MaxVerticalDeviation = FMath::Clamp(InMaxVertDev, 0.0f, 1000.0f);
 }

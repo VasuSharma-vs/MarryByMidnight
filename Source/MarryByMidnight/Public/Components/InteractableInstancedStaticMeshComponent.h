@@ -291,6 +291,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Interactable Prop Database")
 	void SetInstanceSimulationState(int32 InstanceIndex, EPhysicsSimulationState NewState);
 
+	/** Updates the 3 Per-Instance Custom Data floats for an instance: 0 = Portions [0..1], 1 = Frost/Coldness [0..1], 2 = Expiry Age [0..1] */
+	UFUNCTION(BlueprintCallable, Category = "IISM Component|Custom Data")
+	void UpdateInstanceCustomData(int32 InISMI, bool bMarkRenderStateDirty = true);
+
+	/** Updates the 3 Per-Instance Custom Data floats for all valid instances */
+	UFUNCTION(BlueprintCallable, Category = "IISM Component|Custom Data")
+	void UpdateAllInstancesCustomData();
+
 	/**
 	 * Called automatically when this component receives a physics/collision hit.
 	 * Extracts the hit Instance Index (ISMI = Hit.Item), resolves ISID, and sets the prop into Unsettled state.

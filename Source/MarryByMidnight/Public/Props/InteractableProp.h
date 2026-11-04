@@ -8,6 +8,8 @@
 #include "InteractableProp.generated.h"
 
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
+class USkeletalMesh;
 class UTextRenderComponent;
 class UStaticMeshPhysicsSimulationComponent;
 class UInteractablePropDataAsset;
@@ -117,6 +119,19 @@ public:
 
 	UFUNCTION()
 	void OnRep_IsHeld();
+
+	UFUNCTION(BlueprintCallable, Category = "ASM State")
+	void SetHeld(bool bNewHeld);
+
+	/** Whether this ASM is actively driven in motion (when true, prevents settling to rest; when false, settling is allowed) */
+	UPROPERTY(ReplicatedUsing = OnRep_IsInMotion, BlueprintReadWrite, Category = "ASM State")
+	bool bIsInMotion = false;
+
+	UFUNCTION()
+	void OnRep_IsInMotion();
+
+	UFUNCTION(BlueprintCallable, Category = "ASM State")
+	void SetInMotion(bool bNewInMotion);
 
 	/** Tracks whether network replication is enabled for this ASM (Section 30) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ASM State")
@@ -270,11 +285,37 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prop Data")
 	void ApplyProductDefinition(const FPropProductDefinition& InProductDef);
 
+	/**
+	 * Changes this active prop's product definition at runtime (e.g. Empty Bottle -> Full Cola -> Empty Bottle).
+	 * Updates the mesh (swapping to SkeletalMesh or StaticMesh as defined by the new product),
+	 * updates materials, updates PropManager's registry, and releases the old ISM slot to the pool.
+	 * When placed down, it will demote to ISM as the new product.
+	 *
+	 * @param NewProductID The target ProductID to change to.
+	 * @param bResetRuntimeData If true, resets portions and temperature to the new product's defaults.
+	 * @return True if product changed successfully.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ASM Product", meta = (DisplayName = "Change Product"))
+	bool ChangeProduct(int32 NewProductID, bool bResetRuntimeData = true);
+
+	/**
+	 * Changes this active prop's product to match a given Data Asset.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ASM Product", meta = (DisplayName = "Change Product From Data Asset"))
+	bool ChangeProductFromDataAsset(UInteractablePropDataAsset* NewDataAsset, bool bResetRuntimeData = true);
+
+	/** Updates Per-Instance / Custom Primitive Data on this actor's mesh components: 0 = Portions [0..1], 1 = Frost [0..1], 2 = Expiry Age [0..1] */
+	UFUNCTION(BlueprintCallable, Category = "ASM Visual")
+	void UpdateMaterialCustomPrimitiveData();
+
 	// ---------------------------------------------------------
 	// Components
 	// ---------------------------------------------------------
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> PropMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UTextRenderComponent> DebugText;
@@ -298,6 +339,18 @@ public:
 	/** Retriggers/resets the unsettled timer back to 3.0s (or custom delay) */
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void RetriggerUnsettled(float NewDelay = -1.0f);
+
+	/** Transitions this active prop into Unsettled state (physics simulating, countdown to settling) */
+	UFUNCTION(BlueprintCallable, Category = "Interaction|State", meta = (DisplayName = "Set Prop To Unsettled"))
+	void SetPropToUnsettled(float UnsettledDelay = -1.0f);
+
+	/** Transitions this active prop into the Settling state (e.g. when custom InMotion flight ends or after throwing) */
+	UFUNCTION(BlueprintCallable, Category = "Interaction|State", meta = (DisplayName = "Set Prop To Settling"))
+	void SetPropToSettling(float VelocityTolerance = -1.0f);
+
+	/** Transitions this active prop into InMotion state with an optional physics impulse (e.g. rocket launch, thrown object) */
+	UFUNCTION(BlueprintCallable, Category = "Interaction|State", meta = (DisplayName = "Set Prop To InMotion"))
+	void SetPropToInMotion(FVector LaunchImpulse = FVector::ZeroVector);
 
 	// ---------------------------------------------------------
 	// Player Interaction Pathway

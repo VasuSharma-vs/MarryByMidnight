@@ -20,6 +20,7 @@ UInteractableISMComponent::UInteractableISMComponent()
 	SetCollisionProfileName(UCollisionProfile::BlockAllDynamic_ProfileName);
 	SetGenerateOverlapEvents(false);
 	ISMComponent = this;
+	NumCustomDataFloats = 3;
 
 	// Default ResetTransform places parked ISM instances far below the gameplay world with near-zero scale
 	ResetTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -100000.0f), FVector(0.0001f));
@@ -30,6 +31,10 @@ void UInteractableISMComponent::OnRegister()
 	Super::OnRegister();
 
 	ISMComponent = this;
+	if (NumCustomDataFloats < 3)
+	{
+		NumCustomDataFloats = 3;
+	}
 	SetGenerateOverlapEvents(false);
 	SetNotifyRigidBodyCollision(true);
 	BodyInstance.bNotifyRigidBodyCollision = true;
@@ -174,11 +179,6 @@ void UInteractableISMComponent::OnRep_IISMDB()
 
 void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinition& InDefinition)
 {
-	const bool bSameProductAndMesh = (ProductID == InDefinition.ProductID &&
-		InDefinition.ProductID > 0 &&
-		InDefinition.StaticMesh != nullptr &&
-		GetStaticMesh() == InDefinition.StaticMesh);
-
 	if (InDefinition.ProductID > 0)
 	{
 		ProductID = InDefinition.ProductID;
@@ -193,29 +193,58 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 		DefaultDataAsset = InDefinition.SourceDataAsset;
 	}
 
-	if (!bSameProductAndMesh)
+	// 1. Resolve and apply target static mesh
+	UStaticMesh* TargetMesh = InDefinition.StaticMesh;
+	if (!TargetMesh && InDefinition.SourceDataAsset)
 	{
-		if (InDefinition.StaticMesh && GetStaticMesh() != InDefinition.StaticMesh)
+		TargetMesh = InDefinition.SourceDataAsset->StaticMesh;
+	}
+	if (TargetMesh && GetStaticMesh() != TargetMesh)
+	{
+		SetStaticMesh(TargetMesh);
+		MarkRenderStateDirty();
+	}
+
+	// 2. Resolve source material overrides
+	TArray<TObjectPtr<UMaterialInterface>> SourceOverrides = InDefinition.MaterialOverrides;
+	if (SourceOverrides.Num() == 0 && InDefinition.SourceDataAsset)
+	{
+		SourceOverrides = InDefinition.SourceDataAsset->MaterialOverrides;
+	}
+
+	// 3. Always apply materials to all mesh slots
+	const int32 NumSlots = TargetMesh ? TargetMesh->GetStaticMaterials().Num() : GetNumMaterials();
+	const int32 TotalSlotsToApply = FMath::Max(NumSlots, SourceOverrides.Num());
+	for (int32 MatIdx = 0; MatIdx < TotalSlotsToApply; ++MatIdx)
+	{
+		UMaterialInterface* TargetMat = nullptr;
+		if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
 		{
-			SetStaticMesh(InDefinition.StaticMesh);
-			MarkRenderStateDirty();
+			TargetMat = SourceOverrides[MatIdx];
 		}
-		for (int32 MatIdx = 0; MatIdx < InDefinition.MaterialOverrides.Num(); ++MatIdx)
+		else if (TargetMesh)
 		{
-			if (InDefinition.MaterialOverrides[MatIdx] && GetMaterial(MatIdx) != InDefinition.MaterialOverrides[MatIdx])
-			{
-				SetMaterial(MatIdx, InDefinition.MaterialOverrides[MatIdx]);
-			}
+			TargetMat = TargetMesh->GetMaterial(MatIdx);
 		}
-		const int32 NumMats = GetNumMaterials();
-		for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+
+		if (TargetMat && GetMaterial(MatIdx) != TargetMat)
 		{
-			if (UMaterialInterface* Mat = GetMaterial(MatIdx))
-			{
-				Mat->CheckMaterialUsage(MATUSAGE_InstancedStaticMeshes);
-			}
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] [UInteractableISMComponent::ApplyProductDefinition] Slot %d on Comp '%s' updated: '%s' -> '%s'"),
+				MatIdx, *GetName(), GetMaterial(MatIdx) ? *GetMaterial(MatIdx)->GetName() : TEXT("nullptr"), *TargetMat->GetName());
+			SetMaterial(MatIdx, TargetMat);
 		}
 	}
+
+	// 4. Verify material usage for instanced static meshes and dirty render state
+	const int32 FinalNumMats = GetNumMaterials();
+	for (int32 MatIdx = 0; MatIdx < FinalNumMats; ++MatIdx)
+	{
+		if (UMaterialInterface* Mat = GetMaterial(MatIdx))
+		{
+			Mat->CheckMaterialUsage(MATUSAGE_InstancedStaticMeshes);
+		}
+	}
+	MarkRenderStateDirty();
 
 	if (GetCollisionEnabled() == ECollisionEnabled::NoCollision)
 	{
@@ -278,6 +307,7 @@ int32 UInteractableISMComponent::AddInstanceWithISID(int32 InISID, const FTransf
 	PropDatabase[NewISMI] = LegacyEntry;
 
 	BindISIDToISMI(InISID, NewISMI);
+	UpdateInstanceCustomData(NewISMI, true);
 	const FTransform EffectiveReset = GetEffectiveResetTransform();
 	if (!InstanceTransform.GetLocation().Equals(EffectiveReset.GetLocation(), 100.0f) && InstanceTransform.GetScale3D().GetMax() >= 0.005f)
 	{
@@ -368,6 +398,7 @@ int32 UInteractableISMComponent::ReuseOrAddInstanceWithISID(int32 InISID, const 
 		PropDatabase[ReusedISMI] = LegacyEntry;
 
 		BindISIDToISMI(InISID, ReusedISMI);
+		UpdateInstanceCustomData(ReusedISMI, true);
 		if (!InstanceTransform.GetLocation().Equals(EffectiveReset.GetLocation(), 100.0f) && InstanceTransform.GetScale3D().GetMax() >= 0.005f)
 		{
 			CachedGameplayTransformsByISID.Add(InISID, InstanceTransform);
@@ -761,7 +792,80 @@ bool UInteractableISMComponent::SetInstanceDataByISMI(int32 InISMI, const FPropP
 		}
 	}
 
+	UpdateInstanceCustomData(InISMI, true);
+
 	return true;
+}
+
+void UInteractableISMComponent::UpdateInstanceCustomData(int32 InISMI, bool bMarkRenderStateDirty)
+{
+	if (InISMI < 0 || InISMI >= GetInstanceCount())
+	{
+		return;
+	}
+
+	if (NumCustomDataFloats < 3)
+	{
+		NumCustomDataFloats = 3;
+	}
+
+	// 1. Portion Level [0.0 = Empty, 1.0 = Full]
+	float PortionRatio = 1.0f;
+	if (PropDatabase.IsValidIndex(InISMI) && PropDatabase[InISMI].NumOfPortions > 0)
+	{
+		PortionRatio = FMath::Clamp(static_cast<float>(PropDatabase[InISMI].RemainingPortions) / static_cast<float>(PropDatabase[InISMI].NumOfPortions), 0.0f, 1.0f);
+	}
+	else if (PackedInstanceData.IsValidIndex(InISMI))
+	{
+		const int32 TotalPortions = (IISMDB.ConsumableProfile.NumOfPortions > 0) ? IISMDB.ConsumableProfile.NumOfPortions : 4;
+		PortionRatio = FMath::Clamp(static_cast<float>(PackedInstanceData[InISMI].RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f);
+	}
+
+	// 2. Frost / Coldness Factor [0.0 = Warm / Room Temp 22C, 1.0 = Freezing 0C or below]
+	float TempCelsius = 21.0f;
+	if (PackedInstanceData.IsValidIndex(InISMI))
+	{
+		TempCelsius = PackedInstanceData[InISMI].Temperature;
+	}
+	else if (PropDatabase.IsValidIndex(InISMI))
+	{
+		TempCelsius = PropDatabase[InISMI].CurrentTemperature;
+	}
+	const float FrostFactor = FMath::Clamp((22.0f - TempCelsius) / 22.0f, 0.0f, 1.0f);
+
+	// 3. Expiry Age [0.0 = Brand New, 1.0 = Fully Expired / Rotten]
+	float ExpiryAge = 0.0f;
+	if (PropDatabase.IsValidIndex(InISMI))
+	{
+		if (PropDatabase[InISMI].bHasExpiry && PropDatabase[InISMI].ExpiryLifetimeMinutes > 0.0f)
+		{
+			const float AgeMins = FMath::Max(0.0f, PropDatabase[InISMI].AgeMinutes);
+			ExpiryAge = FMath::Clamp(AgeMins / PropDatabase[InISMI].ExpiryLifetimeMinutes, 0.0f, 1.0f);
+		}
+	}
+	else if (PackedInstanceData.IsValidIndex(InISMI))
+	{
+		const float AgeMins = FMath::Max(0.0f, static_cast<float>(PackedInstanceData[InISMI].LastUpdatedMinute - PackedInstanceData[InISMI].CreationMinute));
+		const float Lifetime = (IISMDB.ExpiryProfile.ExpiryLifetimeMinutes > 0.0f) ? IISMDB.ExpiryProfile.ExpiryLifetimeMinutes : 60.0f;
+		ExpiryAge = FMath::Clamp(AgeMins / Lifetime, 0.0f, 1.0f);
+	}
+
+	SetCustomDataValue(InISMI, 0, PortionRatio, false);
+	SetCustomDataValue(InISMI, 1, FrostFactor, false);
+	SetCustomDataValue(InISMI, 2, ExpiryAge, bMarkRenderStateDirty);
+}
+
+void UInteractableISMComponent::UpdateAllInstancesCustomData()
+{
+	const int32 Total = GetInstanceCount();
+	for (int32 i = 0; i < Total; ++i)
+	{
+		UpdateInstanceCustomData(i, false);
+	}
+	if (Total > 0)
+	{
+		MarkRenderStateDirty();
+	}
 }
 
 bool UInteractableISMComponent::GetInstanceRuntimeInfo(int32 InISMI, FISMInstanceRuntimeInfo& OutInfo) const

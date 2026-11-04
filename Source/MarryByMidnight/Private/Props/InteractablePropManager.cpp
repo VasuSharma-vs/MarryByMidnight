@@ -8,7 +8,9 @@
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
 #include "Characters/NPCCharacter.h"
 #include "Components/NPCPersonalityComponent.h"
 #include "GameFramework/Pawn.h"
@@ -461,6 +463,27 @@ int32 APropManager::FindProductIDByDataAsset(const UInteractablePropDataAsset* I
 	return 0;
 }
 
+int32 APropManager::RegisterProductFromDataAsset(const UInteractablePropDataAsset* InAsset)
+{
+	if (!InAsset)
+	{
+		return 0;
+	}
+
+	EnsureLevelPropsInitialized();
+
+	const int32 ExistingPID = FindProductIDByDataAsset(InAsset);
+	if (ExistingPID > 0)
+	{
+		return ExistingPID;
+	}
+
+	const int32 NewPID = AllocateProductID();
+	FPropProductDefinition Def = FPropProductDefinition::FromDataAsset(InAsset, NewPID, NewPID);
+	RegisterProductDefinition(Def);
+	return NewPID;
+}
+
 int32 APropManager::FindProductIDByStaticMesh(const UStaticMesh* InMesh) const
 {
 	if (!InMesh)
@@ -522,13 +545,20 @@ int32 APropManager::FindProductIDByMeshAndMaterials(const UStaticMesh* InMesh, c
 						DefMat = InMesh->GetMaterial(m);
 					}
 
-					if (InMaterials[m] && DefMat)
+					if (InMaterials[m] != DefMat)
 					{
-						const FString NameA = InMaterials[m]->GetName();
-						const FString NameB = DefMat->GetName();
-						if (InMaterials[m] != DefMat &&
-							InMaterials[m]->GetFName() != DefMat->GetFName() &&
-							NameA != NameB)
+						if (InMaterials[m] && DefMat)
+						{
+							const FString NameA = InMaterials[m]->GetName();
+							const FString NameB = DefMat->GetName();
+							if (InMaterials[m]->GetFName() != DefMat->GetFName() &&
+								NameA != NameB)
+							{
+								bMatsMatch = false;
+								break;
+							}
+						}
+						else
 						{
 							bMatsMatch = false;
 							break;
@@ -545,26 +575,29 @@ int32 APropManager::FindProductIDByMeshAndMaterials(const UStaticMesh* InMesh, c
 		}
 	}
 
-	// 2. Only fall back to mesh if there is uniquely ONE product definition using this static mesh
-	int32 UniquePID = 0;
-	int32 MatchCount = 0;
-	for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
+	// 2. Only fall back to mesh if NO materials were specified AND there is uniquely ONE product definition using this static mesh
+	if (InMaterials.Num() == 0)
 	{
-		if (Pair.Value.StaticMesh == InMesh)
+		int32 UniquePID = 0;
+		int32 MatchCount = 0;
+		for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
 		{
-			UniquePID = Pair.Key;
-			MatchCount++;
+			if (Pair.Value.StaticMesh == InMesh)
+			{
+				UniquePID = Pair.Key;
+				MatchCount++;
+			}
+		}
+
+		if (MatchCount == 1)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[PropSenseSight] FindProductIDByMeshAndMaterials: Unique mesh fallback for '%s' returned PID %d"),
+				*InMesh->GetName(), UniquePID);
+			return UniquePID;
 		}
 	}
 
-	if (MatchCount == 1)
-	{
-		UE_LOG(LogTemp, Log, TEXT("[PropSenseSight] FindProductIDByMeshAndMaterials: Unique mesh fallback for '%s' returned PID %d"),
-			*InMesh->GetName(), UniquePID);
-		return UniquePID;
-	}
-
-	// If multiple products share this mesh and materials didn't match, return 0 so a distinct ProductID is allocated
+	// If materials didn't match or multiple products share this mesh, return 0 so a distinct ProductID is allocated
 	return 0;
 }
 
@@ -664,43 +697,100 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 
 	EnsureLevelPropsInitialized();
 
-	// If already registered and valid
+	// 1. If actor has a PropDataAsset, the DataAsset is the authoritative product definition
+	if (InActor->PropDataAsset)
+	{
+		const int32 ExistingPID = FindProductIDByDataAsset(InActor->PropDataAsset);
+		if (ExistingPID > 0)
+		{
+			InActor->ProductID = ExistingPID;
+			return ExistingPID;
+		}
+
+		const int32 NewPID = (InActor->ProductID > 0 && !IsProductRegistered(InActor->ProductID)) ? InActor->ProductID : AllocateProductID();
+		FPropProductDefinition Def = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, NewPID);
+		if (Def.MaterialOverrides.Num() == 0 && InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+		{
+			const int32 NumMats = InActor->SkeletalMeshComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				if (UMaterialInterface* Mat = InActor->SkeletalMeshComponent->GetMaterial(MatIdx))
+				{
+					Def.MaterialOverrides.Add(Mat);
+				}
+			}
+		}
+		else if (Def.MaterialOverrides.Num() == 0 && InActor->PropMesh)
+		{
+			const int32 NumMats = InActor->PropMesh->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				if (UMaterialInterface* Mat = InActor->PropMesh->GetMaterial(MatIdx))
+				{
+					Def.MaterialOverrides.Add(Mat);
+				}
+			}
+		}
+		if (!Def.SkeletalMesh && InActor->SkeletalMeshComponent)
+		{
+			Def.SkeletalMesh = InActor->SkeletalMeshComponent->GetSkeletalMeshAsset();
+		}
+		if (!Def.CustomActiveActorClass)
+		{
+			Def.CustomActiveActorClass = InActor->GetClass();
+		}
+		RegisterProductDefinition(Def);
+		InActor->ProductID = NewPID;
+		return NewPID;
+	}
+
+	// 2. If already registered and valid (without PropDataAsset)
 	if (InActor->ProductID > 0 && IsProductRegistered(InActor->ProductID))
 	{
 		return InActor->ProductID;
 	}
 
-	// If the actor has an explicit ProductID specified (> 0), strictly honor and register with that ProductID
+	// 3. If the actor has an explicit ProductID specified (> 0) without PropDataAsset
 	if (InActor->ProductID > 0)
 	{
 		const int32 ExplicitPID = InActor->ProductID;
 		FPropProductDefinition Def;
-		if (InActor->PropDataAsset)
+		UStaticMesh* ActorMesh = InActor->PropMesh ? InActor->PropMesh->GetStaticMesh() : nullptr;
+		USkeletalMesh* ActorSkelMesh = InActor->SkeletalMeshComponent ? InActor->SkeletalMeshComponent->GetSkeletalMeshAsset() : nullptr;
+		Def.ProductID = ExplicitPID;
+		Def.StaticMeshID = ExplicitPID;
+		Def.StaticMesh = ActorMesh;
+		Def.SkeletalMesh = ActorSkelMesh;
+		Def.DisplayName = InActor->ItemDisplayName.IsEmpty()
+			? (ActorMesh ? FText::FromName(ActorMesh->GetFName()) : (ActorSkelMesh ? FText::FromName(ActorSkelMesh->GetFName()) : FText::GetEmpty()))
+			: InActor->ItemDisplayName;
+		if (InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
 		{
-			Def = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, ExplicitPID);
-		}
-		else
-		{
-			UStaticMesh* ActorMesh = InActor->PropMesh ? InActor->PropMesh->GetStaticMesh() : nullptr;
-			Def.ProductID = ExplicitPID;
-			Def.StaticMeshID = ExplicitPID;
-			Def.StaticMesh = ActorMesh;
-			Def.DisplayName = InActor->ItemDisplayName.IsEmpty() && ActorMesh ? FText::FromName(ActorMesh->GetFName()) : InActor->ItemDisplayName;
-			if (InActor->PropMesh)
+			const int32 NumMats = InActor->SkeletalMeshComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 			{
-				const int32 NumMats = InActor->PropMesh->GetNumMaterials();
-				for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
-				{
-					Def.MaterialOverrides.Add(InActor->PropMesh->GetMaterial(MatIdx));
-				}
+				Def.MaterialOverrides.Add(InActor->SkeletalMeshComponent->GetMaterial(MatIdx));
 			}
-			Def.ConsumableProfile.Price = InActor->Price;
-			Def.ConsumableProfile.NumOfPortions = InActor->NumOfPortions;
-			Def.ConsumableProfile.ConsumableType = InActor->ConsumableType;
-			Def.TemperatureProfile.bEnableTemperatureUpdate = InActor->bEnableTemperatureUpdate;
-			Def.TemperatureProfile.ConsumableTemperature = InActor->ConsumableTemperature;
-			Def.ExpiryProfile.bHasExpiry = InActor->bHasExpiry;
-			Def.ExpiryProfile.ExpiryLifetimeMinutes = InActor->ExpiryLifetimeMinutes;
+		}
+		else if (InActor->PropMesh)
+		{
+			const int32 NumMats = InActor->PropMesh->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				Def.MaterialOverrides.Add(InActor->PropMesh->GetMaterial(MatIdx));
+			}
+		}
+		Def.ConsumableProfile.Price = InActor->Price;
+		Def.ConsumableProfile.NumOfPortions = InActor->NumOfPortions;
+		Def.ConsumableProfile.ConsumableType = InActor->ConsumableType;
+		Def.TemperatureProfile.bEnableTemperatureUpdate = InActor->bEnableTemperatureUpdate;
+		Def.TemperatureProfile.ConsumableTemperature = InActor->ConsumableTemperature;
+		Def.ExpiryProfile.bHasExpiry = InActor->bHasExpiry;
+		Def.ExpiryProfile.ExpiryLifetimeMinutes = InActor->ExpiryLifetimeMinutes;
+
+		if (!Def.SkeletalMesh && InActor->SkeletalMeshComponent)
+		{
+			Def.SkeletalMesh = InActor->SkeletalMeshComponent->GetSkeletalMeshAsset();
 		}
 
 		if (!Def.CustomActiveActorClass)
@@ -712,33 +802,21 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 		return ExplicitPID;
 	}
 
-	// 1. Try finding/building from PropDataAsset
-	if (InActor->PropDataAsset)
-	{
-		const int32 ExistingPID = FindProductIDByDataAsset(InActor->PropDataAsset);
-		if (ExistingPID > 0)
-		{
-			InActor->ProductID = ExistingPID;
-			return ExistingPID;
-		}
-
-		const int32 NewPID = AllocateProductID();
-		FPropProductDefinition Def = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, NewPID);
-		if (!Def.CustomActiveActorClass)
-		{
-			Def.CustomActiveActorClass = InActor->GetClass();
-		}
-		RegisterProductDefinition(Def);
-		InActor->ProductID = NewPID;
-		return NewPID;
-	}
-
-	// 2. Try finding/building from PropMesh and materials
+	// 2. Try finding/building from PropMesh / SkeletalMesh and materials
 	UStaticMesh* ActorMesh = InActor->PropMesh ? InActor->PropMesh->GetStaticMesh() : nullptr;
-	if (ActorMesh)
+	USkeletalMesh* ActorSkelMesh = InActor->SkeletalMeshComponent ? InActor->SkeletalMeshComponent->GetSkeletalMeshAsset() : nullptr;
+	if (ActorMesh || ActorSkelMesh)
 	{
 		TArray<UMaterialInterface*> ActorMats;
-		if (InActor->PropMesh)
+		if (InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+		{
+			const int32 NumMats = InActor->SkeletalMeshComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				ActorMats.Add(InActor->SkeletalMeshComponent->GetMaterial(MatIdx));
+			}
+		}
+		else if (InActor->PropMesh)
 		{
 			const int32 NumMats = InActor->PropMesh->GetNumMaterials();
 			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
@@ -746,7 +824,7 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 				ActorMats.Add(InActor->PropMesh->GetMaterial(MatIdx));
 			}
 		}
-		const int32 ExistingPID = FindProductIDByMeshAndMaterials(ActorMesh, ActorMats);
+		const int32 ExistingPID = ActorMesh ? FindProductIDByMeshAndMaterials(ActorMesh, ActorMats) : 0;
 		if (ExistingPID > 0)
 		{
 			InActor->ProductID = ExistingPID;
@@ -758,10 +836,21 @@ int32 APropManager::RegisterProductFromActor(AActivePropActor* InActor)
 		Def.ProductID = NewPID;
 		Def.StaticMeshID = NewPID;
 		Def.StaticMesh = ActorMesh;
-		Def.DisplayName = InActor->ItemDisplayName.IsEmpty() ? FText::FromName(ActorMesh->GetFName()) : InActor->ItemDisplayName;
+		Def.SkeletalMesh = ActorSkelMesh;
+		Def.DisplayName = InActor->ItemDisplayName.IsEmpty()
+			? (ActorMesh ? FText::FromName(ActorMesh->GetFName()) : (ActorSkelMesh ? FText::FromName(ActorSkelMesh->GetFName()) : FText::GetEmpty()))
+			: InActor->ItemDisplayName;
 		Def.CustomActiveActorClass = InActor->GetClass();
 
-		if (InActor->PropMesh)
+		if (InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+		{
+			const int32 NumMats = InActor->SkeletalMeshComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+			{
+				Def.MaterialOverrides.Add(InActor->SkeletalMeshComponent->GetMaterial(MatIdx));
+			}
+		}
+		else if (InActor->PropMesh)
 		{
 			const int32 NumMats = InActor->PropMesh->GetNumMaterials();
 			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
@@ -876,10 +965,7 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 		{
 			InComponent->ProductID = InComponent->IISMDB.ProductID;
 		}
-		else
-		{
-			InComponent->ProductID = AllocateProductID();
-		}
+		// If the component has no mesh, no data asset, and no IISMDB, leave ProductID <= 0 until assigned
 	}
 	if (InComponent->ProductID > 0)
 	{
@@ -1955,19 +2041,37 @@ bool APropManager::CanComponentReuseForProduct(const UInteractableISMComponent* 
 	const FPropProductDefinition* TargetDef = ProductDefinitions.Find(TargetProductID);
 	if (!TargetDef) return false;
 
+	// An unassigned component with zero instances and compatible/unset mesh can always be assigned to TargetProductID
+	if (Comp->ProductID <= 0 && Comp->GetInstanceCount() == 0)
+	{
+		if (!Comp->GetStaticMesh() || Comp->GetStaticMesh() == TargetDef->StaticMesh)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	if (Comp->GetStaticMesh() && TargetDef->StaticMesh && Comp->GetStaticMesh() != TargetDef->StaticMesh)
 	{
 		return false;
 	}
 
-	if (TargetDef->MaterialOverrides.Num() > 0)
+	const int32 NumSlots = Comp->GetNumMaterials();
+	for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 	{
-		for (int32 MatIdx = 0; MatIdx < TargetDef->MaterialOverrides.Num(); ++MatIdx)
+		UMaterialInterface* TargetMat = nullptr;
+		if (TargetDef->MaterialOverrides.IsValidIndex(MatIdx) && TargetDef->MaterialOverrides[MatIdx])
 		{
-			if (TargetDef->MaterialOverrides[MatIdx] && Comp->GetMaterial(MatIdx) != TargetDef->MaterialOverrides[MatIdx])
-			{
-				return false;
-			}
+			TargetMat = TargetDef->MaterialOverrides[MatIdx];
+		}
+		else if (TargetDef->StaticMesh)
+		{
+			TargetMat = TargetDef->StaticMesh->GetMaterial(MatIdx);
+		}
+
+		if (TargetMat && Comp->GetMaterial(MatIdx) != TargetMat)
+		{
+			return false;
 		}
 	}
 
@@ -2243,6 +2347,95 @@ TArray<int32> APropManager::ReplaceProductInstances(const TArray<int32>& SourceI
 TArray<int32> APropManager::ConvertInstancesToProduct(const TArray<int32>& SourceISIDs, int32 TargetProductID, const TArray<FTransform>& TargetTransforms)
 {
 	return ConvertProductInstances(SourceISIDs, TargetProductID, TargetTransforms);
+}
+
+bool APropManager::ChangePropProduct(int32 InISID, int32 NewProductID, bool bResetRuntimeData)
+{
+	if (InISID <= 0 || NewProductID <= 0)
+	{
+		return false;
+	}
+
+	EnsureLevelPropsInitialized();
+
+	FISIDRuntimeIndex* Record = FindISIDData(InISID);
+	if (!Record)
+	{
+		return false;
+	}
+
+	const int32 OldProductID = Record->ProductID;
+	if (OldProductID == NewProductID)
+	{
+		return true;
+	}
+
+	const FPropProductDefinition* NewDef = FindProductDefinition(NewProductID);
+	if (!NewDef)
+	{
+		return false;
+	}
+
+	// 1. If currently bound to an ISM instance, release the old ISM slot to EmptyInstances
+	if (Record->IISMComponentID > 0)
+	{
+		if (UInteractableISMComponent* OldComp = FindIISMComponent(Record->IISMComponentID))
+		{
+			OldComp->ReleaseInstanceByISIDToEmpty(InISID);
+		}
+	}
+	Record->IISMComponentID = INDEX_NONE;
+	Record->ISMI = INDEX_NONE;
+
+	// 2. Update record product ID
+	Record->ProductID = NewProductID;
+
+	// 3. Reset runtime data if requested
+	if (bResetRuntimeData)
+	{
+		Record->PackedRuntimeData.RemainingPortions = NewDef->ConsumableProfile.NumOfPortions;
+		Record->PackedRuntimeData.Temperature = NewDef->TemperatureProfile.ConsumableTemperature;
+		Record->PackedRuntimeData.CreationMinute = GetCurrentWorldMinutes();
+		Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
+
+		Record->RuntimeData.RemainingPortions = NewDef->ConsumableProfile.NumOfPortions;
+		Record->RuntimeData.Temperature = NewDef->TemperatureProfile.ConsumableTemperature;
+	}
+
+	// 4. If the prop is currently an active ASM actor, update its product definition, mesh, materials, and CPD
+	AActivePropActor* ActiveActor = Record->ActiveActor.Get() ? Record->ActiveActor.Get() : GetActiveActorFromISID(InISID);
+	if (ActiveActor)
+	{
+		ActiveActor->ProductID = NewProductID;
+		ActiveActor->ApplyProductDefinition(*NewDef);
+		if (bResetRuntimeData)
+		{
+			ActiveActor->NumOfPortions = NewDef->ConsumableProfile.NumOfPortions;
+			ActiveActor->ConsumableTemperature = NewDef->TemperatureProfile.ConsumableTemperature;
+			ActiveActor->bEnableTemperatureUpdate = NewDef->TemperatureProfile.bEnableTemperatureUpdate;
+			ActiveActor->AgeMinutes = 0.0f;
+		}
+		ActiveActor->UpdateMaterialCustomPrimitiveData();
+	}
+	else if (Record->Representation == EPropRepresentation::ISM || Record->State == EPropState::AtRest)
+	{
+		// If in ISM representation, immediately allocate into the new product's ISM component
+		if (UInteractableISMComponent* NewComp = GetOrCreateIISMComponent(NewProductID))
+		{
+			const int32 NewISMI = NewComp->ReuseOrAddInstanceWithISID(InISID, Record->ActiveTransform, Record->PackedRuntimeData, INDEX_NONE, true);
+			Record->ISMI = NewISMI;
+			Record->IISMComponentID = NewComp->IISMComponentID;
+			NewComp->UpdateInstanceCustomData(NewISMI, true);
+		}
+	}
+
+	// 5. Mark dirty to replicate to clients
+	if (HasAuthority())
+	{
+		MarkInstanceDirty(InISID, EPropDirtyFlags::Representation | EPropDirtyFlags::Transform | EPropDirtyFlags::State | EPropDirtyFlags::RuntimeData);
+	}
+
+	return true;
 }
 
 // =========================================================================
@@ -2529,6 +2722,59 @@ bool APropManager::ConvertISMToASM(
 	return true;
 }
 
+namespace
+{
+	FString FormatMaterialsList(const TArray<UMaterialInterface*>& Mats)
+	{
+		if (Mats.Num() == 0) return TEXT("None (Count=0)");
+		FString Str = FString::Printf(TEXT("(Count=%d): "), Mats.Num());
+		for (int32 i = 0; i < Mats.Num(); ++i)
+		{
+			Str += FString::Printf(TEXT("[%d]=%s "), i, Mats[i] ? *Mats[i]->GetName() : TEXT("nullptr"));
+		}
+		return Str;
+	}
+
+	FString FormatObjectPtrMaterialsList(const TArray<TObjectPtr<UMaterialInterface>>& Mats)
+	{
+		if (Mats.Num() == 0) return TEXT("None (Count=0)");
+		FString Str = FString::Printf(TEXT("(Count=%d): "), Mats.Num());
+		for (int32 i = 0; i < Mats.Num(); ++i)
+		{
+			Str += FString::Printf(TEXT("[%d]=%s "), i, Mats[i] ? *Mats[i]->GetName() : TEXT("nullptr"));
+		}
+		return Str;
+	}
+
+	FString FormatCompMaterialsList(const UInteractableISMComponent* Comp)
+	{
+		if (!Comp) return TEXT("None (Component is null)");
+		const int32 Num = Comp->GetNumMaterials();
+		if (Num == 0) return TEXT("None (Count=0)");
+		FString Str = FString::Printf(TEXT("(Count=%d): "), Num);
+		for (int32 i = 0; i < Num; ++i)
+		{
+			UMaterialInterface* M = Comp->GetMaterial(i);
+			Str += FString::Printf(TEXT("[%d]=%s "), i, M ? *M->GetName() : TEXT("nullptr"));
+		}
+		return Str;
+	}
+
+	FString FormatMeshComponentMaterialsList(const UMeshComponent* Comp)
+	{
+		if (!Comp) return TEXT("None");
+		const int32 Num = Comp->GetNumMaterials();
+		if (Num == 0) return TEXT("None (Count=0)");
+		FString Str = FString::Printf(TEXT("(Count=%d): "), Num);
+		for (int32 i = 0; i < Num; ++i)
+		{
+			UMaterialInterface* M = Comp->GetMaterial(i);
+			Str += FString::Printf(TEXT("[%d]=%s "), i, M ? *M->GetName() : TEXT("nullptr"));
+		}
+		return Str;
+	}
+}
+
 bool APropManager::ConvertASMToISM(
 	uint32 ISID,
 	EPropState NewState,
@@ -2544,13 +2790,120 @@ bool APropManager::ConvertASMToISM(
 	FISIDRuntimeIndex* Record = FindISIDData(SignedISID);
 	if (!Record)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM FAILED: Record not found for ISID %d"), SignedISID);
 		return false;
 	}
 
-	const int32 SavedASMID = (Record->ASMID > 0) ? Record->ASMID : (Record->ActiveActor ? Record->ActiveActor->ASMID : 0);
+	// Never demote to AtRest if currently locked in Held or InMotion!
+	if (NewState == EPropState::AtRest)
+	{
+		if (Record->State == EPropState::Held)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d is currently Held!"), SignedISID);
+			return false;
+		}
+		if (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is Held or InMotion!"), SignedISID);
+			return false;
+		}
+	}
+
+	AActivePropActor* ActiveActor = Record->ActiveActor.Get() ? Record->ActiveActor.Get() : GetActiveActorFromISID(SignedISID);
+	if (ActiveActor)
+	{
+		if (ActiveActor->PropDataAsset)
+		{
+			int32 AssetPID = FindProductIDByDataAsset(ActiveActor->PropDataAsset);
+			if (AssetPID <= 0)
+			{
+				AssetPID = RegisterProductFromDataAsset(ActiveActor->PropDataAsset);
+			}
+			if (AssetPID > 0)
+			{
+				ActiveActor->ProductID = AssetPID;
+				Record->ProductID = AssetPID;
+			}
+		}
+		else if (ActiveActor->ProductID > 0 && ActiveActor->ProductID != Record->ProductID)
+		{
+			Record->ProductID = ActiveActor->ProductID;
+		}
+
+		if (!IsProductRegistered(Record->ProductID))
+		{
+			const int32 NewPID = RegisterProductFromActor(ActiveActor);
+			if (NewPID > 0)
+			{
+				Record->ProductID = NewPID;
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] >>> ConvertASMToISM STARTED | ISID: %d | Role: %s"),
+		SignedISID, HasAuthority() ? TEXT("Server/Standalone") : TEXT("Client"));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target State: %s | PoolActor: %s | WriteBackTransform: %s"),
+		*UEnum::GetValueAsString(NewState), bPoolActor ? TEXT("true") : TEXT("false"), bWriteBackTransform ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Record: ISID=%d | PID=%d | ICID=%d | ISMI=%d | Rep=%s | State=%s"),
+		Record->ISID, Record->ProductID, Record->IISMComponentID, Record->ISMI,
+		*UEnum::GetValueAsString(Record->Representation), *UEnum::GetValueAsString(Record->State));
+
+	if (ActiveActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   ActiveActor: '%s' (Class: '%s') | Actor PID=%d | Actor ASMID=%d | State=%s | bIsHeld=%s | bIsInMotion=%s"),
+			*ActiveActor->GetName(), *ActiveActor->GetClass()->GetName(), ActiveActor->ProductID, ActiveActor->ASMID,
+			*UEnum::GetValueAsString(ActiveActor->State), ActiveActor->bIsHeld ? TEXT("true") : TEXT("false"), ActiveActor->bIsInMotion ? TEXT("true") : TEXT("false"));
+
+		if (ActiveActor->PropDataAsset)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
+				*ActiveActor->PropDataAsset->GetName(), *ActiveActor->PropDataAsset->ItemDisplayName.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
+				ActiveActor->PropDataAsset->StaticMesh ? *ActiveActor->PropDataAsset->StaticMesh->GetName() : TEXT("None"),
+				ActiveActor->PropDataAsset->SkeletalMesh ? *ActiveActor->PropDataAsset->SkeletalMesh->GetName() : TEXT("None"));
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
+				*FormatObjectPtrMaterialsList(ActiveActor->PropDataAsset->MaterialOverrides));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
+		}
+
+		if (ActiveActor->PropMesh)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
+				ActiveActor->PropMesh->GetStaticMesh() ? *ActiveActor->PropMesh->GetStaticMesh()->GetName() : TEXT("None"),
+				*FormatMeshComponentMaterialsList(ActiveActor->PropMesh));
+		}
+		if (ActiveActor->SkeletalMeshComponent && ActiveActor->SkeletalMeshComponent->IsVisible())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> SkeletalMeshComponent: Asset='%s' | Materials %s"),
+				ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset() ? *ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset()->GetName() : TEXT("None"),
+				*FormatMeshComponentMaterialsList(ActiveActor->SkeletalMeshComponent));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   ActiveActor: None (GetActiveActorFromISID returned null)"));
+	}
+
+	const int32 SavedASMID = (Record->ASMID > 0) ? Record->ASMID : (ActiveActor ? ActiveActor->ASMID : 0);
 	const int32 PID = Record->ProductID;
 
-	UInteractableISMComponent* ISMComp = FindIISMComponent(Record->IISMComponentID);
+	UInteractableISMComponent* ISMComp = nullptr;
+	if (Record->IISMComponentID > 0)
+	{
+		ISMComp = FindIISMComponent(Record->IISMComponentID);
+		if (ISMComp && ISMComp->ProductID > 0 && Record->ProductID > 0 && ISMComp->ProductID != Record->ProductID)
+		{
+			ISMComp->ReleaseInstanceByISIDToEmpty(SignedISID);
+			ISMComp = nullptr;
+			Record->IISMComponentID = INDEX_NONE;
+			Record->ISMI = INDEX_NONE;
+		}
+	}
+
 	if (!ISMComp && Record->ProductID > 0)
 	{
 		ISMComp = GetOrCreateIISMComponent(Record->ProductID);
@@ -2565,16 +2918,134 @@ bool APropManager::ConvertASMToISM(
 
 	const FTransform FinalTransform = Record->ActiveTransform;
 
-	// Restore the SAME ISM instance back to gameplay transform and update its runtime data
+	int32 TargetISMI = INDEX_NONE;
+	TArray<UMaterialInterface*> AuthoritativeMaterials;
+
+	// Restore or allocate the ISM instance back to gameplay transform and update its runtime data
 	if (ISMComp)
 	{
-		if (Record->ISMI != INDEX_NONE && ISMComp->IsValidInstance(Record->ISMI))
+		const FString CompMatsBefore = FormatCompMaterialsList(ISMComp);
+
+		// 1. Ensure the ISM component has the product definition applied and materials configured
+		if (const FPropProductDefinition* Def = FindProductDefinition(Record->ProductID))
 		{
-			ISMComp->BindISIDToISMI(SignedISID, Record->ISMI);
+			ApplyProductDefinitionToComponent(ISMComp, *Def);
 		}
-		ISMComp->RestoreInstanceToGameplayTransform(SignedISID, FinalTransform);
-		ISMComp->SetInstanceData(SignedISID, Record->PackedRuntimeData);
+		else if (ActiveActor && ActiveActor->PropDataAsset)
+		{
+			FPropProductDefinition ActorDef = FPropProductDefinition::FromDataAsset(ActiveActor->PropDataAsset, Record->ProductID);
+			ApplyProductDefinitionToComponent(ISMComp, ActorDef);
+		}
+
+		// 2. Resolve authoritative materials from ProductDefinition, SourceDataAsset, or the visible mesh on ActiveActor
+		if (const FPropProductDefinition* Def = FindProductDefinition(Record->ProductID))
+		{
+			for (const TObjectPtr<UMaterialInterface>& Mat : Def->MaterialOverrides)
+			{
+				if (Mat)
+				{
+					AuthoritativeMaterials.Add(Mat);
+				}
+			}
+			if (AuthoritativeMaterials.Num() == 0 && Def->SourceDataAsset)
+			{
+				for (const TObjectPtr<UMaterialInterface>& Mat : Def->SourceDataAsset->MaterialOverrides)
+				{
+					if (Mat)
+					{
+						AuthoritativeMaterials.Add(Mat);
+					}
+				}
+			}
+		}
+
+		if (AuthoritativeMaterials.Num() == 0 && ActiveActor)
+		{
+			if (ActiveActor->SkeletalMeshComponent && ActiveActor->SkeletalMeshComponent->IsVisible() && ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+			{
+				const int32 NumSkelMats = ActiveActor->SkeletalMeshComponent->GetNumMaterials();
+				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+				{
+					if (UMaterialInterface* Mat = ActiveActor->SkeletalMeshComponent->GetMaterial(MatIdx))
+					{
+						AuthoritativeMaterials.Add(Mat);
+					}
+				}
+			}
+			else if (ActiveActor->PropMesh && ActiveActor->PropMesh->GetStaticMesh())
+			{
+				const int32 NumActorMats = ActiveActor->PropMesh->GetNumMaterials();
+				for (int32 MatIdx = 0; MatIdx < NumActorMats; ++MatIdx)
+				{
+					if (UMaterialInterface* Mat = ActiveActor->PropMesh->GetMaterial(MatIdx))
+					{
+						AuthoritativeMaterials.Add(Mat);
+					}
+				}
+			}
+		}
+
+		for (int32 MatIdx = 0; MatIdx < AuthoritativeMaterials.Num(); ++MatIdx)
+		{
+			if (AuthoritativeMaterials[MatIdx] && ISMComp->GetMaterial(MatIdx) != AuthoritativeMaterials[MatIdx])
+			{
+				ISMComp->SetMaterial(MatIdx, AuthoritativeMaterials[MatIdx]);
+			}
+		}
+		ISMComp->MarkRenderStateDirty();
+
+		// Keep ProductDefinitions in exact sync with authoritative materials so replication conveys them to all clients
+		if (AuthoritativeMaterials.Num() > 0)
+		{
+			if (FPropProductDefinition* MutableDef = ProductDefinitions.Find(Record->ProductID))
+			{
+				if (MutableDef->MaterialOverrides != AuthoritativeMaterials)
+				{
+					MutableDef->MaterialOverrides = AuthoritativeMaterials;
+				}
+			}
+		}
+
+		TargetISMI = Record->ISMI;
+		if (TargetISMI == INDEX_NONE || Record->IISMComponentID != ISMComp->IISMComponentID || !ISMComp->IsValidInstance(TargetISMI))
+		{
+			TargetISMI = ISMComp->ReuseOrAddInstanceWithISID(SignedISID, FinalTransform, Record->PackedRuntimeData, INDEX_NONE, true);
+			Record->ISMI = TargetISMI;
+			Record->IISMComponentID = ISMComp->IISMComponentID;
+		}
+		else
+		{
+			ISMComp->BindISIDToISMI(SignedISID, TargetISMI);
+			ISMComp->RestoreInstanceToGameplayTransform(SignedISID, FinalTransform);
+			ISMComp->SetInstanceData(SignedISID, Record->PackedRuntimeData);
+		}
+
+		if (TargetISMI != INDEX_NONE && ISMComp->IsValidInstance(TargetISMI))
+		{
+			ISMComp->UpdateInstanceCustomData(TargetISMI, true);
+		}
+
+		const FString CompMatsAfter = FormatCompMaterialsList(ISMComp);
+
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
+			ISMComp->IISMComponentID, ISMComp->ProductID,
+			ISMComp->GetStaticMesh() ? *ISMComp->GetStaticMesh()->GetName() : TEXT("None"));
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Instance assigned: ISMI=%d | Total Instances=%d"),
+			TargetISMI, ISMComp->GetInstanceCount());
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PropConversionDebug]   ERROR: Target ISM Component is NULL for PID %d!"), Record->ProductID);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] <<< ConvertASMToISM COMPLETED | ISID: %d -> ICID %d, ISMI %d"),
+		SignedISID, ISMComp ? ISMComp->IISMComponentID : INDEX_NONE, TargetISMI);
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+
+
 
 	if (HasAuthority())
 	{
@@ -2615,21 +3086,147 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 
 	EnsureLevelPropsInitialized();
 
-	// Register product if not yet registered
-	if (!IsProductRegistered(InActor->ProductID))
+	// If actor has a PropDataAsset, ensure ProductID matches the data asset
+	if (InActor->PropDataAsset)
+	{
+		int32 AssetPID = FindProductIDByDataAsset(InActor->PropDataAsset);
+		if (AssetPID <= 0)
+		{
+			AssetPID = RegisterProductFromDataAsset(InActor->PropDataAsset);
+		}
+		if (AssetPID > 0)
+		{
+			InActor->ProductID = AssetPID;
+		}
+	}
+	else if (!IsProductRegistered(InActor->ProductID))
 	{
 		RegisterProductFromActor(InActor);
 	}
 	if (InActor->ProductID <= 0)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[PropConversionDebug] ConvertPlacedActorToISM FAILED: ProductID <= 0 for actor '%s'"), *InActor->GetName());
 		return 0;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] >>> ConvertPlacedActorToISM STARTED | Actor: '%s' (%s) | Role: %s"),
+		*InActor->GetName(), *InActor->GetClass()->GetName(), HasAuthority() ? TEXT("Server/Standalone") : TEXT("Client"));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Actor ASMID: %d | Initial PID: %d | ISID: %d | State: %s"),
+		InActor->ASMID, InActor->ProductID, InActor->ISID, *UEnum::GetValueAsString(InActor->State));
+
+	if (InActor->PropDataAsset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
+			*InActor->PropDataAsset->GetName(), *InActor->PropDataAsset->ItemDisplayName.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
+			InActor->PropDataAsset->StaticMesh ? *InActor->PropDataAsset->StaticMesh->GetName() : TEXT("None"),
+			InActor->PropDataAsset->SkeletalMesh ? *InActor->PropDataAsset->SkeletalMesh->GetName() : TEXT("None"));
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
+			*FormatObjectPtrMaterialsList(InActor->PropDataAsset->MaterialOverrides));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
+	}
+
+	if (InActor->PropMesh)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
+			InActor->PropMesh->GetStaticMesh() ? *InActor->PropMesh->GetStaticMesh()->GetName() : TEXT("None"),
+			*FormatMeshComponentMaterialsList(InActor->PropMesh));
 	}
 
 	UInteractableISMComponent* ISMComp = GetOrCreateIISMComponent(InActor->ProductID);
 	if (!ISMComp)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[PropConversionDebug]   ERROR: GetOrCreateIISMComponent returned null for PID %d!"), InActor->ProductID);
 		return 0;
 	}
+
+	const FString CompMatsBefore = FormatCompMaterialsList(ISMComp);
+
+	if (const FPropProductDefinition* Def = FindProductDefinition(InActor->ProductID))
+	{
+		ApplyProductDefinitionToComponent(ISMComp, *Def);
+	}
+
+	TArray<UMaterialInterface*> AuthoritativeMaterials;
+	if (const FPropProductDefinition* Def = FindProductDefinition(InActor->ProductID))
+	{
+		for (const TObjectPtr<UMaterialInterface>& Mat : Def->MaterialOverrides)
+		{
+			if (Mat)
+			{
+				AuthoritativeMaterials.Add(Mat);
+			}
+		}
+		if (AuthoritativeMaterials.Num() == 0 && Def->SourceDataAsset)
+		{
+			for (const TObjectPtr<UMaterialInterface>& Mat : Def->SourceDataAsset->MaterialOverrides)
+			{
+				if (Mat)
+				{
+					AuthoritativeMaterials.Add(Mat);
+				}
+			}
+		}
+	}
+	if (AuthoritativeMaterials.Num() == 0)
+	{
+		if (InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+		{
+			const int32 NumSkelMats = InActor->SkeletalMeshComponent->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+			{
+				if (UMaterialInterface* Mat = InActor->SkeletalMeshComponent->GetMaterial(MatIdx))
+				{
+					AuthoritativeMaterials.Add(Mat);
+				}
+			}
+		}
+		else if (InActor->PropMesh && InActor->PropMesh->GetStaticMesh())
+		{
+			const int32 NumActorMats = InActor->PropMesh->GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumActorMats; ++MatIdx)
+			{
+				if (UMaterialInterface* Mat = InActor->PropMesh->GetMaterial(MatIdx))
+				{
+					AuthoritativeMaterials.Add(Mat);
+				}
+			}
+		}
+	}
+	for (int32 MatIdx = 0; MatIdx < AuthoritativeMaterials.Num(); ++MatIdx)
+	{
+		if (AuthoritativeMaterials[MatIdx] && ISMComp->GetMaterial(MatIdx) != AuthoritativeMaterials[MatIdx])
+		{
+			ISMComp->SetMaterial(MatIdx, AuthoritativeMaterials[MatIdx]);
+		}
+	}
+	ISMComp->MarkRenderStateDirty();
+
+	// Keep ProductDefinitions in exact sync with authoritative materials so replication conveys them to all clients
+	if (AuthoritativeMaterials.Num() > 0)
+	{
+		if (FPropProductDefinition* MutableDef = ProductDefinitions.Find(InActor->ProductID))
+		{
+			if (MutableDef->MaterialOverrides != AuthoritativeMaterials)
+			{
+				MutableDef->MaterialOverrides = AuthoritativeMaterials;
+			}
+		}
+	}
+
+	const FString CompMatsAfter = FormatCompMaterialsList(ISMComp);
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Resolved ProductID: %d"), InActor->ProductID);
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
+		ISMComp->IISMComponentID, ISMComp->ProductID,
+		ISMComp->GetStaticMesh() ? *ISMComp->GetStaticMesh()->GetName() : TEXT("None"));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
 
 	// Only server/standalone authoritatively creates ISM instances and persists mappings
 	if (!HasAuthority())
@@ -2653,6 +3250,7 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	const int32 NewISMI = ISMComp->AddInstanceWithISID(NewISID, ActorTransform, Packed, true);
 	if (NewISMI == INDEX_NONE)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[PropConversionDebug]   ERROR: AddInstanceWithISID returned INDEX_NONE for ISID %d!"), NewISID);
 		return 0;
 	}
 
@@ -2682,6 +3280,12 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 
 	OnPropRepresentationChanged.Broadcast(NewISID, EPropRepresentation::ISM, nullptr);
 	MarkInstanceDirty(NewISID, EPropDirtyFlags::All);
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] <<< ConvertPlacedActorToISM COMPLETED | Actor '%s' -> ISID %d, ICID %d, ISMI %d"),
+		*InActor->GetName(), NewISID, ISMComp->IISMComponentID, NewISMI);
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+
+
 
 	return NewISID;
 }
@@ -3075,6 +3679,16 @@ void APropManager::Multicast_NotifyASMConvertedToISM_Implementation(
 	if (Record && Record->IISMComponentID > 0)
 	{
 		Comp = FindIISMComponent(Record->IISMComponentID);
+		if (Comp && Comp->ProductID > 0 && InProductID > 0 && Comp->ProductID != InProductID)
+		{
+			Comp->ReleaseInstanceByISIDToEmpty(InISID);
+			Comp = nullptr;
+			if (Record)
+			{
+				Record->IISMComponentID = INDEX_NONE;
+				Record->ISMI = INDEX_NONE;
+			}
+		}
 	}
 	if (!Comp)
 	{
@@ -3087,6 +3701,14 @@ void APropManager::Multicast_NotifyASMConvertedToISM_Implementation(
 
 	if (Comp)
 	{
+		if (InProductID > 0)
+		{
+			if (const FPropProductDefinition* Def = FindProductDefinition(InProductID))
+			{
+				ApplyProductDefinitionToComponent(Comp, *Def);
+			}
+		}
+
 		const FTransform FinalTransform = (Record && Record->ActiveTransform.GetLocation().Z > -50000.0f)
 			? Record->ActiveTransform
 			: InTransform;
@@ -3112,6 +3734,12 @@ void APropManager::Multicast_NotifyASMConvertedToISM_Implementation(
 		{
 			Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
 		}
+
+		if (LocalISMI != INDEX_NONE && Comp->IsValidInstance(LocalISMI))
+		{
+			Comp->UpdateInstanceCustomData(LocalISMI, true);
+		}
+		Comp->MarkRenderStateDirty();
 	}
 
 	OnPropRepresentationChanged.Broadcast(InISID, EPropRepresentation::ISM, nullptr);
@@ -3747,6 +4375,7 @@ bool APropManager::ExecuteGrab(int32 InISID, AActor* InstigatorActor, USceneComp
 	}
 	if (ASM->PhysicsSimComponent)
 	{
+		ASM->PhysicsSimComponent->ClearUnsettledTimer();
 		ASM->PhysicsSimComponent->SetStateHeld();
 	}
 
@@ -4869,6 +5498,22 @@ bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 	const EPropState PrevState = Record->State;
 	if (PrevState == NewState) return true;
 
+	// Guard against illegal transitions:
+	// 1. A Held prop cannot transition directly to Settling, Unsettled, or AtRest while still held
+	if (PrevState == EPropState::Held || (Record->ActiveActor && (Record->ActiveActor->State == EPropState::Held || Record->ActiveActor->bIsHeld)))
+	{
+		if (NewState == EPropState::Settling || NewState == EPropState::AtRest || NewState == EPropState::Unsettled)
+		{
+			return false;
+		}
+	}
+
+	// 2. An InMotion prop cannot snap directly to AtRest without settling first
+	if (PrevState == EPropState::InMotion && NewState == EPropState::AtRest)
+	{
+		return false;
+	}
+
 	Record->State = NewState;
 	Record->PackedRuntimeData.bIsGrabbable = (NewState != EPropState::Held);
 	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
@@ -4890,6 +5535,7 @@ bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 			}
 			if (Record->ActiveActor->PhysicsSimComponent)
 			{
+				Record->ActiveActor->PhysicsSimComponent->ClearUnsettledTimer();
 				Record->ActiveActor->PhysicsSimComponent->SetStateHeld();
 			}
 		}
@@ -5139,6 +5785,12 @@ bool APropManager::SetInstanceToUnsettled(
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 
+	// Guard: If currently locked in Held or InMotion state, DO NOTHING!
+	if (Record->State == EPropState::Held || (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion)))
+	{
+		return false;
+	}
+
 	UInteractableISMComponent* ISMComp = FindIISMComponent(Record->IISMComponentID);
 	if (bDebugPrintInstanceHit || (ISMComp && ISMComp->bDebugPrintInstanceHit))
 	{
@@ -5240,14 +5892,26 @@ bool APropManager::SetInstanceToSettling(int32 InISID, float VelocityTolerance)
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 
+	// Guard: If currently Held or actively InMotion, do not settle (must be released/dropped first)
+	if (Record->State == EPropState::Held)
+	{
+		return false;
+	}
+	if (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion))
+	{
+		return false;
+	}
+
 	if (Record->Representation == EPropRepresentation::ASM)
 	{
 		if (AActivePropActor* ExistingASM = GetActiveActorFromISID(InISID))
 		{
+			SetPropState(InISID, EPropState::Settling);
 			if (ExistingASM->PhysicsSimComponent)
 			{
 				ExistingASM->PhysicsSimComponent->SetStateSettling(VelocityTolerance);
 			}
+			ExistingASM->ForceNetUpdate();
 			return true;
 		}
 	}
@@ -5319,19 +5983,7 @@ bool APropManager::SetInstanceToHeld(
 	}
 
 	SetPropState(InISID, EPropState::Held);
-	PromotedASM->bIsHeld = true;
-	PromotedASM->SetGrabbable(false);
-	if (PromotedASM->PropMesh)
-	{
-		PromotedASM->PropMesh->SetSimulatePhysics(false);
-		PromotedASM->PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		PromotedASM->PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		PromotedASM->PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
-	}
-	if (PromotedASM->PhysicsSimComponent)
-	{
-		PromotedASM->PhysicsSimComponent->SetStateHeld();
-	}
+	PromotedASM->SetHeld(true);
 
 	PromotedASM->ForceNetUpdate();
 	return true;
@@ -5355,8 +6007,11 @@ bool APropManager::SetInstanceToInMotion(
 	{
 		if (AActivePropActor* ExistingASM = GetActiveActorFromISID(InISID))
 		{
+			ExistingASM->bIsInMotion = false;
+			ExistingASM->State = EPropState::InMotion;
 			if (ExistingASM->PhysicsSimComponent)
 			{
+				ExistingASM->PhysicsSimComponent->bIsInMotion = false;
 				ExistingASM->PhysicsSimComponent->SetStateInMotion();
 			}
 			if (!SafeImpulse.IsNearlyZero() && ExistingASM->PropMesh && ExistingASM->PropMesh->IsSimulatingPhysics())
@@ -5401,8 +6056,11 @@ bool APropManager::SetInstanceToInMotion(
 	}
 
 	SetPropState(InISID, EPropState::InMotion);
+	PromotedASM->bIsInMotion = false;
+	PromotedASM->State = EPropState::InMotion;
 	if (PromotedASM->PhysicsSimComponent)
 	{
+		PromotedASM->PhysicsSimComponent->bIsInMotion = false;
 		PromotedASM->PhysicsSimComponent->SetStateInMotion();
 	}
 
@@ -5466,6 +6124,14 @@ void APropManager::Server_SetInstanceState_Implementation(
 					{
 						ExistingServerASM->PropMesh->AddImpulse(HitImpulse, NAME_None, true);
 					}
+				}
+				else if (TargetState == EPropState::Settling)
+				{
+					SetInstanceToSettling(InISID, CustomParam);
+				}
+				else if (TargetState == EPropState::InMotion)
+				{
+					SetInstanceToInMotion(InISID, HitImpulse, ImpactPoint);
 				}
 			}
 			return;
@@ -5541,6 +6207,19 @@ void APropManager::ApplyPropState(int32 InISID, EPropState InState)
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return;
 
+	// Guard: If currently in Held or actively InMotion, DO NOT transition to Settling, Unsettled, or AtRest!
+	if (InState == EPropState::Settling || InState == EPropState::AtRest || InState == EPropState::Unsettled)
+	{
+		if (Record->State == EPropState::Held)
+		{
+			return;
+		}
+		if (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion))
+		{
+			return;
+		}
+	}
+
 	Record->State = InState;
 	Record->PackedRuntimeData.bIsGrabbable = (InState != EPropState::Held);
 	if (Record->ActiveActor)
@@ -5549,6 +6228,7 @@ void APropManager::ApplyPropState(int32 InISID, EPropState InState)
 		if (InState == EPropState::Held)
 		{
 			Record->ActiveActor->bIsHeld = true;
+			Record->ActiveActor->bIsInMotion = false;
 			Record->ActiveActor->SetGrabbable(false);
 			if (Record->ActiveActor->PropMesh)
 			{
@@ -5559,8 +6239,20 @@ void APropManager::ApplyPropState(int32 InISID, EPropState InState)
 			}
 			if (Record->ActiveActor->PhysicsSimComponent)
 			{
+				Record->ActiveActor->PhysicsSimComponent->ClearUnsettledTimer();
 				Record->ActiveActor->PhysicsSimComponent->SetStateHeld();
 			}
+		}
+		else if (InState == EPropState::InMotion)
+		{
+			Record->ActiveActor->bIsInMotion = true;
+			Record->ActiveActor->bIsHeld = false;
+		}
+		else if (InState == EPropState::Settling || InState == EPropState::AtRest)
+		{
+			Record->ActiveActor->bIsInMotion = false;
+			Record->ActiveActor->bIsHeld = false;
+			Record->ActiveActor->SetGrabbable(true);
 		}
 		else if (Record->ActiveActor->bIsHeld)
 		{
@@ -5688,12 +6380,9 @@ void APropManager::UpdateClientISM(int32 InISID)
 			Record->IISMComponentID = Comp->IISMComponentID;
 		}
 
-		if (!Comp->GetStaticMesh() || (Record->ProductID > 0 && Comp->ProductID != Record->ProductID))
+		if (const FPropProductDefinition* Def = ProductDefinitions.Find(Record->ProductID))
 		{
-			if (const FPropProductDefinition* Def = ProductDefinitions.Find(Record->ProductID))
-			{
-				ApplyProductDefinitionToComponent(Comp, *Def);
-			}
+			ApplyProductDefinitionToComponent(Comp, *Def);
 		}
 
 		const FTransform TargetTransform = (Record->Representation == EPropRepresentation::ASM)
@@ -5775,9 +6464,10 @@ void APropManager::UpdateClientASM(int32 InISID)
 		}
 		else
 		{
-			// If this exact ASM is ALREADY active, visible, and simulating in the gameplay world for this ISID
+			// If this exact ASM is ALREADY active, visible, and simulating in the gameplay world for this ISID with the matching ProductID
 			// (e.g., Client predicted it locally and the Server confirmed the same ASMID), do NOT touch its transform or physics!
-			if (ASM->bIsActive && !ASM->IsHidden() && ASM->GetActorEnableCollision() && ASM->GetActorLocation().Z > -50000.0f && ASM->PropMesh && ASM->PropMesh->GetStaticMesh() != nullptr)
+			const bool bHasMesh = (ASM->PropMesh && ASM->PropMesh->GetStaticMesh() != nullptr) || (ASM->SkeletalMeshComponent && ASM->SkeletalMeshComponent->GetSkeletalMeshAsset() != nullptr);
+			if (ASM->bIsActive && !ASM->IsHidden() && ASM->GetActorEnableCollision() && ASM->GetActorLocation().Z > -50000.0f && bHasMesh && ASM->ProductID == Record->ProductID)
 			{
 				return;
 			}
@@ -6039,12 +6729,9 @@ int32 APropManager::GenerateClientProductInstance(const FPropInstanceDelta& Delt
 
 	const int32 EffectiveProductID = Delta.ProductID > 0 ? Delta.ProductID : Comp->ProductID;
 
-	if (!Comp->GetStaticMesh() || (EffectiveProductID > 0 && Comp->ProductID != EffectiveProductID))
+	if (const FPropProductDefinition* Def = ProductDefinitions.Find(EffectiveProductID))
 	{
-		if (const FPropProductDefinition* Def = ProductDefinitions.Find(EffectiveProductID))
-		{
-			ApplyProductDefinitionToComponent(Comp, *Def);
-		}
+		ApplyProductDefinitionToComponent(Comp, *Def);
 	}
 
 	const FTransform TargetTransform = (Delta.Representation == EPropRepresentation::ASM)
@@ -6198,7 +6885,7 @@ void APropManager::Multicast_ReceiveBulkBatch_Implementation(const FPropBulkUpda
 	// 1. Register or update any product definitions included in the batch on the client
 	for (const FPropProductDefinition& Def : Batch.ProductDefinitions)
 	{
-		if (Def.ProductID > 0 && !ProductDefinitions.Contains(Def.ProductID))
+		if (Def.ProductID > 0)
 		{
 			RegisterProductDefinition(Def);
 		}
@@ -6346,14 +7033,14 @@ void APropManager::ApplyPropInitializationBatch(const FPropBulkUpdateBatch& Batc
 	if (Batch.bIsFirstInitBatch)
 	{
 		SetLoadState(EPropManagerLoadState::SynchronizingClients);
+	}
 
-		// Register all product definitions from server so client can generate products & IISM components
-		for (const FPropProductDefinition& Def : Batch.ProductDefinitions)
+	// Register all product definitions from server so client can generate products & IISM components
+	for (const FPropProductDefinition& Def : Batch.ProductDefinitions)
+	{
+		if (Def.ProductID > 0)
 		{
-			if (Def.ProductID > 0)
-			{
-				RegisterProductDefinition(Def);
-			}
+			RegisterProductDefinition(Def);
 		}
 	}
 

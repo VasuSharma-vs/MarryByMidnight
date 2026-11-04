@@ -6,6 +6,7 @@
 #include "InteractablePropDataAsset.generated.h"
 
 class UStaticMesh;
+class USkeletalMesh;
 class AActivePropActor;
 class UMaterialInterface;
 
@@ -63,13 +64,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TObjectPtr<UStaticMesh> StaticMesh;
 
-	/** Optional material overrides for the static mesh */
+	/** Optional material overrides for the mesh (applies to StaticMesh or SkeletalMesh) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TArray<TObjectPtr<UMaterialInterface>> MaterialOverrides;
 
 	/** Optional custom Blueprint or C++ AActivePropActor subclass spawned when this prop is promoted from ISM to ASM */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual", meta = (DisplayName = "Custom Active Prop Actor Class (BP)"))
 	TSubclassOf<AActivePropActor> CustomActiveActorClass;
+
+	/** Optional skeletal mesh model used by this prop in ASM (if null, falls back to StaticMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TObjectPtr<USkeletalMesh> SkeletalMesh;
 
 	/** In-game display name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")

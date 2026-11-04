@@ -60,13 +60,13 @@ void UStaticMeshPhysicsSimulationComponent::EndPlay(const EEndPlayReason::Type E
 void UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (!bUnsettleOnHit) return;
-	if (CurrentState == EPhysicsSimulationState::Held) return;
+	if (IsHeldOrInMotion()) return;
 
 	AActor* Owner = GetOwner();
 	if (!Owner || !Owner->HasAuthority()) return;
 	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
-		if (!Prop->bIsActive) return;
+		if (!Prop->bIsActive || Prop->bIsHeld || Prop->bIsInMotion) return;
 	}
 
 	// Ignore passive static floor/world geometry unless hit by a Pawn, a moving physics body, or receiving an impact impulse
@@ -112,13 +112,40 @@ bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearToler
 	{
 		return true;
 	}
-	if (!TargetMesh->IsSimulatingPhysics() || !TargetMesh->IsAnyRigidBodyAwake())
+	if (!TargetMesh->IsSimulatingPhysics())
 	{
 		return true;
 	}
 	const float LinTol = (CustomLinearTolerance > 0.0f) ? CustomLinearTolerance : ActiveVelocityTolerance;
 	const float AngTol = (CustomAngularTolerance > 0.0f) ? CustomAngularTolerance : AngularVelocityTolerance;
-	return (GetLinearSpeed() <= LinTol) && (GetAngularSpeed() <= AngTol);
+	const bool bStationary = (GetLinearSpeed() <= LinTol) && (GetAngularSpeed() <= AngTol);
+	if (!bStationary)
+	{
+		return false;
+	}
+
+	// Verify the object is in contact with or immediately above a physical surface (not hanging in mid-air!)
+	if (UWorld* World = GetWorld())
+	{
+		FHitResult GroundHit;
+		FCollisionQueryParams QP(SCENE_QUERY_STAT(StaticMeshPhysicsCheckSettledSurface), false, GetOwner());
+		const FVector BoundsOrigin = TargetMesh->Bounds.Origin;
+		const float BoxExtentZ = TargetMesh->Bounds.BoxExtent.Z;
+		const FVector TraceStart = BoundsOrigin;
+		const FVector TraceEnd = BoundsOrigin - FVector(0.0f, 0.0f, BoxExtentZ + 35.0f);
+
+		const bool bHasSurface = World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, QP)
+			|| World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldDynamic, QP);
+
+		if (!bHasSurface)
+		{
+			// Body is floating or falling in mid-air - keep physics active and awake!
+			TargetMesh->WakeAllRigidBodies();
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void UStaticMeshPhysicsSimulationComponent::EnsureTargetMeshResolved()
@@ -149,13 +176,13 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 
 	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
-		if (!Prop->bIsActive)
+		if (!Prop->bIsActive || Prop->bIsHeld || Prop->bIsInMotion)
 		{
 			return;
 		}
 	}
 
-	if (CurrentState == EPhysicsSimulationState::AtRest || CurrentState == EPhysicsSimulationState::Held)
+	if (bIsInMotion || CurrentState == EPhysicsSimulationState::AtRest || CurrentState == EPhysicsSimulationState::Held)
 	{
 		return;
 	}
@@ -179,7 +206,8 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 
 	if (CurrentState == EPhysicsSimulationState::InMotion)
 	{
-		// InMotion: remains actively simulating physics continuously until an external function changes its state.
+		// InMotion: when bIsInMotion is false, physics motion transitions to Unsettled state
+		SetStateUnsettled();
 		return;
 	}
 	else if (CurrentState == EPhysicsSimulationState::Unsettled)
@@ -207,6 +235,16 @@ void UStaticMeshPhysicsSimulationComponent::GetLifetimeReplicatedProps(TArray<FL
 
 	DOREPLIFETIME(UStaticMeshPhysicsSimulationComponent, CurrentState);
 	DOREPLIFETIME(UStaticMeshPhysicsSimulationComponent, bIsGrabbable);
+	DOREPLIFETIME(UStaticMeshPhysicsSimulationComponent, bIsInMotion);
+}
+
+void UStaticMeshPhysicsSimulationComponent::OnRep_IsInMotion()
+{
+	if (bIsInMotion && TargetMesh)
+	{
+		TargetMesh->SetSimulatePhysics(true);
+		TargetMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+	}
 }
 
 void UStaticMeshPhysicsSimulationComponent::OnRep_CurrentState()
@@ -345,28 +383,116 @@ bool UStaticMeshPhysicsSimulationComponent::Server_SetPhysicsState_Validate(EPhy
 	return true;
 }
 
+void UStaticMeshPhysicsSimulationComponent::ClearUnsettledTimer()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(UnsettledTimerHandle);
+	}
+}
+
+bool UStaticMeshPhysicsSimulationComponent::IsHeldOrInMotion() const
+{
+	if (bIsInMotion)
+	{
+		return true;
+	}
+	if (CurrentState == EPhysicsSimulationState::Held)
+	{
+		return true;
+	}
+	if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(GetOwner()))
+	{
+		if (PropOwner->bIsHeld || PropOwner->bIsInMotion)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void UStaticMeshPhysicsSimulationComponent::SetStateAtRest()
 {
+	if (IsHeldOrInMotion())
+	{
+		return;
+	}
 	SetPhysicsState(EPhysicsSimulationState::AtRest);
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetStateInMotion()
 {
+	ClearUnsettledTimer();
 	SetPhysicsState(EPhysicsSimulationState::InMotion);
+}
+
+void UStaticMeshPhysicsSimulationComponent::SetInMotion(bool bNewInMotion)
+{
+	bIsInMotion = bNewInMotion;
+	if (bNewInMotion)
+	{
+		SetStateInMotion();
+	}
+	else
+	{
+		if (CurrentState == EPhysicsSimulationState::InMotion)
+		{
+			SetStateUnsettled();
+		}
+	}
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetStateHeld()
 {
+	ClearUnsettledTimer();
 	SetPhysicsState(EPhysicsSimulationState::Held);
+}
+
+void UStaticMeshPhysicsSimulationComponent::SetHeld(bool bNewHeld)
+{
+	if (bNewHeld)
+	{
+		bIsInMotion = false;
+		SetStateHeld();
+	}
+	else
+	{
+		if (CurrentState == EPhysicsSimulationState::Held)
+		{
+			SetStateSettling();
+		}
+	}
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetStateSettling(float InToleranceLevel)
 {
+	if (bIsInMotion)
+	{
+		return;
+	}
+	if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(GetOwner()))
+	{
+		if (PropOwner->bIsHeld || PropOwner->bIsInMotion)
+		{
+			return;
+		}
+	}
 	SetPhysicsState(EPhysicsSimulationState::Settling, -1.0f, InToleranceLevel);
 }
 
 void UStaticMeshPhysicsSimulationComponent::SetStateUnsettled(float UnsettledDelay)
 {
+	if (bIsInMotion)
+	{
+		return;
+	}
+	if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(GetOwner()))
+	{
+		if (PropOwner->bIsHeld || PropOwner->bIsInMotion)
+		{
+			return;
+		}
+	}
 	SetPhysicsState(EPhysicsSimulationState::Unsettled, UnsettledDelay);
 }
 
@@ -394,6 +520,34 @@ bool UStaticMeshPhysicsSimulationComponent::IsUnsettledTimerActive() const
 
 void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState NewState, float CustomDelay, float CustomTolerance)
 {
+	AActor* Owner = GetOwner();
+	AActivePropActor* ActivePropOwner = Cast<AActivePropActor>(Owner);
+
+	// Guard against invalid state transitions:
+	// 1. A Held prop cannot transition into Settling, AtRest, or Unsettled while still held by owner
+	if (ActivePropOwner && (ActivePropOwner->State == EPropState::Held || ActivePropOwner->bIsHeld))
+	{
+		if (NewState == EPhysicsSimulationState::Settling || NewState == EPhysicsSimulationState::AtRest || NewState == EPhysicsSimulationState::Unsettled)
+		{
+			return;
+		}
+	}
+
+	// 2. An InMotion prop cannot transition into Settling, AtRest, or Unsettled while bIsInMotion is true
+	if (bIsInMotion || (ActivePropOwner && ActivePropOwner->bIsInMotion))
+	{
+		if (NewState == EPhysicsSimulationState::Settling || NewState == EPhysicsSimulationState::AtRest || NewState == EPhysicsSimulationState::Unsettled)
+		{
+			return;
+		}
+	}
+
+	// 3. An InMotion prop cannot snap directly to AtRest without settling first while still in motion
+	if (CurrentState == EPhysicsSimulationState::InMotion && NewState == EPhysicsSimulationState::AtRest && (bIsInMotion || (ActivePropOwner && ActivePropOwner->bIsInMotion)))
+	{
+		return;
+	}
+
 	const EPhysicsSimulationState PrevState = CurrentState;
 	CurrentState = NewState;
 	StateElapsedTime = 0.0f;
@@ -404,8 +558,6 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 
 	EnsureTargetMeshResolved();
 
-	AActor* Owner = GetOwner();
-	AActivePropActor* ActivePropOwner = Cast<AActivePropActor>(Owner);
 	UWorld* World = GetWorld();
 
 	if (World)
@@ -595,5 +747,10 @@ void UStaticMeshPhysicsSimulationComponent::SetGrabbableInternal(bool bNewGrabba
 
 void UStaticMeshPhysicsSimulationComponent::TransitionFromUnsettledToSettling()
 {
+	if (IsHeldOrInMotion())
+	{
+		ClearUnsettledTimer();
+		return;
+	}
 	SetStateSettling();
 }

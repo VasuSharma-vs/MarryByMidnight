@@ -9,6 +9,7 @@
 #include "InteractablePropDatabase.generated.h"
 
 class UStaticMesh;
+class USkeletalMesh;
 class UMaterialInterface;
 class UInteractablePropDataAsset;
 class AActivePropActor;
@@ -780,6 +781,10 @@ struct MARRYBYMIDNIGHT_API FPropProductDefinition
 	/** Optional custom Blueprint or C++ AActivePropActor subclass used when promoting this product from ISM to ASM */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition", meta = (DisplayName = "Custom Active Prop Actor Class (BP)"))
 	TSubclassOf<AActivePropActor> CustomActiveActorClass;
+
+	/** Visual skeletal mesh asset used in ASM (if null, falls back to StaticMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition")
+	TObjectPtr<USkeletalMesh> SkeletalMesh = nullptr;
 
 	/** Interaction capability profile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition")

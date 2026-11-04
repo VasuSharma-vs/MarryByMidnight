@@ -144,7 +144,66 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 		Def.CustomActiveActorClass = InAsset->CustomActiveActorClass;
 		Def.DisplayName = InAsset->ItemDisplayName;
 		Def.StaticMesh = InAsset->StaticMesh;
+		Def.SkeletalMesh = InAsset->SkeletalMesh;
 		Def.MaterialOverrides = InAsset->MaterialOverrides;
+		if (Def.MaterialOverrides.Num() == 0)
+		{
+			if (InAsset->StaticMesh)
+			{
+				const int32 NumStaticMats = InAsset->StaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticMats; ++MatIdx)
+				{
+					Def.MaterialOverrides.Add(InAsset->StaticMesh->GetMaterial(MatIdx));
+				}
+			}
+			else if (InAsset->SkeletalMesh)
+			{
+				const int32 NumSkelMats = InAsset->SkeletalMesh->GetMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+				{
+					Def.MaterialOverrides.Add(InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get());
+				}
+			}
+		}
+		else
+		{
+			if (InAsset->StaticMesh)
+			{
+				const int32 NumStaticMats = InAsset->StaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticMats; ++MatIdx)
+				{
+					if (Def.MaterialOverrides.IsValidIndex(MatIdx))
+					{
+						if (!Def.MaterialOverrides[MatIdx])
+						{
+							Def.MaterialOverrides[MatIdx] = InAsset->StaticMesh->GetMaterial(MatIdx);
+						}
+					}
+					else
+					{
+						Def.MaterialOverrides.Add(InAsset->StaticMesh->GetMaterial(MatIdx));
+					}
+				}
+			}
+			else if (InAsset->SkeletalMesh)
+			{
+				const int32 NumSkelMats = InAsset->SkeletalMesh->GetMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+				{
+					if (Def.MaterialOverrides.IsValidIndex(MatIdx))
+					{
+						if (!Def.MaterialOverrides[MatIdx])
+						{
+							Def.MaterialOverrides[MatIdx] = InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
+						}
+					}
+					else
+					{
+						Def.MaterialOverrides.Add(InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get());
+					}
+				}
+			}
+		}
 
 		Def.ConsumableProfile.ConsumableType = InAsset->ConsumableType;
 		Def.ConsumableProfile.NumOfPortions = InAsset->NumOfPortions;

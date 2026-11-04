@@ -64,6 +64,13 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentState();
 
+	/** Whether this component is actively in motion (when true, prevents settling to rest; when false, settling is allowed) */
+	UPROPERTY(ReplicatedUsing = OnRep_IsInMotion, BlueprintReadWrite, Category = "Physics Simulation")
+	bool bIsInMotion = false;
+
+	UFUNCTION()
+	void OnRep_IsInMotion();
+
 	/** Internal replicated grabbable state (hidden from Details panel to avoid duplicating Actor's Is Grabable) */
 	UPROPERTY(ReplicatedUsing = OnRep_IsGrabbable)
 	bool bIsGrabbable = false;
@@ -130,7 +137,13 @@ public:
 	void SetStateInMotion();
 
 	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
+	void SetInMotion(bool bNewInMotion);
+
+	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
 	void SetStateHeld();
+
+	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
+	void SetHeld(bool bNewHeld);
 
 	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
 	void SetStateSettling(float InToleranceLevel = -1.0f);
@@ -149,6 +162,14 @@ public:
 	/** Returns true if the Unsettled countdown timer is actively ticking */
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
 	bool IsUnsettledTimerActive() const;
+
+	/** Explicitly clears the Unsettled countdown timer (e.g. when grabbed or held) */
+	UFUNCTION(BlueprintCallable, Category = "Physics Simulation")
+	void ClearUnsettledTimer();
+
+	/** Returns true if this component or its owner actor is in Held or InMotion state */
+	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
+	bool IsHeldOrInMotion() const;
 
 	UFUNCTION(BlueprintPure, Category = "Physics Simulation")
 	bool IsGrabbable() const;

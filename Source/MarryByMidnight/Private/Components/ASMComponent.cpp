@@ -1201,6 +1201,12 @@ void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
 		{
 			if (UStaticMeshPhysicsSimulationComponent* SimComp = It->Get())
 			{
+				if (SimComp->IsHeldOrInMotion())
+				{
+					It.RemoveCurrent();
+					continue;
+				}
+
 				if (SimComp->CurrentState == EPhysicsSimulationState::Settling)
 				{
 					if (SimComp->CheckSettled())
@@ -1218,9 +1224,18 @@ void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
 
 		for (UStaticMeshPhysicsSimulationComponent* SimComp : RestedComponents)
 		{
+			if (!SimComp || SimComp->IsHeldOrInMotion())
+			{
+				continue;
+			}
+
 			SimComp->SetStateAtRest();
 			if (AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
 			{
+				if (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion)
+				{
+					continue;
+				}
 				if (PropOwner->bIsActive && PropOwner->ISID > 0 && PropManager)
 				{
 					PropManager->ConvertASMToISM(static_cast<uint32>(PropOwner->ISID), EPropState::AtRest, true, true);
@@ -1254,7 +1269,7 @@ void UASMComponent::ProcessSettlingQueueAsync()
 	{
 		if (UStaticMeshPhysicsSimulationComponent* SimComp = WeakComp.Get())
 		{
-			if (SimComp->CurrentState == EPhysicsSimulationState::Settling)
+			if (!SimComp->IsHeldOrInMotion() && SimComp->CurrentState == EPhysicsSimulationState::Settling)
 			{
 				UPrimitiveComponent* Prim = SimComp->TargetMesh;
 				const FVector LinVel = Prim ? Prim->GetComponentVelocity() : FVector::ZeroVector;
@@ -1295,12 +1310,22 @@ void UASMComponent::ProcessSettlingQueueAsync()
 					{
 						if (UStaticMeshPhysicsSimulationComponent* SimComp = WeakComp.Get())
 						{
+							if (SimComp->IsHeldOrInMotion())
+							{
+								StrongThis->ActiveSettlingComponents.Remove(WeakComp);
+								continue;
+							}
+
 							if (SimComp->CurrentState == EPhysicsSimulationState::Settling)
 							{
 								SimComp->SetStateAtRest();
 								StrongThis->ActiveSettlingComponents.Remove(WeakComp);
 								if (AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
 								{
+									if (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion)
+									{
+										continue;
+									}
 									if (PropOwner->bIsActive && PropOwner->ISID > 0 && StrongThis->PropManager)
 									{
 										StrongThis->PropManager->ConvertASMToISM(static_cast<uint32>(PropOwner->ISID), EPropState::AtRest, true, true);

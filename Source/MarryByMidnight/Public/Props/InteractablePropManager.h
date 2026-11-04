@@ -343,6 +343,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
 	int32 RegisterProductFromActor(AActivePropActor* InActor);
 
+	/** Registers a product definition from a Data Asset if not already registered, and returns its ProductID (>0) */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Database")
+	int32 RegisterProductFromDataAsset(const UInteractablePropDataAsset* InAsset);
+
 	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Initialization")
 	int32 RegisterIISMComponent(UInteractableISMComponent* InComponent, int32 ExplicitICID = 0);
 
@@ -583,6 +587,20 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Product Conversion")
 	TArray<int32> ConvertInstancesToProduct(const TArray<int32>& SourceISIDs, int32 TargetProductID, const TArray<FTransform>& TargetTransforms);
+
+	/**
+	 * Changes the ProductID of an active prop (ASM or ISM).
+	 * If the prop is in ASM, updates its product definition, mesh (skeletal or static),
+	 * materials, and runtime data, while freeing the old ISM component slot to EmptyInstances.
+	 * When the prop settles back to AtRest, it will be demoted into the new Product's ISM component.
+	 *
+	 * @param InISID The prop's permanent instance ID.
+	 * @param NewProductID The target product ID.
+	 * @param bResetRuntimeData Whether to reset portions, temperature, and age to new product defaults.
+	 * @return True if successfully changed; false if ISID or NewProductID is invalid.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Prop Manager|Product Conversion")
+	bool ChangePropProduct(int32 InISID, int32 NewProductID, bool bResetRuntimeData = true);
 
 	// =====================================================================
 	// 37.D & Section 16 — Prop Remove / Destroy Functions (Destroys ISID)

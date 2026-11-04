@@ -26,10 +26,6 @@
 			"Enabled": true
 		},
 		{
-			"Name": "WaterAdvanced",
-			"Enabled": true
-		},
-		{
 			"Name": "ModelContextProtocol",
 			"Enabled": true
 		},
@@ -43,6 +39,10 @@
 		},
 		{
 			"Name": "ChaosVehiclesPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "WaterAdvanced",
 			"Enabled": true
 		}
 	]

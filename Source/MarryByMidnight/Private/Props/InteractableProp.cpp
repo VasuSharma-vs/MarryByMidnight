@@ -2,6 +2,8 @@
 #include "Props/InteractablePropDataAsset.h"
 #include "Props/InteractablePropManager.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
 #include "Characters/NPCCharacter.h"
@@ -27,6 +29,12 @@ AActivePropActor::AActivePropActor()
 	PropMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 	PropMesh->SetGenerateOverlapEvents(false);
 	MeshComponent = PropMesh;
+
+	SkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComponent"));
+	SkeletalMeshComponent->SetupAttachment(PropMesh);
+	SkeletalMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SkeletalMeshComponent->SetGenerateOverlapEvents(false);
+	SkeletalMeshComponent->SetVisibility(false);
 
 	DebugText = nullptr;
 
@@ -111,18 +119,78 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 
 	PropDataAsset = const_cast<UInteractablePropDataAsset*>(AssetToApply);
 
-	if (PropMesh)
+	// Select Skeletal Mesh if present, otherwise fall back to Static Mesh
+	if (AssetToApply->SkeletalMesh)
 	{
-		if (AssetToApply->StaticMesh && PropMesh->GetStaticMesh() != AssetToApply->StaticMesh)
+		if (SkeletalMeshComponent)
 		{
-			PropMesh->SetStaticMesh(AssetToApply->StaticMesh);
-		}
-		for (int32 MatIdx = 0; MatIdx < AssetToApply->MaterialOverrides.Num(); ++MatIdx)
-		{
-			if (AssetToApply->MaterialOverrides[MatIdx] && PropMesh->GetMaterial(MatIdx) != AssetToApply->MaterialOverrides[MatIdx])
+			if (SkeletalMeshComponent->GetSkeletalMeshAsset() != AssetToApply->SkeletalMesh)
 			{
-				PropMesh->SetMaterial(MatIdx, AssetToApply->MaterialOverrides[MatIdx]);
+				SkeletalMeshComponent->SetSkinnedAssetAndUpdate(AssetToApply->SkeletalMesh);
 			}
+			const int32 NumSkelMats = AssetToApply->SkeletalMesh ? AssetToApply->SkeletalMesh->GetMaterials().Num() : 0;
+			const int32 NumSlots = FMath::Max(SkeletalMeshComponent->GetNumMaterials(), FMath::Max(NumSkelMats, AssetToApply->MaterialOverrides.Num()));
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			{
+				UMaterialInterface* TargetMat = nullptr;
+				if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && AssetToApply->MaterialOverrides[MatIdx])
+				{
+					TargetMat = AssetToApply->MaterialOverrides[MatIdx];
+				}
+				else if (AssetToApply->SkeletalMesh && AssetToApply->SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
+				{
+					TargetMat = AssetToApply->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
+				}
+				if (TargetMat)
+				{
+					SkeletalMeshComponent->SetMaterial(MatIdx, TargetMat);
+				}
+			}
+			SkeletalMeshComponent->SetVisibility(true);
+		}
+
+		if (PropMesh)
+		{
+			if (AssetToApply->StaticMesh && PropMesh->GetStaticMesh() != AssetToApply->StaticMesh)
+			{
+				PropMesh->SetStaticMesh(AssetToApply->StaticMesh);
+			}
+			PropMesh->SetVisibility(false);
+		}
+	}
+	else
+	{
+		if (SkeletalMeshComponent)
+		{
+			SkeletalMeshComponent->SetVisibility(false);
+			SkeletalMeshComponent->SetSkinnedAssetAndUpdate(nullptr);
+		}
+
+		if (PropMesh)
+		{
+			if (AssetToApply->StaticMesh && PropMesh->GetStaticMesh() != AssetToApply->StaticMesh)
+			{
+				PropMesh->SetStaticMesh(AssetToApply->StaticMesh);
+			}
+			const int32 NumStaticMats = AssetToApply->StaticMesh ? AssetToApply->StaticMesh->GetStaticMaterials().Num() : 0;
+			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, AssetToApply->MaterialOverrides.Num()));
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			{
+				UMaterialInterface* TargetMat = nullptr;
+				if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && AssetToApply->MaterialOverrides[MatIdx])
+				{
+					TargetMat = AssetToApply->MaterialOverrides[MatIdx];
+				}
+				else if (AssetToApply->StaticMesh)
+				{
+					TargetMat = AssetToApply->StaticMesh->GetMaterial(MatIdx);
+				}
+				if (TargetMat)
+				{
+					PropMesh->SetMaterial(MatIdx, TargetMat);
+				}
+			}
+			PropMesh->SetVisibility(true);
 		}
 	}
 
@@ -175,6 +243,30 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 	PackedRuntimeData.Temperature = CurrentTemperature;
 	PackedRuntimeData.bIsGrabbable = bIsGrabbable;
 
+	if (GetWorld() && GetWorld()->IsGameWorld())
+	{
+		if (APropManager* Mgr = PropManagerReference ? PropManagerReference.Get() : APropManager::Get(this))
+		{
+			int32 FoundPID = Mgr->FindProductIDByDataAsset(AssetToApply);
+			if (FoundPID <= 0)
+			{
+				FoundPID = Mgr->RegisterProductFromDataAsset(AssetToApply);
+			}
+			if (FoundPID > 0)
+			{
+				ProductID = FoundPID;
+				if (ISID > 0)
+				{
+					if (FISIDRuntimeIndex* Rec = Mgr->FindISIDData(ISID))
+					{
+						Rec->ProductID = FoundPID;
+					}
+				}
+			}
+		}
+	}
+
+	UpdateMaterialCustomPrimitiveData();
 	UpdateDebugBillboard();
 	BP_OnDataAssetApplied(AssetToApply);
 }
@@ -187,18 +279,101 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 		PropDataAsset = InProductDef.SourceDataAsset;
 	}
 
-	if (PropMesh && InProductDef.StaticMesh)
+	const UInteractablePropDataAsset* SourceAsset = InProductDef.SourceDataAsset ? InProductDef.SourceDataAsset.Get() : PropDataAsset.Get();
+	const TArray<TObjectPtr<UMaterialInterface>>& SourceOverrides = (InProductDef.MaterialOverrides.Num() > 0)
+		? InProductDef.MaterialOverrides
+		: (SourceAsset ? SourceAsset->MaterialOverrides : TArray<TObjectPtr<UMaterialInterface>>());
+
+	// Select Skeletal Mesh if present, otherwise fall back to Static Mesh
+	if (InProductDef.SkeletalMesh)
 	{
-		if (PropMesh->GetStaticMesh() != InProductDef.StaticMesh)
+		if (SkeletalMeshComponent)
 		{
-			PropMesh->SetStaticMesh(InProductDef.StaticMesh);
-		}
-		for (int32 MatIdx = 0; MatIdx < InProductDef.MaterialOverrides.Num(); ++MatIdx)
-		{
-			if (InProductDef.MaterialOverrides[MatIdx] && PropMesh->GetMaterial(MatIdx) != InProductDef.MaterialOverrides[MatIdx])
+			if (SkeletalMeshComponent->GetSkeletalMeshAsset() != InProductDef.SkeletalMesh)
 			{
-				PropMesh->SetMaterial(MatIdx, InProductDef.MaterialOverrides[MatIdx]);
+				SkeletalMeshComponent->SetSkinnedAssetAndUpdate(InProductDef.SkeletalMesh);
 			}
+			const int32 NumSkelMats = InProductDef.SkeletalMesh ? InProductDef.SkeletalMesh->GetMaterials().Num() : 0;
+			const int32 NumSlots = FMath::Max(SkeletalMeshComponent->GetNumMaterials(), FMath::Max(NumSkelMats, SourceOverrides.Num()));
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			{
+				UMaterialInterface* TargetMat = nullptr;
+				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				{
+					TargetMat = SourceOverrides[MatIdx];
+				}
+				else if (InProductDef.SkeletalMesh && InProductDef.SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
+				{
+					TargetMat = InProductDef.SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
+				}
+				if (TargetMat)
+				{
+					SkeletalMeshComponent->SetMaterial(MatIdx, TargetMat);
+				}
+			}
+			SkeletalMeshComponent->SetVisibility(true);
+		}
+
+		if (PropMesh)
+		{
+			if (InProductDef.StaticMesh && PropMesh->GetStaticMesh() != InProductDef.StaticMesh)
+			{
+				PropMesh->SetStaticMesh(InProductDef.StaticMesh);
+			}
+			const int32 NumStaticMats = InProductDef.StaticMesh ? InProductDef.StaticMesh->GetStaticMaterials().Num() : 0;
+			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, SourceOverrides.Num()));
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			{
+				UMaterialInterface* TargetMat = nullptr;
+				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				{
+					TargetMat = SourceOverrides[MatIdx];
+				}
+				else if (InProductDef.StaticMesh)
+				{
+					TargetMat = InProductDef.StaticMesh->GetMaterial(MatIdx);
+				}
+				if (TargetMat)
+				{
+					PropMesh->SetMaterial(MatIdx, TargetMat);
+				}
+			}
+			PropMesh->SetVisibility(false);
+		}
+	}
+	else
+	{
+		if (SkeletalMeshComponent)
+		{
+			SkeletalMeshComponent->SetVisibility(false);
+			SkeletalMeshComponent->SetSkinnedAssetAndUpdate(nullptr);
+		}
+
+		if (PropMesh)
+		{
+			if (InProductDef.StaticMesh && PropMesh->GetStaticMesh() != InProductDef.StaticMesh)
+			{
+				PropMesh->SetStaticMesh(InProductDef.StaticMesh);
+			}
+			const int32 NumStaticMats = InProductDef.StaticMesh ? InProductDef.StaticMesh->GetStaticMaterials().Num() : 0;
+			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, SourceOverrides.Num()));
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			{
+				UMaterialInterface* TargetMat = nullptr;
+				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				{
+					TargetMat = SourceOverrides[MatIdx];
+				}
+				else if (InProductDef.StaticMesh)
+				{
+					TargetMat = InProductDef.StaticMesh->GetMaterial(MatIdx);
+				}
+				if (TargetMat)
+				{
+					PropMesh->SetMaterial(MatIdx, TargetMat);
+				}
+			}
+			PropMesh->SetVisibility(true);
 		}
 	}
 
@@ -244,6 +419,80 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 			PhysicsSimComponent->DefaultCollisionProfile = InProductDef.PhysicsProfile.DefaultCollisionProfile;
 		}
 	}
+
+	UpdateMaterialCustomPrimitiveData();
+}
+
+void AActivePropActor::UpdateMaterialCustomPrimitiveData()
+{
+	const float PortionRatio = (NumOfPortions > 0) ? FMath::Clamp(static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions), 0.0f, 1.0f) : 1.0f;
+	const float FrostFactor = FMath::Clamp((AmbientRoomTemperature - CurrentTemperature) / FMath::Max(1.0f, AmbientRoomTemperature), 0.0f, 1.0f);
+	const float ExpiryAge = (bHasExpiry && ExpiryLifetimeMinutes > 0.0f) ? FMath::Clamp(AgeMinutes / ExpiryLifetimeMinutes, 0.0f, 1.0f) : 0.0f;
+
+	if (PropMesh)
+	{
+		PropMesh->SetCustomPrimitiveDataFloat(0, PortionRatio);
+		PropMesh->SetCustomPrimitiveDataFloat(1, FrostFactor);
+		PropMesh->SetCustomPrimitiveDataFloat(2, ExpiryAge);
+	}
+	if (SkeletalMeshComponent)
+	{
+		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(0, PortionRatio);
+		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(1, FrostFactor);
+		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(2, ExpiryAge);
+	}
+}
+
+bool AActivePropActor::ChangeProduct(int32 NewProductID, bool bResetRuntimeData)
+{
+	if (NewProductID <= 0 || NewProductID == ProductID)
+	{
+		return false;
+	}
+
+	APropManager* Mgr = PropManagerReference ? PropManagerReference.Get() : APropManager::Get(this);
+	if (Mgr)
+	{
+		if (!Mgr->ChangePropProduct(ISID, NewProductID, bResetRuntimeData))
+		{
+			return false;
+		}
+	}
+	else
+	{
+		ProductID = NewProductID;
+	}
+
+	return true;
+}
+
+bool AActivePropActor::ChangeProductFromDataAsset(UInteractablePropDataAsset* NewDataAsset, bool bResetRuntimeData)
+{
+	if (!NewDataAsset)
+	{
+		return false;
+	}
+
+	APropManager* Mgr = PropManagerReference ? PropManagerReference.Get() : APropManager::Get(this);
+	if (Mgr)
+	{
+		int32 TargetPID = Mgr->FindProductIDByDataAsset(NewDataAsset);
+		if (TargetPID <= 0)
+		{
+			TargetPID = Mgr->RegisterProductFromDataAsset(NewDataAsset);
+		}
+		if (TargetPID > 0)
+		{
+			return ChangeProduct(TargetPID, bResetRuntimeData);
+		}
+	}
+	else
+	{
+		ApplyDataAsset(NewDataAsset);
+		return true;
+	}
+
+	return false;
 }
 
 void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef, APropManager* InManager)
@@ -295,6 +544,11 @@ void AActivePropActor::WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord) const
 	InOutRecord.State = State;
 	InOutRecord.Version = FMath::Max(InOutRecord.Version, Version);
 
+	if (ProductID > 0)
+	{
+		InOutRecord.ProductID = ProductID;
+	}
+
 	InOutRecord.PackedRuntimeData = PackedRuntimeData;
 	InOutRecord.PackedRuntimeData.RemainingPortions = RemainingPortions;
 	InOutRecord.PackedRuntimeData.Temperature = CurrentTemperature;
@@ -320,6 +574,7 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 	bIsReplicated = bEnableReplication;
 	State = InitialPropState;
 	bIsHeld = (InitialPropState == EPropState::Held);
+	bIsInMotion = (InitialPropState == EPropState::InMotion);
 
 	FTransform SafeGameplayTransform = GameplayTransform;
 	if (SafeGameplayTransform.GetScale3D().GetMax() < 0.005f)
@@ -334,8 +589,28 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 	// 2. Make visible and fire OnBecomeActive / OnActivatedFromISM FIRST (all data & transform are applied,
 	// before collision, physics simulation, timers, or Tick run).
 	SetActorHiddenInGame(false);
-	if (PropMesh)
+	if (SkeletalMeshComponent && SkeletalMeshComponent->GetSkeletalMeshAsset())
 	{
+		SkeletalMeshComponent->SetHiddenInGame(false, true);
+		SkeletalMeshComponent->SetVisibility(true, true);
+		SkeletalMeshComponent->MarkRenderStateDirty();
+
+		if (PropMesh)
+		{
+			PropMesh->SetHiddenInGame(false, false);
+			PropMesh->SetVisibility(false, false);
+			PropMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
+			PropMesh->SetLinearDamping(0.2f);
+			PropMesh->SetAngularDamping(0.3f);
+			PropMesh->MarkRenderStateDirty();
+		}
+	}
+	else if (PropMesh)
+	{
+		if (SkeletalMeshComponent)
+		{
+			SkeletalMeshComponent->SetVisibility(false, true);
+		}
 		PropMesh->SetHiddenInGame(false, true);
 		PropMesh->SetVisibility(true, true);
 		PropMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
@@ -343,6 +618,7 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 		PropMesh->SetAngularDamping(0.3f);
 		PropMesh->MarkRenderStateDirty();
 	}
+	UpdateMaterialCustomPrimitiveData();
 
 	const FTransform CurrentActiveTransform = GetActorTransform();
 	BP_OnBecomeActive(ISID, ProductID, CurrentActiveTransform, InitialPropState);
@@ -446,6 +722,7 @@ void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 	SetActorTickInterval(0.05f);
 	bHasNotifiedBeforeReturnToRest = true;
 	bIsHeld = false;
+	bIsInMotion = false;
 	bIsReplicated = false;
 	bAlwaysRelevant = false;
 	SetReplicates(false);
@@ -462,6 +739,7 @@ void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 		{
 			PropManagerReference->UnregisterSettlingComponent(PhysicsSimComponent);
 		}
+		PhysicsSimComponent->bIsInMotion = false;
 		PhysicsSimComponent->CurrentState = EPhysicsSimulationState::AtRest;
 	}
 
@@ -476,6 +754,11 @@ void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 			PropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 		PropMesh->SetVisibility(false, true);
+	}
+
+	if (SkeletalMeshComponent)
+	{
+		SkeletalMeshComponent->SetVisibility(false, true);
 	}
 
 	if (GetActorEnableCollision())
@@ -674,8 +957,20 @@ void AActivePropActor::QueueSelfForISMConversion()
 	}
 	PropManagerReference = Manager;
 
-	// Ensure product is registered
-	if (!Manager->IsProductRegistered(ProductID))
+	// If a PropDataAsset is assigned, ensure ProductID is synchronized with the DataAsset
+	if (PropDataAsset)
+	{
+		int32 AssetPID = Manager->FindProductIDByDataAsset(PropDataAsset);
+		if (AssetPID <= 0)
+		{
+			AssetPID = Manager->RegisterProductFromDataAsset(PropDataAsset);
+		}
+		if (AssetPID > 0)
+		{
+			ProductID = AssetPID;
+		}
+	}
+	else if (!Manager->IsProductRegistered(ProductID))
 	{
 		RegisterProductWithManager();
 	}
@@ -716,7 +1011,7 @@ void AActivePropActor::BeginPlay()
 		PhysicsSimComponent->OnPhysicsSimulationStateChanged.AddUniqueDynamic(this, &AActivePropActor::HandlePhysicsSimStateChanged);
 	}
 
-	if (PropDataAsset && ProductID == 0)
+	if (PropDataAsset)
 	{
 		ApplyDataAsset(PropDataAsset);
 	}
@@ -787,12 +1082,18 @@ void AActivePropActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AActivePropActor::HandlePhysicsSimStateChanged(EPhysicsSimulationState NewSimState, EPhysicsSimulationState PrevSimState)
 {
+	if (bIsInMotion && NewSimState != EPhysicsSimulationState::InMotion && NewSimState != EPhysicsSimulationState::Held)
+	{
+		return;
+	}
+
 	const EPropState PrevPropState = State;
 	const EPropState TargetPropState = ConvertPhysicsStateToPropState(NewSimState);
 	bIsHeld = (TargetPropState == EPropState::Held);
 
 	if (TargetPropState == EPropState::Held)
 	{
+		bIsInMotion = false;
 		bIsGrabbable = false;
 		PackedRuntimeData.bIsGrabbable = false;
 		if (PropMesh)
@@ -803,17 +1104,36 @@ void AActivePropActor::HandlePhysicsSimStateChanged(EPhysicsSimulationState NewS
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
 		}
 	}
+	else if (TargetPropState == EPropState::InMotion)
+	{
+		bIsInMotion = true;
+	}
+	else if (TargetPropState == EPropState::Settling || TargetPropState == EPropState::AtRest)
+	{
+		bIsInMotion = false;
+	}
 
 	// When an active ASM settles back to AtRest on the server, ConvertASMToISM -> NotifyBeforeReturnToRestPosition
 	// will fire BP_OnBeforeReturnToRestPosition and BP_OnPropStateChanged(AtRest, PrevPropState) before moving to ResetTransform.
 	if (HasAuthority() && ISID > 0 && bIsActive && NewSimState == EPhysicsSimulationState::AtRest && PrevSimState != EPhysicsSimulationState::AtRest)
 	{
+		if (bIsHeld || bIsInMotion)
+		{
+			return;
+		}
 		if (!PropManagerReference)
 		{
 			PropManagerReference = APropManager::Get(this);
 		}
 		if (PropManagerReference)
 		{
+			if (const FISIDRuntimeIndex* Record = PropManagerReference->FindISIDData(ISID))
+			{
+				if (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion))
+				{
+					return;
+				}
+			}
 			PropManagerReference->ConvertASMToISM(static_cast<uint32>(ISID), EPropState::AtRest, true, true);
 			return;
 		}
@@ -937,6 +1257,7 @@ void AActivePropActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AActivePropActor, AngularVelocity);
 	DOREPLIFETIME(AActivePropActor, bIsActive);
 	DOREPLIFETIME(AActivePropActor, bIsHeld);
+	DOREPLIFETIME(AActivePropActor, bIsInMotion);
 }
 
 void AActivePropActor::OnRep_ISID()
@@ -1008,6 +1329,11 @@ void AActivePropActor::SetPropState(EPropState NewState)
 {
 	const EPropState PrevState = State;
 	if (PrevState == NewState)
+	{
+		return;
+	}
+
+	if (bIsInMotion && NewState != EPropState::InMotion && NewState != EPropState::Held)
 	{
 		return;
 	}
@@ -1149,6 +1475,11 @@ void AActivePropActor::OnRep_IsActive()
 			}
 		}
 
+		if (SkeletalMeshComponent)
+		{
+			SkeletalMeshComponent->SetVisibility(false, true);
+		}
+
 		const FTransform SafePoolTransform(FQuat::Identity, FVector(0.0f, 0.0f, -100000.0f), FVector::OneVector);
 		SetActorTransform(SafePoolTransform, false, nullptr, ETeleportType::TeleportPhysics);
 		return;
@@ -1261,8 +1592,26 @@ void AActivePropActor::OnRep_IsActive()
 
 	// 2. Make visible and fire OnBecomeActive BEFORE enabling collision, physics simulation, or tick
 	SetActorHiddenInGame(false);
-	if (PropMesh)
+	if (SkeletalMeshComponent && SkeletalMeshComponent->GetSkeletalMeshAsset())
 	{
+		SkeletalMeshComponent->SetHiddenInGame(false, true);
+		SkeletalMeshComponent->SetVisibility(true, true);
+		if (PropMesh)
+		{
+			PropMesh->SetHiddenInGame(false, false);
+			PropMesh->SetVisibility(false, false);
+			PropMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
+			PropMesh->SetLinearDamping(0.2f);
+			PropMesh->SetAngularDamping(0.3f);
+			PropMesh->MarkRenderStateDirty();
+		}
+	}
+	else if (PropMesh)
+	{
+		if (SkeletalMeshComponent)
+		{
+			SkeletalMeshComponent->SetVisibility(false, true);
+		}
 		PropMesh->SetHiddenInGame(false, true);
 		PropMesh->SetVisibility(true, true);
 		PropMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
@@ -1270,6 +1619,7 @@ void AActivePropActor::OnRep_IsActive()
 		PropMesh->SetAngularDamping(0.3f);
 		PropMesh->MarkRenderStateDirty();
 	}
+	UpdateMaterialCustomPrimitiveData();
 
 	if (bHasNotifiedBeforeReturnToRest)
 	{
@@ -1333,6 +1683,91 @@ void AActivePropActor::OnRep_IsActive()
 
 void AActivePropActor::OnRep_IsHeld()
 {
+	if (bIsHeld)
+	{
+		bIsInMotion = false;
+	}
+}
+
+void AActivePropActor::OnRep_IsInMotion()
+{
+	if (bIsInMotion && PropMesh)
+	{
+		PropMesh->SetSimulatePhysics(true);
+		PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+	}
+}
+
+void AActivePropActor::SetInMotion(bool bNewInMotion)
+{
+	bIsInMotion = bNewInMotion;
+	if (bNewInMotion)
+	{
+		bIsHeld = false;
+		State = EPropState::InMotion;
+		if (PhysicsSimComponent)
+		{
+			PhysicsSimComponent->SetInMotion(true);
+		}
+		if (PropMesh && !PropMesh->IsSimulatingPhysics())
+		{
+			PropMesh->SetSimulatePhysics(true);
+			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		}
+	}
+	else
+	{
+		if (PhysicsSimComponent)
+		{
+			PhysicsSimComponent->SetInMotion(false);
+		}
+		if (State == EPropState::InMotion)
+		{
+			SetPropToSettling();
+		}
+	}
+}
+
+void AActivePropActor::SetHeld(bool bNewHeld)
+{
+	bIsHeld = bNewHeld;
+	if (bNewHeld)
+	{
+		bIsInMotion = false;
+		State = EPropState::Held;
+		bIsGrabbable = false;
+		PackedRuntimeData.bIsGrabbable = false;
+		if (PhysicsSimComponent)
+		{
+			PhysicsSimComponent->SetHeld(true);
+		}
+		if (PropMesh)
+		{
+			PropMesh->SetSimulatePhysics(false);
+			PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+			PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		}
+	}
+	else
+	{
+		bIsGrabbable = true;
+		PackedRuntimeData.bIsGrabbable = true;
+		InteractionState = EPropInteractionLockState::Free;
+		InteractionOwner = nullptr;
+		RuntimeData.CurrentInteractor = nullptr;
+		RuntimeData.InteractionOwner = nullptr;
+		RuntimeData.InteractionState = EPropInteractionLockState::Free;
+
+		if (PhysicsSimComponent)
+		{
+			PhysicsSimComponent->SetHeld(false);
+		}
+		if (State == EPropState::Held)
+		{
+			SetPropToSettling();
+		}
+	}
 }
 
 void AActivePropActor::OnRep_IsGrabbable()
@@ -1350,6 +1785,66 @@ void AActivePropActor::RetriggerUnsettled(float NewDelay)
 	if (PhysicsSimComponent)
 	{
 		PhysicsSimComponent->RetriggerUnsettledTimer(NewDelay);
+	}
+}
+
+void AActivePropActor::SetPropToUnsettled(float UnsettledDelay)
+{
+	if (bIsHeld || bIsInMotion)
+	{
+		return;
+	}
+
+	SetPropState(EPropState::Unsettled);
+	if (PhysicsSimComponent)
+	{
+		PhysicsSimComponent->SetStateUnsettled(UnsettledDelay);
+	}
+	else if (PropManagerReference && ISID > 0)
+	{
+		PropManagerReference->SetInstanceToUnsettled(ISID);
+	}
+}
+
+void AActivePropActor::SetPropToSettling(float VelocityTolerance)
+{
+	if (bIsHeld || bIsInMotion)
+	{
+		return;
+	}
+
+	if (PhysicsSimComponent)
+	{
+		PhysicsSimComponent->SetStateSettling(VelocityTolerance);
+	}
+	else if (PropManagerReference && ISID > 0)
+	{
+		PropManagerReference->SetInstanceToSettling(ISID, VelocityTolerance);
+	}
+}
+
+void AActivePropActor::SetPropToInMotion(FVector LaunchImpulse)
+{
+	if (bIsHeld)
+	{
+		return;
+	}
+
+	bIsInMotion = true;
+	State = EPropState::InMotion;
+
+	if (PhysicsSimComponent)
+	{
+		PhysicsSimComponent->SetInMotion(true);
+	}
+	else if (PropManagerReference && ISID > 0)
+	{
+		PropManagerReference->SetInstanceToInMotion(ISID, LaunchImpulse, GetActorLocation());
+	}
+
+	if (!LaunchImpulse.IsNearlyZero() && PropMesh && PropMesh->IsSimulatingPhysics())
+	{
+		PropMesh->AddImpulse(LaunchImpulse, NAME_None, true);
 	}
 }
 
@@ -1379,6 +1874,7 @@ bool AActivePropActor::OnPlayerGrab_Implementation(USceneComponent* AttachToPare
 
 	State = EPropState::Held;
 	bIsHeld = true;
+	bIsInMotion = false;
 	bIsGrabbable = false;
 	PackedRuntimeData.bIsGrabbable = false;
 	InteractionState = EPropInteractionLockState::Held;
@@ -1398,7 +1894,8 @@ bool AActivePropActor::OnPlayerGrab_Implementation(USceneComponent* AttachToPare
 
 	if (PhysicsSimComponent)
 	{
-		PhysicsSimComponent->SetStateHeld();
+		PhysicsSimComponent->ClearUnsettledTimer();
+		PhysicsSimComponent->SetHeld(true);
 	}
 
 	AttachToComponent(AttachToParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
@@ -1420,22 +1917,33 @@ bool AActivePropActor::OnPlayerRelease_Implementation(FVector LaunchVelocity)
 
 	if (LaunchVelocity.SizeSquared() > 100.0f)
 	{
+		bIsInMotion = false;
 		State = EPropState::InMotion;
 		if (PhysicsSimComponent)
 		{
+			PhysicsSimComponent->bIsInMotion = false;
 			PhysicsSimComponent->SetStateInMotion();
 		}
 		if (PropMesh)
 		{
+			PropMesh->SetSimulatePhysics(true);
+			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
 			PropMesh->AddImpulse(LaunchVelocity, NAME_None, true);
 		}
 	}
 	else
 	{
+		bIsInMotion = false;
 		State = EPropState::Unsettled;
 		if (PhysicsSimComponent)
 		{
+			PhysicsSimComponent->SetHeld(false);
 			PhysicsSimComponent->SetStateUnsettled(-1.0f);
+		}
+		if (PropMesh)
+		{
+			PropMesh->SetSimulatePhysics(true);
+			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
 		}
 	}
 
