@@ -9,6 +9,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "DrawDebugHelpers.h"
 #include "Props/InteractableProp.h"
+#include "Props/InteractablePropManager.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
 #include "NavigationSystem.h"
 
@@ -630,6 +631,34 @@ void URocketProjectileComponent::TransitionToRocketing(const FVector& InLiftoffC
 	CurrentBounceReboundSpeed = 0.0f;
 	LastImpactSpeed = 0.0f;
 	FlightDistanceTraveled = 0.0f;
+
+	// Lock PropActor into InMotion and ensure PhysicsSimComponent is uninstalled from settling queue
+	if (AActor* OwnerActor = GetOwner())
+	{
+		if (AActivePropActor* PropActor = Cast<AActivePropActor>(OwnerActor))
+		{
+			PropActor->bIsInMotion = true;
+			PropActor->bIsHeld = false;
+			PropActor->State = EPropState::InMotion;
+		}
+		if (APropManager* PM = APropManager::Get(OwnerActor))
+		{
+			for (UActorComponent* Comp : OwnerActor->GetComponents())
+			{
+				if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
+				{
+					if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
+					{
+						SimComp->ClearUnsettledTimer();
+						SimComp->bIsInMotion = true;
+						SimComp->CurrentState = EPhysicsSimulationState::InMotion;
+						SimComp->SetComponentTickEnabled(false);
+						PM->UnregisterSettlingComponent(SimComp);
+					}
+				}
+			}
+		}
+	}
 
 	// Calculate liftoff heading directly towards first flight plan node if available, else LaunchTargetHitLocation
 	FVector LiftoffHeading = FVector::ForwardVector;
@@ -1895,15 +1924,21 @@ void URocketProjectileComponent::ApplyClientLaunch(
 		}
 
 		// Suspend any PhysicsSimComponent while the rocket is in flight so it does not interfere or freeze the mesh
+		APropManager* PM = APropManager::Get(GetOwner());
 		for (UActorComponent* Comp : GetOwner()->GetComponents())
 		{
 			if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 			{
 				if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
 				{
+					SimComp->ClearUnsettledTimer();
 					SimComp->SetHeld(false);
 					SimComp->SetInMotion(true);
 					SimComp->SetStateInMotion();
+					if (PM)
+					{
+						PM->UnregisterSettlingComponent(SimComp);
+					}
 				}
 				Comp->SetComponentTickEnabled(false);
 			}
@@ -2468,15 +2503,21 @@ void URocketProjectileComponent::LaunchRocket(
 			}
 
 			// Suspend any PhysicsSimComponent while the rocket is in flight so it does not interfere or freeze the mesh
+			APropManager* PM = APropManager::Get(OwnerActor);
 			for (UActorComponent* Comp : OwnerActor->GetComponents())
 			{
 				if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 				{
 					if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
 					{
+						SimComp->ClearUnsettledTimer();
 						SimComp->SetHeld(false);
 						SimComp->SetInMotion(true);
 						SimComp->SetStateInMotion();
+						if (PM)
+						{
+							PM->UnregisterSettlingComponent(SimComp);
+						}
 					}
 					Comp->SetComponentTickEnabled(false);
 				}
@@ -2849,15 +2890,21 @@ void URocketProjectileComponent::Multicast_SettleRocket_Implementation(FVector I
 		}
 
 		// Re-enable any PhysicsSimComponent that was suspended during rocket flight and put it at rest
+		APropManager* PM = APropManager::Get(OwnerActor);
 		for (UActorComponent* Comp : OwnerActor->GetComponents())
 		{
 			if (Comp && Comp->GetClass()->GetName().Contains(TEXT("PhysicsSim")))
 			{
 				if (UStaticMeshPhysicsSimulationComponent* SimComp = Cast<UStaticMeshPhysicsSimulationComponent>(Comp))
 				{
+					SimComp->ClearUnsettledTimer();
 					SimComp->SetHeld(false);
 					SimComp->SetInMotion(false);
 					SimComp->SetStateAtRest();
+					if (PM)
+					{
+						PM->UnregisterSettlingComponent(SimComp);
+					}
 				}
 				Comp->SetComponentTickEnabled(true);
 			}
@@ -3226,6 +3273,17 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 	ElapsedFlightTime += DeltaTime;
 	TotalAirTime += DeltaTime;
 
+	// Guarantee prop actor remains in motion and cannot be demoted to ISM while active rocket simulation is running!
+	if (AActivePropActor* PropActor = Cast<AActivePropActor>(GetOwner()))
+	{
+		PropActor->bIsInMotion = true;
+		PropActor->bIsHeld = false;
+		if (PropActor->State != EPropState::InMotion)
+		{
+			PropActor->State = EPropState::InMotion;
+		}
+	}
+
 	// Check if unified pre-calculated 3-part flight plan is active
 	if (AuthoritativeFlightNodes.Num() >= 2)
 	{
@@ -3286,12 +3344,11 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			if (CurrentState != ERocketSimulationState::LowFuelSputter)
 			{
 				SetSimulationState(ERocketSimulationState::LowFuelSputter);
-				OnRocketFuelDepleted.Broadcast();
 			}
 
-			// Starts with residual speed from end of rocketing (~900 cm/s) and bleeds to apex stall (~60 cm/s)
+			// Starts with residual speed from end of rocketing (~900 cm/s) and bleeds smoothly towards apex
 			const float V_start = FMath::Max(FlightSettings.BaseSpeed * 0.40f, 900.0f);
-			const float V_apex = 60.0f;
+			const float V_apex = 280.0f;
 
 			const float Region2StartDist = CumulativeFlightPlanDistances.IsValidIndex(RocketingEndIndex) ? CumulativeFlightPlanDistances[RocketingEndIndex] : 0.0f;
 			const float Region2EndDist = CumulativeFlightPlanDistances.IsValidIndex(LowFuelIndex) ? CumulativeFlightPlanDistances[LowFuelIndex] : (Region2StartDist + SegmentLength);
@@ -3299,8 +3356,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			const float CurrentClimbDist = ((CumulativeFlightPlanDistances.IsValidIndex(CurrentIdx) ? CumulativeFlightPlanDistances[CurrentIdx] : Region2StartDist) - Region2StartDist) + CurrentSegmentDistTraveled;
 			const float ClimbAlpha = FMath::Clamp(CurrentClimbDist / Region2TotalDist, 0.0f, 1.0f);
 
-			// Forward thrust degrades smoothly while gravity decelerates the bottle to near stop at apex
-			TargetSpeed = FMath::Lerp(V_start, V_apex, FMath::Pow(ClimbAlpha, 1.35f));
+			// Forward thrust degrades smoothly while gravity decelerates the bottle towards apex
+			TargetSpeed = FMath::Lerp(V_start, V_apex, FMath::Pow(ClimbAlpha, 1.2f));
 		}
 		else if (CurrentIdx == LowFuelIndex)
 		{
@@ -3308,27 +3365,28 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			if (CurrentState != ERocketSimulationState::SpentFalling)
 			{
 				SetSimulationState(ERocketSimulationState::SpentFalling);
+				OnRocketFuelDepleted.Broadcast();
 				FallingBounceCount = 0;
 				TimeSpentFalling = 0.0f;
 			}
 
 			TimeSpentFalling += DeltaTime;
 
-			const float ApexHang = bLowFuelHitObstacle ? 0.0f : (FallingSettings.ApexHangDuration > 0.0f ? FallingSettings.ApexHangDuration : 0.12f);
-			const float V_terminal = FMath::Clamp(FallingSettings.TerminalVelocity > 0.0f ? FallingSettings.TerminalVelocity : 2600.0f, 1800.0f, 3200.0f);
-			const float FallAccel = FallingSettings.FallAcceleration > 0.0f ? FallingSettings.FallAcceleration : 3000.0f;
+			const float ApexHang = bLowFuelHitObstacle ? 0.0f : (FallingSettings.ApexHangDuration > 0.0f ? FallingSettings.ApexHangDuration : 0.08f);
+			const float V_terminal = FMath::Clamp(FallingSettings.TerminalVelocity > 0.0f ? FallingSettings.TerminalVelocity : 2800.0f, 1800.0f, 3500.0f);
+			const float FallAccel = FallingSettings.FallAcceleration > 0.0f ? FallingSettings.FallAcceleration : 3800.0f;
 
 			if (TimeSpentFalling <= ApexHang && ApexHang > 0.0f)
 			{
-				// Brief time frame to show apex stall / zero-g crest (gentle rollover from 60 to 180 cm/s)
+				// Brief time frame to show apex stall / zero-g crest (gentle rollover from 280 to 420 cm/s)
 				const float HangAlpha = FMath::Clamp(TimeSpentFalling / ApexHang, 0.0f, 1.0f);
-				TargetSpeed = FMath::Lerp(60.0f, 180.0f, FMath::SmoothStep(0.0f, 1.0f, HangAlpha));
+				TargetSpeed = FMath::Lerp(280.0f, 420.0f, FMath::SmoothStep(0.0f, 1.0f, HangAlpha));
 			}
 			else
 			{
 				// Rapidly add falling velocity downward under gravity!
 				const float ActiveFallTime = TimeSpentFalling - ApexHang;
-				const float GravitySpeed = 180.0f + (FallAccel * ActiveFallTime);
+				const float GravitySpeed = 420.0f + (FallAccel * ActiveFallTime);
 				TargetSpeed = FMath::Min(GravitySpeed, V_terminal);
 			}
 		}
@@ -3630,7 +3688,7 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			{
 				TravelHistoryLogTimer = 0.0f;
 				const FString StageName = (CurrentIdx < RocketingEndIndex) ? TEXT("Rocketing") :
-					(CurrentIdx == RocketingEndIndex) ? TEXT("LowFuelThrust") :
+					(CurrentIdx >= RocketingEndIndex && CurrentIdx < LowFuelIndex) ? TEXT("LowFuelThrust") :
 					(CurrentIdx == LowFuelIndex) ? TEXT("FallingDrop") :
 					((CurrentIdx - FirstGroundHitIndex) % 2 == 0 ? TEXT("BounceAscent") : TEXT("BounceDescent"));
 

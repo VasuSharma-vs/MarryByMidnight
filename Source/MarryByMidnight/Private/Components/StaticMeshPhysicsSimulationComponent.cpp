@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "Props/InteractableProp.h"
 #include "Props/InteractablePropManager.h"
+#include "Components/RocketProjectileComponent.h"
 
 UStaticMeshPhysicsSimulationComponent::UStaticMeshPhysicsSimulationComponent()
 {
@@ -108,6 +109,19 @@ float UStaticMeshPhysicsSimulationComponent::GetAngularSpeed() const
 
 bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearTolerance, float CustomAngularTolerance) const
 {
+	if (AActor* OwnerActor = GetOwner())
+	{
+		if (URocketProjectileComponent* RocketComp = OwnerActor->FindComponentByClass<URocketProjectileComponent>())
+		{
+			if (RocketComp->IsActive() &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+			{
+				return false;
+			}
+		}
+	}
+
 	if (!TargetMesh)
 	{
 		return true;
@@ -177,6 +191,16 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
 		if (!Prop->bIsActive || Prop->bIsHeld || Prop->bIsInMotion)
+		{
+			return;
+		}
+	}
+
+	if (URocketProjectileComponent* RocketComp = Owner->FindComponentByClass<URocketProjectileComponent>())
+	{
+		if (RocketComp->IsActive() &&
+			RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+			RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
 		{
 			return;
 		}
@@ -397,15 +421,27 @@ bool UStaticMeshPhysicsSimulationComponent::IsHeldOrInMotion() const
 	{
 		return true;
 	}
-	if (CurrentState == EPhysicsSimulationState::Held)
+	if (CurrentState == EPhysicsSimulationState::Held || CurrentState == EPhysicsSimulationState::InMotion)
 	{
 		return true;
 	}
-	if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(GetOwner()))
+	if (AActor* OwnerActor = GetOwner())
 	{
-		if (PropOwner->bIsHeld || PropOwner->bIsInMotion)
+		if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(OwnerActor))
 		{
-			return true;
+			if (PropOwner->bIsHeld || PropOwner->bIsInMotion || PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion)
+			{
+				return true;
+			}
+		}
+		if (URocketProjectileComponent* RocketComp = OwnerActor->FindComponentByClass<URocketProjectileComponent>())
+		{
+			if (RocketComp->IsActive() &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+			{
+				return true;
+			}
 		}
 	}
 	return false;

@@ -6,6 +6,7 @@
 #include "Components/InteractablePropSenseSightComponent.h"
 #include "Components/InteractableInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
+#include "Components/RocketProjectileComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -2806,6 +2807,19 @@ bool APropManager::ConvertASMToISM(
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is Held or InMotion!"), SignedISID);
 			return false;
+		}
+		if (Record->ActiveActor)
+		{
+			if (URocketProjectileComponent* RocketComp = Record->ActiveActor->FindComponentByClass<URocketProjectileComponent>())
+			{
+				if (RocketComp->IsActive() &&
+					RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+					RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is active in Rocket flight (State=%d)!"), SignedISID, (int32)RocketComp->GetSimulationState());
+					return false;
+				}
+			}
 		}
 	}
 
@@ -5901,6 +5915,18 @@ bool APropManager::SetInstanceToSettling(int32 InISID, float VelocityTolerance)
 	{
 		return false;
 	}
+	if (Record->ActiveActor)
+	{
+		if (URocketProjectileComponent* RocketComp = Record->ActiveActor->FindComponentByClass<URocketProjectileComponent>())
+		{
+			if (RocketComp->IsActive() &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+			{
+				return false;
+			}
+		}
+	}
 
 	if (Record->Representation == EPropRepresentation::ASM)
 	{
@@ -7608,6 +7634,19 @@ void APropManager::UnregisterISMComponent(UInteractableISMComponent* ISMComp)
 
 void APropManager::RegisterSettlingComponent(UStaticMeshPhysicsSimulationComponent* SimComp)
 {
+	if (!SimComp) return;
+	if (AActor* OwnerActor = SimComp->GetOwner())
+	{
+		if (URocketProjectileComponent* RocketComp = OwnerActor->FindComponentByClass<URocketProjectileComponent>())
+		{
+			if (RocketComp->IsActive() &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+			{
+				return;
+			}
+		}
+	}
 	if (ASMComponent)
 	{
 		ASMComponent->RegisterSettlingComponent(SimComp);

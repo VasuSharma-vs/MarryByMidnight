@@ -3,6 +3,7 @@
 #include "Props/InteractablePropManager.h"
 #include "Components/InteractableInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
+#include "Components/RocketProjectileComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameStateBase.h"
@@ -1129,7 +1130,23 @@ void UASMComponent::UnregisterProp(AActivePropActor* Prop)
 
 void UASMComponent::RegisterSettlingComponent(UStaticMeshPhysicsSimulationComponent* SimComp)
 {
-	if (SimComp && !ActiveSettlingComponents.Contains(SimComp))
+	if (!SimComp)
+	{
+		return;
+	}
+	if (AActor* OwnerActor = SimComp->GetOwner())
+	{
+		if (URocketProjectileComponent* RocketComp = OwnerActor->FindComponentByClass<URocketProjectileComponent>())
+		{
+			if (RocketComp->IsActive() &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+				RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+			{
+				return;
+			}
+		}
+	}
+	if (!ActiveSettlingComponents.Contains(SimComp))
 	{
 		ActiveSettlingComponents.Add(SimComp);
 	}
@@ -1236,6 +1253,15 @@ void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
 				{
 					continue;
 				}
+				if (URocketProjectileComponent* RocketComp = PropOwner->FindComponentByClass<URocketProjectileComponent>())
+				{
+					if (RocketComp->IsActive() &&
+						RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+						RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+					{
+						continue;
+					}
+				}
 				if (PropOwner->bIsActive && PropOwner->ISID > 0 && PropManager)
 				{
 					PropManager->ConvertASMToISM(static_cast<uint32>(PropOwner->ISID), EPropState::AtRest, true, true);
@@ -1325,6 +1351,15 @@ void UASMComponent::ProcessSettlingQueueAsync()
 									if (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion)
 									{
 										continue;
+									}
+									if (URocketProjectileComponent* RocketComp = PropOwner->FindComponentByClass<URocketProjectileComponent>())
+									{
+										if (RocketComp->IsActive() &&
+											RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
+											RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
+										{
+											continue;
+										}
 									}
 									if (PropOwner->bIsActive && PropOwner->ISID > 0 && StrongThis->PropManager)
 									{
