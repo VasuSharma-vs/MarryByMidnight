@@ -206,37 +206,44 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 	}
 
 	// 2. Resolve source material overrides
-	TArray<TObjectPtr<UMaterialInterface>> SourceOverrides = InDefinition.MaterialOverrides;
-	if (SourceOverrides.Num() == 0 && InDefinition.SourceDataAsset)
-	{
-		SourceOverrides = InDefinition.SourceDataAsset->MaterialOverrides;
-	}
+	const TArray<TObjectPtr<UMaterialInterface>>& SourceOverrides = (InDefinition.SourceDataAsset && InDefinition.SourceDataAsset->MaterialOverrides.Num() > 0)
+		? InDefinition.SourceDataAsset->MaterialOverrides
+		: InDefinition.MaterialOverrides;
 
 	// 3. Always apply materials to all mesh slots
-	const int32 NumSlots = TargetMesh ? TargetMesh->GetStaticMaterials().Num() : GetNumMaterials();
-	const int32 TotalSlotsToApply = FMath::Max(NumSlots, SourceOverrides.Num());
-	for (int32 MatIdx = 0; MatIdx < TotalSlotsToApply; ++MatIdx)
+	if (TargetMesh)
 	{
-		UMaterialInterface* TargetMat = nullptr;
-		if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+		const int32 NumSlots = TargetMesh->GetStaticMaterials().Num();
+		for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 		{
-			TargetMat = SourceOverrides[MatIdx];
-		}
-		else if (TargetMesh)
-		{
-			TargetMat = TargetMesh->GetMaterial(MatIdx);
+			UMaterialInterface* TargetMat = nullptr;
+			if (SourceOverrides.IsValidIndex(MatIdx) && IsValid(SourceOverrides[MatIdx]))
+			{
+				TargetMat = SourceOverrides[MatIdx];
+			}
+			else
+			{
+				TargetMat = TargetMesh->GetMaterial(MatIdx);
+			}
+
+			if (TargetMat && GetMaterial(MatIdx) != TargetMat)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] [UInteractableISMComponent::ApplyProductDefinition] Slot %d on Comp '%s' updated: '%s' -> '%s'"),
+					MatIdx, *GetName(), GetMaterial(MatIdx) ? *GetMaterial(MatIdx)->GetName() : TEXT("nullptr"), *TargetMat->GetName());
+				SetMaterial(MatIdx, TargetMat);
+			}
 		}
 
-		if (TargetMat && GetMaterial(MatIdx) != TargetMat)
+		// Clear any excess override material slots beyond the mesh slot count
+		const int32 ExistingNumMats = GetNumMaterials();
+		for (int32 ExcessIdx = NumSlots; ExcessIdx < ExistingNumMats; ++ExcessIdx)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] [UInteractableISMComponent::ApplyProductDefinition] Slot %d on Comp '%s' updated: '%s' -> '%s'"),
-				MatIdx, *GetName(), GetMaterial(MatIdx) ? *GetMaterial(MatIdx)->GetName() : TEXT("nullptr"), *TargetMat->GetName());
-			SetMaterial(MatIdx, TargetMat);
+			SetMaterial(ExcessIdx, nullptr);
 		}
 	}
 
 	// 4. Verify material usage for instanced static meshes and dirty render state
-	const int32 FinalNumMats = GetNumMaterials();
+	const int32 FinalNumMats = TargetMesh ? TargetMesh->GetStaticMaterials().Num() : GetNumMaterials();
 	for (int32 MatIdx = 0; MatIdx < FinalNumMats; ++MatIdx)
 	{
 		if (UMaterialInterface* Mat = GetMaterial(MatIdx))
@@ -817,8 +824,10 @@ void UInteractableISMComponent::UpdateInstanceCustomData(int32 InISMI, bool bMar
 	}
 	else if (PackedInstanceData.IsValidIndex(InISMI))
 	{
-		const int32 TotalPortions = (IISMDB.ConsumableProfile.NumOfPortions > 0) ? IISMDB.ConsumableProfile.NumOfPortions : 4;
-		PortionRatio = FMath::Clamp(static_cast<float>(PackedInstanceData[InISMI].RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f);
+		const int32 TotalPortions = IISMDB.ConsumableProfile.NumOfPortions;
+		PortionRatio = (TotalPortions > 0)
+			? FMath::Clamp(static_cast<float>(PackedInstanceData[InISMI].RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f)
+			: 0.0f;
 	}
 
 	// 2. Frost / Coldness Factor [0.0 = Warm / Room Temp 22C, 1.0 = Freezing 0C or below]

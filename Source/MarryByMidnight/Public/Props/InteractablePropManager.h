@@ -719,6 +719,20 @@ public:
 	UFUNCTION(NetMulticast, Reliable, Category = "Prop Manager|Representation")
 	void Multicast_NotifyISMConvertedToASM(int32 InISID, int32 InProductID, int32 InASMID, const FTransform& InTransform, EPropState InState, EPropActivationReason InReason);
 
+	/** Queue of ISM -> ASM conversions to be sent in the next fast replication batch at end of frame */
+	UPROPERTY(Transient)
+	TArray<FPropASMConversionEntry> PendingASMConversions;
+
+	/** Queues an ISM -> ASM conversion entry (ISID + ASM actor reference) for fast replication at end of frame */
+	void QueueASMConversion(int32 InISID, AActivePropActor* InActor);
+
+	/** Flushes up to MaxPerFrame pending conversions to clients using fast replication batching (max 25 per frame) */
+	void ProcessPendingASMConversions(int32 MaxPerFrame = 25);
+
+	/** Fast replication NetMulticast RPC: notifies clients of converted ASMs sending only ISID and ASM object reference */
+	UFUNCTION(NetMulticast, Reliable, Category = "Prop Manager|Representation")
+	void Multicast_NotifyBatchISMConvertedToASM(const TArray<FPropASMConversionEntry>& Entries);
+
 	/** Reliable NetMulticast RPC: notifies all clients that an active ASM actor has returned to rest and converted back to ISM */
 	UFUNCTION(NetMulticast, Reliable, Category = "Prop Manager|Representation")
 	void Multicast_NotifyASMConvertedToISM(int32 InISID, int32 InProductID, int32 InASMID, const FTransform& InTransform, EPropState InState);
@@ -1523,6 +1537,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Prop Manager|Time")
 	int32 GetCurrentWorldMinutes() const;
 
+	/** Ensures level props are discovered and registered */
+	void EnsureLevelPropsInitialized();
+
 protected:
 	UPROPERTY(Transient)
 	TArray<TWeakObjectPtr<UInteractableISMComponent>> RegisteredISMComponents;
@@ -1541,7 +1558,6 @@ protected:
 
 	FTimerHandle SettlingTimerHandle;
 
-	void EnsureLevelPropsInitialized();
 	void ApplyProductDefinitionToComponent(UInteractableISMComponent* Comp, const FPropProductDefinition& Def);
 	void SetLoadState(EPropManagerLoadState NewState);
 	void UpdateDistributedProps(float DeltaSeconds);

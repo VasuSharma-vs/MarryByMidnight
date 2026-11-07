@@ -176,7 +176,7 @@ void UASMComponent::InitializeASMPool(int32 InitialCount)
 		{
 			if (AActivePropActor* ExistingEmpty = GetActiveActorFromASMID(EmptyID))
 			{
-				if (ExistingEmpty->GetClass() != DesiredDefaultClass)
+				if (ExistingEmpty->GetClass() != DesiredDefaultClass && ExistingEmpty->GetOwner() == PropManager && ExistingEmpty->ProductID <= 0)
 				{
 					RemoveASMByASMID(EmptyID);
 				}
@@ -783,6 +783,21 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 				}
 			}
 		}
+
+		if (ASMActors.Num() < MaxASMCount)
+		{
+			AActivePropActor* Spawned = SpawnPooledASM(GetEffectiveActivePropActorClass(InProductID));
+			if (Spawned)
+			{
+				EmptyASMIDs.Remove(Spawned->ASMID);
+				if (PropManager)
+				{
+					PropManager->EmptyASMIDs.Remove(Spawned->ASMID);
+				}
+				return Spawned;
+			}
+		}
+
 		return nullptr;
 	}
 
@@ -829,7 +844,7 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 	{
 		AcquiredASMID = ConsumeEmptyASMID();
 		AActivePropActor* CandidateASM = (AcquiredASMID > 0) ? GetActiveActorFromASMID(AcquiredASMID) : nullptr;
-		if (!IsValid(CandidateASM) || CandidateASM->bIsActive || CandidateASM->ISID > 0)
+		if (!IsValid(CandidateASM) || CandidateASM->bIsActive || CandidateASM->ISID > 0 || CandidateASM->GetOwner() != PropManager || CandidateASM->ProductID > 0)
 		{
 			continue;
 		}
@@ -1073,8 +1088,7 @@ void UASMComponent::RegisterProp(AActivePropActor* Prop)
 	}
 	Prop->PropManagerReference = PropManager;
 
-	const bool bIsClient = (Prop->GetWorld() && Prop->GetWorld()->IsNetMode(NM_Client) && !Prop->HasAuthority());
-	if (Prop->ASMID <= 0 && !bIsClient)
+	if (Prop->ASMID <= 0)
 	{
 		Prop->ASMID = AllocateASMID();
 	}

@@ -353,7 +353,7 @@ struct MARRYBYMIDNIGHT_API FPropConsumableProfile
 	EConsumablePropType ConsumableType = EConsumablePropType::Drink;
 
 	/** Total number of portions (sips or bites) this product contains when full */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Profile", meta = (DisplayName = "Num of Portions", ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Profile", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Profile")
@@ -363,7 +363,7 @@ struct MARRYBYMIDNIGHT_API FPropConsumableProfile
 	bool bDestroyWhenEmpty = true;
 
 	/** Portion size fraction calculated as 1.0 / NumOfPortions */
-	float GetPortionSize() const { return (NumOfPortions > 0) ? (1.0f / static_cast<float>(NumOfPortions)) : 1.0f; }
+	float GetPortionSize() const { return (NumOfPortions > 0) ? (1.0f / static_cast<float>(NumOfPortions)) : 0.0f; }
 };
 
 /**
@@ -977,6 +977,22 @@ struct MARRYBYMIDNIGHT_API FPropInstanceDelta
 };
 
 /**
+ * Lightweight entry for batch ISM -> ASM conversion sent on fast replication at end of frame (max 25 per frame).
+ * Contains only the logical ISID and the target ASMID (8 bytes total, highly optimal for MTU budget).
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropASMConversionEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Conversion")
+	int32 ISID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Conversion")
+	int32 ASMID = 0;
+};
+
+/**
  * Bounded batch of dirty ISID deltas sent to clients (Sections 34, 58, 66).
  */
 USTRUCT(BlueprintType)
@@ -1346,7 +1362,7 @@ struct MARRYBYMIDNIGHT_API FInteractablePropData
 	float Price = 2.0f;
 
 	/** Total number of portions (e.g. 4 sips or bites) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Portions", meta = (DisplayName = "Num of Portions", ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Portions", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
 
 	/** Current remaining portions (e.g. player drinks 2 sips, 2 left) */
@@ -1358,7 +1374,7 @@ struct MARRYBYMIDNIGHT_API FInteractablePropData
 	float QuantityLevel = 1.0f;
 
 	/** Portion size fraction calculated as 1.0 / NumOfPortions */
-	float GetPortionSize() const { return (NumOfPortions > 0) ? (1.0f / static_cast<float>(NumOfPortions)) : 1.0f; }
+	float GetPortionSize() const { return (NumOfPortions > 0) ? (1.0f / static_cast<float>(NumOfPortions)) : 0.0f; }
 
 	// -------------------------------------------------------------
 	// Physics Simulation & Grabbability

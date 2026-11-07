@@ -174,6 +174,7 @@ void APropManager::Tick(float DeltaSeconds)
 	{
 		UpdateDistributedProps(DeltaSeconds);
 		ProcessPendingTasks(DeltaSeconds);
+		ProcessPendingASMConversions(25);
 		ProcessBulkReplication(DeltaSeconds);
 		ProcessQueuedPlacedConversions();
 		ProcessQueuedISMPromotions();
@@ -528,31 +529,35 @@ int32 APropManager::FindProductIDByMeshAndMaterials(const UStaticMesh* InMesh, c
 	// 1. First attempt: match both StaticMesh AND material
 	if (InMaterials.Num() > 0)
 	{
+		const int32 NumSlots = InMesh->GetStaticMaterials().Num();
 		for (const TPair<int32, FPropProductDefinition>& Pair : ProductDefinitions)
 		{
 			if (Pair.Value.StaticMesh == InMesh)
 			{
 				bool bMatsMatch = true;
-				const int32 NumToCheck = InMaterials.Num();
-				for (int32 m = 0; m < NumToCheck; ++m)
+				for (int32 m = 0; m < NumSlots; ++m)
 				{
 					UMaterialInterface* DefMat = nullptr;
-					if (Pair.Value.MaterialOverrides.IsValidIndex(m) && Pair.Value.MaterialOverrides[m])
+					if (Pair.Value.MaterialOverrides.IsValidIndex(m) && IsValid(Pair.Value.MaterialOverrides[m]))
 					{
 						DefMat = Pair.Value.MaterialOverrides[m];
 					}
-					else if (InMesh->GetMaterial(m))
+					else
 					{
 						DefMat = InMesh->GetMaterial(m);
 					}
 
-					if (InMaterials[m] != DefMat)
+					UMaterialInterface* InMat = (InMaterials.IsValidIndex(m) && IsValid(InMaterials[m]))
+						? InMaterials[m]
+						: InMesh->GetMaterial(m);
+
+					if (InMat != DefMat)
 					{
-						if (InMaterials[m] && DefMat)
+						if (InMat && DefMat)
 						{
-							const FString NameA = InMaterials[m]->GetName();
+							const FString NameA = InMat->GetName();
 							const FString NameB = DefMat->GetName();
-							if (InMaterials[m]->GetFName() != DefMat->GetFName() &&
+							if (InMat->GetFName() != DefMat->GetFName() &&
 								NameA != NameB)
 							{
 								bMatsMatch = false;
@@ -1165,16 +1170,80 @@ void APropManager::InitializeLevelProps(const FString& SaveSlotName, int32 SaveU
 	// 1. Clear stale runtime EmptyInstances and reset ISID allocator for the new session
 	ClearLevelRuntimeState();
 
-	// 2. Initialize ASM Pool via ASMComponent (Min 100 to Max 500 ASM units, populating EmptyASMIDs)
-	if (ASMComponent && HasAuthority())
+	// 2. Initialize Product Definitions (IISMDB)
+	InitializeIISMDB();
+
+	// 3. Discover and register all level-placed AActivePropActors deterministically
+	TArray<AActivePropActor*> PlacedActors;
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AActivePropActor> It(World); It; ++It)
+		{
+			AActivePropActor* PlacedActor = *It;
+			if (IsValid(PlacedActor) && PlacedActor->GetOwner() != this && !PlacedActor->IsTemplate())
+			{
+				PlacedActors.Add(PlacedActor);
+			}
+		}
+	}
+
+	PlacedActors.Sort([](const AActivePropActor& A, const AActivePropActor& B)
+	{
+		return A.GetFName().LexicalLess(B.GetFName());
+	});
+
+	for (AActivePropActor* PlacedActor : PlacedActors)
+	{
+		PlacedActor->PropManagerReference = this;
+		if (PlacedActor->ASMID <= 0)
+		{
+			PlacedActor->ASMID = AllocateASMID();
+		}
+		RegisterProp(PlacedActor);
+
+		if (PlacedActor->PropDataAsset)
+		{
+			int32 AssetPID = FindProductIDByDataAsset(PlacedActor->PropDataAsset);
+			if (AssetPID <= 0)
+			{
+				AssetPID = RegisterProductFromDataAsset(PlacedActor->PropDataAsset);
+			}
+			if (AssetPID > 0)
+			{
+				PlacedActor->ProductID = AssetPID;
+			}
+		}
+		else if (!IsProductRegistered(PlacedActor->ProductID))
+		{
+			PlacedActor->RegisterProductWithManager();
+		}
+
+		if (PlacedActor->bAutoConvertToISMIfAtRest && PlacedActor->State == EPropState::AtRest && PlacedActor->ISID <= 0)
+		{
+			if (HasAuthority())
+			{
+				QueuePlacedASMForConversion(PlacedActor->ASMID);
+			}
+			else
+			{
+				PlacedActor->DeactivateToPoolState(GetResetTransformForSlot(PlacedActor->ASMID));
+				if (ASMComponent)
+				{
+					ASMComponent->ASMActors.AddUnique(PlacedActor);
+					ASMComponent->EmptyASMIDs.AddUnique(PlacedActor->ASMID);
+				}
+				EmptyASMIDs.AddUnique(PlacedActor->ASMID);
+			}
+		}
+	}
+
+	// 4. Initialize ASM Pool via ASMComponent (Min 100 to Max 500 ASM units, populating EmptyASMIDs on both Server and Client)
+	if (ASMComponent)
 	{
 		ASMComponent->InitializeASMPool(ASMComponent->MinASMCount);
 	}
 
-	// 3. Initialize Product Definitions (IISMDB)
-	InitializeIISMDB();
-
-	// 4. Discover and initialize level IISM components
+	// 5. Discover and initialize level IISM components
 	InitializeIISMComponents();
 
 	// 5. Load saved Prop Database if a valid save slot was provided
@@ -2000,6 +2069,7 @@ bool APropManager::InitializeInstanceData(int32 InISID, const FPropProductDefini
 	Record->PackedRuntimeData = ProductDef.RuntimeDefaults;
 	Record->PackedRuntimeData.CreationMinute = NowMin;
 	Record->PackedRuntimeData.LastUpdatedMinute = NowMin;
+	Record->PackedRuntimeData.RemainingPortions = ProductDef.ConsumableProfile.NumOfPortions;
 	Record->RuntimeData.RemainingPortions = ProductDef.ConsumableProfile.NumOfPortions;
 	Record->RuntimeData.Temperature = ProductDef.TemperatureProfile.ConsumableTemperature;
 
@@ -2057,11 +2127,11 @@ bool APropManager::CanComponentReuseForProduct(const UInteractableISMComponent* 
 		return false;
 	}
 
-	const int32 NumSlots = Comp->GetNumMaterials();
+	const int32 NumSlots = TargetDef->StaticMesh ? TargetDef->StaticMesh->GetStaticMaterials().Num() : Comp->GetNumMaterials();
 	for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 	{
 		UMaterialInterface* TargetMat = nullptr;
-		if (TargetDef->MaterialOverrides.IsValidIndex(MatIdx) && TargetDef->MaterialOverrides[MatIdx])
+		if (TargetDef->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(TargetDef->MaterialOverrides[MatIdx]))
 		{
 			TargetMat = TargetDef->MaterialOverrides[MatIdx];
 		}
@@ -2644,10 +2714,15 @@ bool APropManager::ConvertISMToASM(
 
 		if (FallbackDef.MaterialOverrides.Num() == 0)
 		{
-			const int32 NumMats = ISMComp->GetNumMaterials();
+			const int32 NumMats = ISMComp->GetStaticMesh() ? ISMComp->GetStaticMesh()->GetStaticMaterials().Num() : ISMComp->GetNumMaterials();
 			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 			{
-				FallbackDef.MaterialOverrides.Add(ISMComp->GetMaterial(MatIdx));
+				UMaterialInterface* Mat = ISMComp->GetMaterial(MatIdx);
+				if (!Mat && ISMComp->GetStaticMesh())
+				{
+					Mat = ISMComp->GetStaticMesh()->GetMaterial(MatIdx);
+				}
+				FallbackDef.MaterialOverrides.Add(Mat);
 			}
 		}
 
@@ -2715,8 +2790,7 @@ bool APropManager::ConvertISMToASM(
 
 	if (HasAuthority())
 	{
-		const int32 OutASMID = OutActor ? OutActor->ASMID : Record->ASMID;
-		Multicast_NotifyISMConvertedToASM(SignedISID, PID, OutASMID, GameplayTransform, Record->State, Reason);
+		QueueASMConversion(SignedISID, OutActor);
 		MarkInstanceDirty(SignedISID, EPropDirtyFlags::Representation | EPropDirtyFlags::State | EPropDirtyFlags::Transform);
 	}
 	OnPropRepresentationChanged.Broadcast(SignedISID, EPropRepresentation::ASM, OutActor);
@@ -2941,81 +3015,72 @@ bool APropManager::ConvertASMToISM(
 		const FString CompMatsBefore = FormatCompMaterialsList(ISMComp);
 
 		// 1. Ensure the ISM component has the product definition applied and materials configured
-		if (const FPropProductDefinition* Def = FindProductDefinition(Record->ProductID))
+		const FPropProductDefinition* ProductDefPtr = FindProductDefinition(Record->ProductID);
+		if (ProductDefPtr)
 		{
-			ApplyProductDefinitionToComponent(ISMComp, *Def);
+			ApplyProductDefinitionToComponent(ISMComp, *ProductDefPtr);
 		}
 		else if (ActiveActor && ActiveActor->PropDataAsset)
 		{
 			FPropProductDefinition ActorDef = FPropProductDefinition::FromDataAsset(ActiveActor->PropDataAsset, Record->ProductID);
 			ApplyProductDefinitionToComponent(ISMComp, ActorDef);
+			ProductDefPtr = FindProductDefinition(Record->ProductID);
 		}
 
-		// 2. Resolve authoritative materials from ProductDefinition, SourceDataAsset, or the visible mesh on ActiveActor
-		if (const FPropProductDefinition* Def = FindProductDefinition(Record->ProductID))
+		// 2. Resolve authoritative materials slot-by-slot matching the target static mesh
+		UStaticMesh* TargetMesh = ISMComp->GetStaticMesh();
+		if (TargetMesh)
 		{
-			for (const TObjectPtr<UMaterialInterface>& Mat : Def->MaterialOverrides)
-			{
-				if (Mat)
-				{
-					AuthoritativeMaterials.Add(Mat);
-				}
-			}
-			if (AuthoritativeMaterials.Num() == 0 && Def->SourceDataAsset)
-			{
-				for (const TObjectPtr<UMaterialInterface>& Mat : Def->SourceDataAsset->MaterialOverrides)
-				{
-					if (Mat)
-					{
-						AuthoritativeMaterials.Add(Mat);
-					}
-				}
-			}
-		}
+			const int32 NumSlots = TargetMesh->GetStaticMaterials().Num();
+			AuthoritativeMaterials.SetNum(NumSlots);
 
-		if (AuthoritativeMaterials.Num() == 0 && ActiveActor)
-		{
-			if (ActiveActor->SkeletalMeshComponent && ActiveActor->SkeletalMeshComponent->IsVisible() && ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
+			const TArray<TObjectPtr<UMaterialInterface>>* DefOverrides = ProductDefPtr ? &ProductDefPtr->MaterialOverrides : nullptr;
+			const TArray<TObjectPtr<UMaterialInterface>>* AssetOverrides = (ProductDefPtr && ProductDefPtr->SourceDataAsset)
+				? &ProductDefPtr->SourceDataAsset->MaterialOverrides
+				: (ActiveActor && ActiveActor->PropDataAsset ? &ActiveActor->PropDataAsset->MaterialOverrides : nullptr);
+
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 			{
-				const int32 NumSkelMats = ActiveActor->SkeletalMeshComponent->GetNumMaterials();
-				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+				UMaterialInterface* ResolvedMat = nullptr;
+				if (DefOverrides && DefOverrides->IsValidIndex(MatIdx) && IsValid((*DefOverrides)[MatIdx]))
 				{
-					if (UMaterialInterface* Mat = ActiveActor->SkeletalMeshComponent->GetMaterial(MatIdx))
-					{
-						AuthoritativeMaterials.Add(Mat);
-					}
+					ResolvedMat = (*DefOverrides)[MatIdx];
+				}
+				else if (AssetOverrides && AssetOverrides->IsValidIndex(MatIdx) && IsValid((*AssetOverrides)[MatIdx]))
+				{
+					ResolvedMat = (*AssetOverrides)[MatIdx];
+				}
+				else if (ActiveActor && ActiveActor->PropMesh && ActiveActor->PropMesh->GetStaticMesh() == TargetMesh && ActiveActor->PropMesh->GetMaterial(MatIdx))
+				{
+					ResolvedMat = ActiveActor->PropMesh->GetMaterial(MatIdx);
+				}
+				else
+				{
+					ResolvedMat = TargetMesh->GetMaterial(MatIdx);
+				}
+
+				AuthoritativeMaterials[MatIdx] = ResolvedMat;
+				if (ResolvedMat && ISMComp->GetMaterial(MatIdx) != ResolvedMat)
+				{
+					ISMComp->SetMaterial(MatIdx, ResolvedMat);
 				}
 			}
-			else if (ActiveActor->PropMesh && ActiveActor->PropMesh->GetStaticMesh())
-			{
-				const int32 NumActorMats = ActiveActor->PropMesh->GetNumMaterials();
-				for (int32 MatIdx = 0; MatIdx < NumActorMats; ++MatIdx)
-				{
-					if (UMaterialInterface* Mat = ActiveActor->PropMesh->GetMaterial(MatIdx))
-					{
-						AuthoritativeMaterials.Add(Mat);
-					}
-				}
-			}
-		}
 
-		for (int32 MatIdx = 0; MatIdx < AuthoritativeMaterials.Num(); ++MatIdx)
-		{
-			if (AuthoritativeMaterials[MatIdx] && ISMComp->GetMaterial(MatIdx) != AuthoritativeMaterials[MatIdx])
+			const int32 ExistingCompMats = ISMComp->GetNumMaterials();
+			for (int32 ExcessIdx = NumSlots; ExcessIdx < ExistingCompMats; ++ExcessIdx)
 			{
-				ISMComp->SetMaterial(MatIdx, AuthoritativeMaterials[MatIdx]);
+				ISMComp->SetMaterial(ExcessIdx, nullptr);
 			}
-		}
-		ISMComp->MarkRenderStateDirty();
 
-		// Keep ProductDefinitions in exact sync with authoritative materials so replication conveys them to all clients
-		if (AuthoritativeMaterials.Num() > 0)
-		{
+			ISMComp->MarkRenderStateDirty();
+
+			// Keep ProductDefinitions in exact sync with authoritative materials so replication conveys them to all clients
 			if (FPropProductDefinition* MutableDef = ProductDefinitions.Find(Record->ProductID))
 			{
-				if (MutableDef->MaterialOverrides != AuthoritativeMaterials)
+				MutableDef->MaterialOverrides.Reset();
+				for (UMaterialInterface* Mat : AuthoritativeMaterials)
 				{
-					MutableDef->MaterialOverrides = AuthoritativeMaterials;
+					MutableDef->MaterialOverrides.Add(Mat);
 				}
 			}
 		}
@@ -3160,74 +3225,71 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 
 	const FString CompMatsBefore = FormatCompMaterialsList(ISMComp);
 
-	if (const FPropProductDefinition* Def = FindProductDefinition(InActor->ProductID))
+	const FPropProductDefinition* ProductDefPtr = FindProductDefinition(InActor->ProductID);
+	if (ProductDefPtr)
 	{
-		ApplyProductDefinitionToComponent(ISMComp, *Def);
+		ApplyProductDefinitionToComponent(ISMComp, *ProductDefPtr);
+	}
+	else if (InActor->PropDataAsset)
+	{
+		FPropProductDefinition ActorDef = FPropProductDefinition::FromDataAsset(InActor->PropDataAsset, InActor->ProductID);
+		ApplyProductDefinitionToComponent(ISMComp, ActorDef);
+		ProductDefPtr = FindProductDefinition(InActor->ProductID);
 	}
 
 	TArray<UMaterialInterface*> AuthoritativeMaterials;
-	if (const FPropProductDefinition* Def = FindProductDefinition(InActor->ProductID))
+	UStaticMesh* TargetMesh = ISMComp->GetStaticMesh();
+	if (TargetMesh)
 	{
-		for (const TObjectPtr<UMaterialInterface>& Mat : Def->MaterialOverrides)
-		{
-			if (Mat)
-			{
-				AuthoritativeMaterials.Add(Mat);
-			}
-		}
-		if (AuthoritativeMaterials.Num() == 0 && Def->SourceDataAsset)
-		{
-			for (const TObjectPtr<UMaterialInterface>& Mat : Def->SourceDataAsset->MaterialOverrides)
-			{
-				if (Mat)
-				{
-					AuthoritativeMaterials.Add(Mat);
-				}
-			}
-		}
-	}
-	if (AuthoritativeMaterials.Num() == 0)
-	{
-		if (InActor->SkeletalMeshComponent && InActor->SkeletalMeshComponent->IsVisible() && InActor->SkeletalMeshComponent->GetSkeletalMeshAsset())
-		{
-			const int32 NumSkelMats = InActor->SkeletalMeshComponent->GetNumMaterials();
-			for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
-			{
-				if (UMaterialInterface* Mat = InActor->SkeletalMeshComponent->GetMaterial(MatIdx))
-				{
-					AuthoritativeMaterials.Add(Mat);
-				}
-			}
-		}
-		else if (InActor->PropMesh && InActor->PropMesh->GetStaticMesh())
-		{
-			const int32 NumActorMats = InActor->PropMesh->GetNumMaterials();
-			for (int32 MatIdx = 0; MatIdx < NumActorMats; ++MatIdx)
-			{
-				if (UMaterialInterface* Mat = InActor->PropMesh->GetMaterial(MatIdx))
-				{
-					AuthoritativeMaterials.Add(Mat);
-				}
-			}
-		}
-	}
-	for (int32 MatIdx = 0; MatIdx < AuthoritativeMaterials.Num(); ++MatIdx)
-	{
-		if (AuthoritativeMaterials[MatIdx] && ISMComp->GetMaterial(MatIdx) != AuthoritativeMaterials[MatIdx])
-		{
-			ISMComp->SetMaterial(MatIdx, AuthoritativeMaterials[MatIdx]);
-		}
-	}
-	ISMComp->MarkRenderStateDirty();
+		const int32 NumSlots = TargetMesh->GetStaticMaterials().Num();
+		AuthoritativeMaterials.SetNum(NumSlots);
 
-	// Keep ProductDefinitions in exact sync with authoritative materials so replication conveys them to all clients
-	if (AuthoritativeMaterials.Num() > 0)
-	{
+		const TArray<TObjectPtr<UMaterialInterface>>* DefOverrides = ProductDefPtr ? &ProductDefPtr->MaterialOverrides : nullptr;
+		const TArray<TObjectPtr<UMaterialInterface>>* AssetOverrides = (ProductDefPtr && ProductDefPtr->SourceDataAsset)
+			? &ProductDefPtr->SourceDataAsset->MaterialOverrides
+			: (InActor->PropDataAsset ? &InActor->PropDataAsset->MaterialOverrides : nullptr);
+
+		for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+		{
+			UMaterialInterface* ResolvedMat = nullptr;
+			if (DefOverrides && DefOverrides->IsValidIndex(MatIdx) && IsValid((*DefOverrides)[MatIdx]))
+			{
+				ResolvedMat = (*DefOverrides)[MatIdx];
+			}
+			else if (AssetOverrides && AssetOverrides->IsValidIndex(MatIdx) && IsValid((*AssetOverrides)[MatIdx]))
+			{
+				ResolvedMat = (*AssetOverrides)[MatIdx];
+			}
+			else if (InActor->PropMesh && InActor->PropMesh->GetStaticMesh() == TargetMesh && InActor->PropMesh->GetMaterial(MatIdx))
+			{
+				ResolvedMat = InActor->PropMesh->GetMaterial(MatIdx);
+			}
+			else
+			{
+				ResolvedMat = TargetMesh->GetMaterial(MatIdx);
+			}
+
+			AuthoritativeMaterials[MatIdx] = ResolvedMat;
+			if (ResolvedMat && ISMComp->GetMaterial(MatIdx) != ResolvedMat)
+			{
+				ISMComp->SetMaterial(MatIdx, ResolvedMat);
+			}
+		}
+
+		const int32 ExistingCompMats = ISMComp->GetNumMaterials();
+		for (int32 ExcessIdx = NumSlots; ExcessIdx < ExistingCompMats; ++ExcessIdx)
+		{
+			ISMComp->SetMaterial(ExcessIdx, nullptr);
+		}
+
+		ISMComp->MarkRenderStateDirty();
+
 		if (FPropProductDefinition* MutableDef = ProductDefinitions.Find(InActor->ProductID))
 		{
-			if (MutableDef->MaterialOverrides != AuthoritativeMaterials)
+			MutableDef->MaterialOverrides.Reset();
+			for (UMaterialInterface* Mat : AuthoritativeMaterials)
 			{
-				MutableDef->MaterialOverrides = AuthoritativeMaterials;
+				MutableDef->MaterialOverrides.Add(Mat);
 			}
 		}
 	}
@@ -3492,21 +3554,287 @@ void APropManager::Multicast_OnPlacedASMsConvertedToISM_Implementation(const TAr
 		return;
 	}
 
+	EnsureLevelPropsInitialized();
+
 	// On Client: Deactivate the corresponding placed level actors so they are parked to the pool at ResetTransform
 	for (const int32 ASMIDToDeactivate : ConvertedASMIDs)
 	{
-		if (AActivePropActor* ClientActor = GetActiveActorFromASMID(ASMIDToDeactivate))
+		AActivePropActor* ClientActor = GetActiveActorFromASMID(ASMIDToDeactivate);
+		if (!ClientActor && ASMComponent)
 		{
-			if (ClientActor->bIsActive)
+			for (AActivePropActor* Candidate : ASMComponent->ASMActors)
 			{
-				ClientActor->DeactivateToPoolState(GetResetTransformForSlot(ASMIDToDeactivate));
-				if (ASMComponent)
+				if (IsValid(Candidate) && Candidate->ASMID == ASMIDToDeactivate)
 				{
-					ASMComponent->ASMActors.AddUnique(ClientActor);
-					ASMComponent->EmptyASMIDs.AddUnique(ASMIDToDeactivate);
+					ClientActor = Candidate;
+					ASMComponent->ActiveActorByASMID.Add(ASMIDToDeactivate, ClientActor);
+					ActiveActorByASMID.Add(ASMIDToDeactivate, ClientActor);
+					break;
 				}
 			}
 		}
+
+		if (ClientActor)
+		{
+			ClientActor->DeactivateToPoolState(GetResetTransformForSlot(ASMIDToDeactivate));
+			if (ASMComponent)
+			{
+				ASMComponent->ASMActors.AddUnique(ClientActor);
+				ASMComponent->EmptyASMIDs.AddUnique(ASMIDToDeactivate);
+			}
+			EmptyASMIDs.AddUnique(ASMIDToDeactivate);
+		}
+	}
+}
+
+void APropManager::QueueASMConversion(int32 InISID, AActivePropActor* InActor)
+{
+	if (InISID <= 0 || !IsValid(InActor))
+	{
+		return;
+	}
+
+	for (const FPropASMConversionEntry& Entry : PendingASMConversions)
+	{
+		if (Entry.ISID == InISID)
+		{
+			return;
+		}
+	}
+
+	if (InActor->ASMID <= 0)
+	{
+		InActor->ASMID = AllocateASMID();
+		RegisterProp(InActor);
+	}
+
+	FPropASMConversionEntry NewEntry;
+	NewEntry.ISID = InISID;
+	NewEntry.ASMID = InActor->ASMID;
+	PendingASMConversions.Add(NewEntry);
+
+	UE_LOG(LogTemp, Warning, TEXT("[PropManager] QueueASMConversion: Queued ISID %d, ASMID %d, Actor '%s'"),
+		InISID, InActor->ASMID, *InActor->GetName());
+}
+
+void APropManager::ProcessPendingASMConversions(int32 MaxPerFrame)
+{
+	if (!HasAuthority() || PendingASMConversions.Num() == 0)
+	{
+		return;
+	}
+
+	const int32 CountToSend = FMath::Clamp(PendingASMConversions.Num(), 0, FMath::Max(1, MaxPerFrame));
+	TArray<FPropASMConversionEntry> Batch;
+	Batch.Reserve(CountToSend);
+
+	for (int32 i = 0; i < CountToSend; ++i)
+	{
+		Batch.Add(PendingASMConversions[0]);
+		PendingASMConversions.RemoveAt(0, EAllowShrinking::No);
+	}
+
+	if (Batch.Num() > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PropManager] ProcessPendingASMConversions: Sending multicast batch of %d conversions to clients"), Batch.Num());
+		Multicast_NotifyBatchISMConvertedToASM(Batch);
+	}
+}
+
+void APropManager::Multicast_NotifyBatchISMConvertedToASM_Implementation(const TArray<FPropASMConversionEntry>& Entries)
+{
+	if (HasAuthority())
+	{
+		return;
+	}
+
+	EnsureLevelPropsInitialized();
+
+	for (const FPropASMConversionEntry& Entry : Entries)
+	{
+		const int32 InISID = Entry.ISID;
+		const int32 InASMID = Entry.ASMID;
+		if (InISID <= 0 || InASMID <= 0)
+		{
+			continue;
+		}
+
+		// Resolve ASM actor directly via ASMID, with fallback to ISID, ASMActors search, or AcquireActiveActor
+		AActivePropActor* ASM = GetActiveActorFromASMID(InASMID);
+		if (!IsValid(ASM))
+		{
+			ASM = GetActiveActorFromISID(InISID);
+		}
+		if (!IsValid(ASM) && ASMComponent)
+		{
+			for (AActivePropActor* Candidate : ASMComponent->ASMActors)
+			{
+				if (IsValid(Candidate) && Candidate->ASMID == InASMID)
+				{
+					ASM = Candidate;
+					ASMComponent->ActiveActorByASMID.Add(InASMID, ASM);
+					ActiveActorByASMID.Add(InASMID, ASM);
+					break;
+				}
+			}
+		}
+		if (!IsValid(ASM))
+		{
+			UInteractableISMComponent* FallbackComp = GetComponentFromISID(InISID);
+			int32 ProductID = FallbackComp ? FallbackComp->ProductID : 0;
+			if (ProductID <= 0)
+			{
+				if (const FISIDRuntimeIndex* Rec = FindISIDData(InISID))
+				{
+					ProductID = Rec->ProductID;
+				}
+			}
+			ASM = AcquireActiveActor(ProductID);
+			if (IsValid(ASM))
+			{
+				ASM->ASMID = InASMID;
+				if (ASMComponent)
+				{
+					ASMComponent->ActiveActorByASMID.Add(InASMID, ASM);
+				}
+				ActiveActorByASMID.Add(InASMID, ASM);
+			}
+		}
+
+		if (!IsValid(ASM))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PropManager] Multicast_NotifyBatchISMConvertedToASM: FAILED to resolve ASM actor for ISID %d (ASMID %d) on client!"),
+				InISID, InASMID);
+			continue;
+		}
+
+		UInteractableISMComponent* Comp = GetComponentFromISID(InISID);
+		if (!Comp && ASM->ProductID > 0)
+		{
+			Comp = GetOrCreateIISMComponent(ASM->ProductID);
+		}
+
+		// On client: take ISM location, rotation, and data to set up everything
+		FTransform InstTransform = FTransform::Identity;
+		FPropPackedRuntimeData InstData;
+		bool bHasInstData = false;
+
+		if (Comp)
+		{
+			Comp->GetInstanceTransformByISID(InISID, InstTransform, true);
+			bHasInstData = Comp->GetInstanceData(InISID, InstData);
+			Comp->MoveInstanceToResetTransform(InISID);
+		}
+
+		FISIDRuntimeIndex* Record = FindISIDData(InISID);
+		if (!Record)
+		{
+			FISIDRuntimeIndex NewRecord;
+			NewRecord.ISID = InISID;
+			NewRecord.ProductID = (ASM->ProductID > 0) ? ASM->ProductID : (Comp ? Comp->ProductID : 0);
+			NewRecord.IISMComponentID = Comp ? Comp->IISMComponentID : 0;
+			NewRecord.Representation = EPropRepresentation::ASM;
+			NewRecord.State = ASM->State;
+			NewRecord.ActiveTransform = InstTransform;
+			if (bHasInstData && InstData.RemainingPortions > 0)
+			{
+				NewRecord.PackedRuntimeData = InstData;
+				NewRecord.RuntimeData.RemainingPortions = InstData.RemainingPortions;
+				NewRecord.RuntimeData.Temperature = InstData.Temperature;
+			}
+			else if (const FPropProductDefinition* ProductDef = ProductDefinitions.Find(NewRecord.ProductID))
+			{
+				NewRecord.PackedRuntimeData = ProductDef->RuntimeDefaults;
+				NewRecord.PackedRuntimeData.RemainingPortions = ProductDef->ConsumableProfile.NumOfPortions;
+				NewRecord.RuntimeData.RemainingPortions = ProductDef->ConsumableProfile.NumOfPortions;
+				NewRecord.RuntimeData.Temperature = ProductDef->TemperatureProfile.ConsumableTemperature;
+			}
+			ISIDData.Add(InISID, NewRecord);
+			AllActiveISIDs.AddUnique(InISID);
+			Record = FindISIDData(InISID);
+		}
+
+		if (Record)
+		{
+			Record->Representation = EPropRepresentation::ASM;
+			Record->ActiveActor = ASM;
+			Record->ASMID = (InASMID > 0) ? InASMID : ASM->ASMID;
+			if (InstTransform.GetLocation().Z > -50000.0f && InstTransform.GetScale3D().GetMin() >= 0.005f)
+			{
+				Record->ActiveTransform = InstTransform;
+			}
+			else if (Record->ActiveTransform.GetLocation().Z > -50000.0f)
+			{
+				InstTransform = Record->ActiveTransform;
+			}
+			if (bHasInstData && InstData.RemainingPortions > 0)
+			{
+				Record->PackedRuntimeData = InstData;
+				Record->RuntimeData.RemainingPortions = InstData.RemainingPortions;
+				Record->RuntimeData.Temperature = InstData.Temperature;
+			}
+			else if (Record->PackedRuntimeData.RemainingPortions <= 0)
+			{
+				if (const FPropProductDefinition* PDef = ProductDefinitions.Find(Record->ProductID))
+				{
+					Record->PackedRuntimeData.RemainingPortions = PDef->ConsumableProfile.NumOfPortions;
+					Record->RuntimeData.RemainingPortions = PDef->ConsumableProfile.NumOfPortions;
+				}
+			}
+		}
+
+		if (InstTransform.GetScale3D().GetMax() < 0.005f)
+		{
+			InstTransform.SetScale3D(Comp ? Comp->GetComponentScale() : FVector::OneVector);
+		}
+
+		// Register and initialize the authoritative ASM directly on the client
+		ASM->PropManagerReference = this;
+		ASM->ISID = InISID;
+		if (InASMID > 0)
+		{
+			ASM->ASMID = InASMID;
+		}
+		if (Record && Record->ProductID > 0)
+		{
+			ASM->ProductID = Record->ProductID;
+		}
+		else if (Comp && Comp->ProductID > 0)
+		{
+			ASM->ProductID = Comp->ProductID;
+		}
+
+		const FPropProductDefinition* ProductDef = ProductDefinitions.Find(ASM->ProductID);
+		if (Record)
+		{
+			ASM->InitializeFromISIDRecord(*Record, ProductDef, this);
+		}
+		RegisterActiveActor(InISID, ASM);
+
+		const EPropState TargetState = Record ? Record->State : ASM->State;
+		ASM->ActivateASMRepresentation(InstTransform, TargetState, false);
+
+		if (TargetState == EPropState::Held)
+		{
+			ASM->bIsHeld = true;
+			ASM->SetGrabbable(false);
+			if (ASM->PropMesh)
+			{
+				ASM->PropMesh->SetSimulatePhysics(false);
+				ASM->PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+				ASM->PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+				ASM->PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			}
+			if (ASM->PhysicsSimComponent)
+			{
+				ASM->PhysicsSimComponent->SetStateHeld();
+			}
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("[PropManager] Multicast_NotifyBatchISMConvertedToASM: Converted ISID %d to ASM '%s' (ASMID %d) on client at %s"),
+			InISID, *ASM->GetName(), ASM->ASMID, *InstTransform.GetLocation().ToString());
+
+		OnPropRepresentationChanged.Broadcast(InISID, EPropRepresentation::ASM, ASM);
 	}
 }
 
@@ -3535,6 +3863,23 @@ void APropManager::Multicast_NotifyISMConvertedToASM_Implementation(
 		NewRecord.Representation = EPropRepresentation::ASM;
 		NewRecord.State = InState;
 		NewRecord.ActiveTransform = InTransform;
+		if (const FPropProductDefinition* ProductDef = ProductDefinitions.Find(InProductID))
+		{
+			NewRecord.PackedRuntimeData = ProductDef->RuntimeDefaults;
+			NewRecord.PackedRuntimeData.RemainingPortions = ProductDef->ConsumableProfile.NumOfPortions;
+			NewRecord.RuntimeData.RemainingPortions = ProductDef->ConsumableProfile.NumOfPortions;
+			NewRecord.RuntimeData.Temperature = ProductDef->TemperatureProfile.ConsumableTemperature;
+		}
+		if (UInteractableISMComponent* Comp = GetComponentFromISID(InISID))
+		{
+			FPropPackedRuntimeData InstPacked;
+			if (Comp->GetInstanceData(InISID, InstPacked))
+			{
+				NewRecord.PackedRuntimeData = InstPacked;
+				NewRecord.RuntimeData.RemainingPortions = InstPacked.RemainingPortions;
+				NewRecord.RuntimeData.Temperature = InstPacked.Temperature;
+			}
+		}
 		ISIDData.Add(InISID, NewRecord);
 		AllActiveISIDs.AddUnique(InISID);
 		Record = FindISIDData(InISID);
@@ -3552,6 +3897,14 @@ void APropManager::Multicast_NotifyISMConvertedToASM_Implementation(
 		if (InTransform.GetLocation().Z > -50000.0f && InTransform.GetScale3D().GetMin() >= 0.005f)
 		{
 			Record->ActiveTransform = InTransform;
+		}
+		if (const FPropProductDefinition* ProductDef = ProductDefinitions.Find(Record->ProductID))
+		{
+			if (ProductDef->ConsumableProfile.NumOfPortions <= 0)
+			{
+				Record->PackedRuntimeData.RemainingPortions = 0;
+				Record->RuntimeData.RemainingPortions = 0;
+			}
 		}
 	}
 
@@ -6528,10 +6881,15 @@ void APropManager::UpdateClientASM(int32 InISID)
 
 				if (FallbackDef.MaterialOverrides.Num() == 0)
 				{
-					const int32 NumMats = Comp->GetNumMaterials();
+					const int32 NumMats = Comp->GetStaticMesh() ? Comp->GetStaticMesh()->GetStaticMaterials().Num() : Comp->GetNumMaterials();
 					for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 					{
-						FallbackDef.MaterialOverrides.Add(Comp->GetMaterial(MatIdx));
+						UMaterialInterface* Mat = Comp->GetMaterial(MatIdx);
+						if (!Mat && Comp->GetStaticMesh())
+						{
+							Mat = Comp->GetStaticMesh()->GetMaterial(MatIdx);
+						}
+						FallbackDef.MaterialOverrides.Add(Mat);
 					}
 				}
 

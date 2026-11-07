@@ -128,23 +128,29 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 			{
 				SkeletalMeshComponent->SetSkinnedAssetAndUpdate(AssetToApply->SkeletalMesh);
 			}
-			const int32 NumSkelMats = AssetToApply->SkeletalMesh ? AssetToApply->SkeletalMesh->GetMaterials().Num() : 0;
-			const int32 NumSlots = FMath::Max(SkeletalMeshComponent->GetNumMaterials(), FMath::Max(NumSkelMats, AssetToApply->MaterialOverrides.Num()));
-			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			const int32 NumSkelSlots = AssetToApply->SkeletalMesh->GetMaterials().Num();
+			for (int32 MatIdx = 0; MatIdx < NumSkelSlots; ++MatIdx)
 			{
 				UMaterialInterface* TargetMat = nullptr;
-				if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && AssetToApply->MaterialOverrides[MatIdx])
+				if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(AssetToApply->MaterialOverrides[MatIdx]))
 				{
 					TargetMat = AssetToApply->MaterialOverrides[MatIdx];
 				}
-				else if (AssetToApply->SkeletalMesh && AssetToApply->SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
+				else if (AssetToApply->SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
 				{
 					TargetMat = AssetToApply->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
 				}
-				if (TargetMat)
+
+				if (TargetMat && SkeletalMeshComponent->GetMaterial(MatIdx) != TargetMat)
 				{
 					SkeletalMeshComponent->SetMaterial(MatIdx, TargetMat);
 				}
+			}
+
+			const int32 ExistingSkelMats = SkeletalMeshComponent->GetNumMaterials();
+			for (int32 ExcessIdx = NumSkelSlots; ExcessIdx < ExistingSkelMats; ++ExcessIdx)
+			{
+				SkeletalMeshComponent->SetMaterial(ExcessIdx, nullptr);
 			}
 			SkeletalMeshComponent->SetVisibility(true);
 		}
@@ -154,6 +160,33 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 			if (AssetToApply->StaticMesh && PropMesh->GetStaticMesh() != AssetToApply->StaticMesh)
 			{
 				PropMesh->SetStaticMesh(AssetToApply->StaticMesh);
+			}
+			if (AssetToApply->StaticMesh)
+			{
+				const int32 NumStaticSlots = AssetToApply->StaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticSlots; ++MatIdx)
+				{
+					UMaterialInterface* TargetMat = nullptr;
+					if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(AssetToApply->MaterialOverrides[MatIdx]))
+					{
+						TargetMat = AssetToApply->MaterialOverrides[MatIdx];
+					}
+					else
+					{
+						TargetMat = AssetToApply->StaticMesh->GetMaterial(MatIdx);
+					}
+
+					if (TargetMat && PropMesh->GetMaterial(MatIdx) != TargetMat)
+					{
+						PropMesh->SetMaterial(MatIdx, TargetMat);
+					}
+				}
+
+				const int32 ExistingStaticMats = PropMesh->GetNumMaterials();
+				for (int32 ExcessIdx = NumStaticSlots; ExcessIdx < ExistingStaticMats; ++ExcessIdx)
+				{
+					PropMesh->SetMaterial(ExcessIdx, nullptr);
+				}
 			}
 			PropMesh->SetVisibility(false);
 		}
@@ -172,22 +205,31 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 			{
 				PropMesh->SetStaticMesh(AssetToApply->StaticMesh);
 			}
-			const int32 NumStaticMats = AssetToApply->StaticMesh ? AssetToApply->StaticMesh->GetStaticMaterials().Num() : 0;
-			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, AssetToApply->MaterialOverrides.Num()));
-			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			if (AssetToApply->StaticMesh)
 			{
-				UMaterialInterface* TargetMat = nullptr;
-				if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && AssetToApply->MaterialOverrides[MatIdx])
+				const int32 NumStaticSlots = AssetToApply->StaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticSlots; ++MatIdx)
 				{
-					TargetMat = AssetToApply->MaterialOverrides[MatIdx];
+					UMaterialInterface* TargetMat = nullptr;
+					if (AssetToApply->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(AssetToApply->MaterialOverrides[MatIdx]))
+					{
+						TargetMat = AssetToApply->MaterialOverrides[MatIdx];
+					}
+					else
+					{
+						TargetMat = AssetToApply->StaticMesh->GetMaterial(MatIdx);
+					}
+
+					if (TargetMat && PropMesh->GetMaterial(MatIdx) != TargetMat)
+					{
+						PropMesh->SetMaterial(MatIdx, TargetMat);
+					}
 				}
-				else if (AssetToApply->StaticMesh)
+
+				const int32 ExistingStaticMats = PropMesh->GetNumMaterials();
+				for (int32 ExcessIdx = NumStaticSlots; ExcessIdx < ExistingStaticMats; ++ExcessIdx)
 				{
-					TargetMat = AssetToApply->StaticMesh->GetMaterial(MatIdx);
-				}
-				if (TargetMat)
-				{
-					PropMesh->SetMaterial(MatIdx, TargetMat);
+					PropMesh->SetMaterial(ExcessIdx, nullptr);
 				}
 			}
 			PropMesh->SetVisibility(true);
@@ -200,7 +242,7 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 
 	NumOfPortions = AssetToApply->NumOfPortions;
 	RemainingPortions = NumOfPortions;
-	QuantityLevel = 1.0f;
+	QuantityLevel = (NumOfPortions > 0) ? 1.0f : 0.0f;
 
 	bEnableTemperatureUpdate = AssetToApply->bEnableTemperatureUpdate;
 	ConsumableTemperature = AssetToApply->ConsumableTemperature;
@@ -280,62 +322,80 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 	}
 
 	const UInteractablePropDataAsset* SourceAsset = InProductDef.SourceDataAsset ? InProductDef.SourceDataAsset.Get() : PropDataAsset.Get();
-	const TArray<TObjectPtr<UMaterialInterface>>& SourceOverrides = (InProductDef.MaterialOverrides.Num() > 0)
-		? InProductDef.MaterialOverrides
-		: (SourceAsset ? SourceAsset->MaterialOverrides : TArray<TObjectPtr<UMaterialInterface>>());
+	const TArray<TObjectPtr<UMaterialInterface>>& SourceOverrides = (SourceAsset && SourceAsset->MaterialOverrides.Num() > 0)
+		? SourceAsset->MaterialOverrides
+		: InProductDef.MaterialOverrides;
+
+	USkeletalMesh* TargetSkelMesh = InProductDef.SkeletalMesh ? InProductDef.SkeletalMesh.Get() : (SourceAsset ? SourceAsset->SkeletalMesh.Get() : nullptr);
+	UStaticMesh* TargetStaticMesh = InProductDef.StaticMesh ? InProductDef.StaticMesh.Get() : (SourceAsset ? SourceAsset->StaticMesh.Get() : nullptr);
 
 	// Select Skeletal Mesh if present, otherwise fall back to Static Mesh
-	if (InProductDef.SkeletalMesh)
+	if (TargetSkelMesh)
 	{
 		if (SkeletalMeshComponent)
 		{
-			if (SkeletalMeshComponent->GetSkeletalMeshAsset() != InProductDef.SkeletalMesh)
+			if (SkeletalMeshComponent->GetSkeletalMeshAsset() != TargetSkelMesh)
 			{
-				SkeletalMeshComponent->SetSkinnedAssetAndUpdate(InProductDef.SkeletalMesh);
+				SkeletalMeshComponent->SetSkinnedAssetAndUpdate(TargetSkelMesh);
 			}
-			const int32 NumSkelMats = InProductDef.SkeletalMesh ? InProductDef.SkeletalMesh->GetMaterials().Num() : 0;
-			const int32 NumSlots = FMath::Max(SkeletalMeshComponent->GetNumMaterials(), FMath::Max(NumSkelMats, SourceOverrides.Num()));
-			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			const int32 NumSkelSlots = TargetSkelMesh->GetMaterials().Num();
+			for (int32 MatIdx = 0; MatIdx < NumSkelSlots; ++MatIdx)
 			{
 				UMaterialInterface* TargetMat = nullptr;
-				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				if (SourceOverrides.IsValidIndex(MatIdx) && IsValid(SourceOverrides[MatIdx]))
 				{
 					TargetMat = SourceOverrides[MatIdx];
 				}
-				else if (InProductDef.SkeletalMesh && InProductDef.SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
+				else if (TargetSkelMesh->GetMaterials().IsValidIndex(MatIdx))
 				{
-					TargetMat = InProductDef.SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
+					TargetMat = TargetSkelMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
 				}
-				if (TargetMat)
+
+				if (TargetMat && SkeletalMeshComponent->GetMaterial(MatIdx) != TargetMat)
 				{
 					SkeletalMeshComponent->SetMaterial(MatIdx, TargetMat);
 				}
+			}
+
+			const int32 ExistingSkelMats = SkeletalMeshComponent->GetNumMaterials();
+			for (int32 ExcessIdx = NumSkelSlots; ExcessIdx < ExistingSkelMats; ++ExcessIdx)
+			{
+				SkeletalMeshComponent->SetMaterial(ExcessIdx, nullptr);
 			}
 			SkeletalMeshComponent->SetVisibility(true);
 		}
 
 		if (PropMesh)
 		{
-			if (InProductDef.StaticMesh && PropMesh->GetStaticMesh() != InProductDef.StaticMesh)
+			if (TargetStaticMesh && PropMesh->GetStaticMesh() != TargetStaticMesh)
 			{
-				PropMesh->SetStaticMesh(InProductDef.StaticMesh);
+				PropMesh->SetStaticMesh(TargetStaticMesh);
 			}
-			const int32 NumStaticMats = InProductDef.StaticMesh ? InProductDef.StaticMesh->GetStaticMaterials().Num() : 0;
-			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, SourceOverrides.Num()));
-			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			if (TargetStaticMesh)
 			{
-				UMaterialInterface* TargetMat = nullptr;
-				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				const int32 NumStaticSlots = TargetStaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticSlots; ++MatIdx)
 				{
-					TargetMat = SourceOverrides[MatIdx];
+					UMaterialInterface* TargetMat = nullptr;
+					if (SourceOverrides.IsValidIndex(MatIdx) && IsValid(SourceOverrides[MatIdx]))
+					{
+						TargetMat = SourceOverrides[MatIdx];
+					}
+					else
+					{
+						TargetMat = TargetStaticMesh->GetMaterial(MatIdx);
+					}
+
+					if (TargetMat && PropMesh->GetMaterial(MatIdx) != TargetMat)
+					{
+						PropMesh->SetMaterial(MatIdx, TargetMat);
+					}
 				}
-				else if (InProductDef.StaticMesh)
+
+				const int32 ExistingStaticMats = PropMesh->GetNumMaterials();
+				for (int32 ExcessIdx = NumStaticSlots; ExcessIdx < ExistingStaticMats; ++ExcessIdx)
 				{
-					TargetMat = InProductDef.StaticMesh->GetMaterial(MatIdx);
-				}
-				if (TargetMat)
-				{
-					PropMesh->SetMaterial(MatIdx, TargetMat);
+					PropMesh->SetMaterial(ExcessIdx, nullptr);
 				}
 			}
 			PropMesh->SetVisibility(false);
@@ -351,26 +411,35 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 
 		if (PropMesh)
 		{
-			if (InProductDef.StaticMesh && PropMesh->GetStaticMesh() != InProductDef.StaticMesh)
+			if (TargetStaticMesh && PropMesh->GetStaticMesh() != TargetStaticMesh)
 			{
-				PropMesh->SetStaticMesh(InProductDef.StaticMesh);
+				PropMesh->SetStaticMesh(TargetStaticMesh);
 			}
-			const int32 NumStaticMats = InProductDef.StaticMesh ? InProductDef.StaticMesh->GetStaticMaterials().Num() : 0;
-			const int32 NumSlots = FMath::Max(PropMesh->GetNumMaterials(), FMath::Max(NumStaticMats, SourceOverrides.Num()));
-			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
+			if (TargetStaticMesh)
 			{
-				UMaterialInterface* TargetMat = nullptr;
-				if (SourceOverrides.IsValidIndex(MatIdx) && SourceOverrides[MatIdx])
+				const int32 NumStaticSlots = TargetStaticMesh->GetStaticMaterials().Num();
+				for (int32 MatIdx = 0; MatIdx < NumStaticSlots; ++MatIdx)
 				{
-					TargetMat = SourceOverrides[MatIdx];
+					UMaterialInterface* TargetMat = nullptr;
+					if (SourceOverrides.IsValidIndex(MatIdx) && IsValid(SourceOverrides[MatIdx]))
+					{
+						TargetMat = SourceOverrides[MatIdx];
+					}
+					else
+					{
+						TargetMat = TargetStaticMesh->GetMaterial(MatIdx);
+					}
+
+					if (TargetMat && PropMesh->GetMaterial(MatIdx) != TargetMat)
+					{
+						PropMesh->SetMaterial(MatIdx, TargetMat);
+					}
 				}
-				else if (InProductDef.StaticMesh)
+
+				const int32 ExistingStaticMats = PropMesh->GetNumMaterials();
+				for (int32 ExcessIdx = NumStaticSlots; ExcessIdx < ExistingStaticMats; ++ExcessIdx)
 				{
-					TargetMat = InProductDef.StaticMesh->GetMaterial(MatIdx);
-				}
-				if (TargetMat)
-				{
-					PropMesh->SetMaterial(MatIdx, TargetMat);
+					PropMesh->SetMaterial(ExcessIdx, nullptr);
 				}
 			}
 			PropMesh->SetVisibility(true);
@@ -382,7 +451,7 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 	Price = InProductDef.ConsumableProfile.Price;
 	NumOfPortions = InProductDef.ConsumableProfile.NumOfPortions;
 	RemainingPortions = InProductDef.ConsumableProfile.NumOfPortions;
-	QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 1.0f;
+	QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
 	bDestroyWhenEmpty = InProductDef.ConsumableProfile.bDestroyWhenEmpty;
 
 	bEnableTemperatureUpdate = InProductDef.TemperatureProfile.bEnableTemperatureUpdate;
@@ -425,7 +494,7 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 
 void AActivePropActor::UpdateMaterialCustomPrimitiveData()
 {
-	const float PortionRatio = (NumOfPortions > 0) ? FMath::Clamp(static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions), 0.0f, 1.0f) : 1.0f;
+	const float PortionRatio = (NumOfPortions > 0) ? FMath::Clamp(static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions), 0.0f, 1.0f) : 0.0f;
 	const float FrostFactor = FMath::Clamp((AmbientRoomTemperature - CurrentTemperature) / FMath::Max(1.0f, AmbientRoomTemperature), 0.0f, 1.0f);
 	const float ExpiryAge = (bHasExpiry && ExpiryLifetimeMinutes > 0.0f) ? FMath::Clamp(AgeMinutes / ExpiryLifetimeMinutes, 0.0f, 1.0f) : 0.0f;
 
@@ -525,6 +594,14 @@ void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record,
 	bIsHeld = (Record.State == EPropState::Held);
 
 	RemainingPortions = Record.PackedRuntimeData.RemainingPortions;
+	if (ProductDef && ProductDef->ConsumableProfile.NumOfPortions <= 0)
+	{
+		RemainingPortions = 0;
+	}
+	else if (NumOfPortions <= 0)
+	{
+		RemainingPortions = 0;
+	}
 	CurrentTemperature = Record.PackedRuntimeData.Temperature;
 	bIsGrabbable = Record.PackedRuntimeData.bIsGrabbable;
 	QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
@@ -586,6 +663,21 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 	// so no OnComponentHit or physics contact can fire before OnBecomeActive.
 	SetActorTransform(SafeGameplayTransform, false, nullptr, ETeleportType::TeleportPhysics);
 
+	// Enable replication on Server before firing OnBecomeActive so that any replicated Blueprint properties
+	// modified during OnBecomeActive are properly tracked by the network driver and replicated to clients.
+	if (HasAuthority())
+	{
+		bReplicates = bEnableReplication;
+		bAlwaysRelevant = bEnableReplication;
+		SetReplicates(bEnableReplication);
+		SetReplicateMovement(bEnableReplication);
+	}
+	else
+	{
+		bReplicates = false;
+		bAlwaysRelevant = false;
+	}
+
 	// 2. Make visible and fire OnBecomeActive / OnActivatedFromISM FIRST (all data & transform are applied,
 	// before collision, physics simulation, timers, or Tick run).
 	SetActorHiddenInGame(false);
@@ -636,18 +728,18 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 	}
 
 	SetActorTickEnabled(true);
-	bReplicates = true;
-	bAlwaysRelevant = true;
-	SetReplicateMovement(true);
-
-	if (const UWorld* World = GetWorld())
+	if (HasAuthority())
 	{
-		if (!World->IsNetMode(NM_Client) && HasAuthority())
+		bReplicates = bEnableReplication;
+		bAlwaysRelevant = bEnableReplication;
+		SetReplicateMovement(bEnableReplication);
+
+		if (const UWorld* World = GetWorld())
 		{
-			bReplicates = true;
-			bAlwaysRelevant = true;
-			SetReplicateMovement(true);
-			ForceNetUpdate();
+			if (!World->IsNetMode(NM_Client))
+			{
+				ForceNetUpdate();
+			}
 		}
 	}
 
@@ -725,7 +817,10 @@ void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 	bIsInMotion = false;
 	bIsReplicated = false;
 	bAlwaysRelevant = false;
-	SetReplicates(false);
+	if (HasAuthority())
+	{
+		SetReplicates(false);
+	}
 	State = EPropState::AtRest;
 	InteractionState = EPropInteractionLockState::Free;
 	InteractionOwner = nullptr;
@@ -975,7 +1070,7 @@ void AActivePropActor::QueueSelfForISMConversion()
 		RegisterProductWithManager();
 	}
 
-	if (ASMID <= 0 && HasAuthority())
+	if (ASMID <= 0)
 	{
 		ASMID = Manager->AllocateASMID();
 		Manager->RegisterProp(this);
@@ -1019,6 +1114,7 @@ void AActivePropActor::BeginPlay()
 	if (APropManager* Manager = APropManager::Get(this))
 	{
 		PropManagerReference = Manager;
+		Manager->EnsureLevelPropsInitialized();
 		Manager->RegisterProp(this);
 	}
 
@@ -1034,13 +1130,24 @@ void AActivePropActor::BeginPlay()
 		{
 			// Placed actor at rest on client: Server will authoritatively convert to ISM and sync.
 			// Deactivate and park to pool immediately on client so it doesn't duplicate the ISM instance.
-			DeactivateToPoolState(FTransform(FQuat::Identity, FVector(0.0f, 0.0f, -100000.0f)));
+			const FTransform ParkTransform = (ASMID > 0 && PropManagerReference)
+				? PropManagerReference->GetResetTransformForSlot(ASMID)
+				: FTransform(FQuat::Identity, FVector(0.0f, 0.0f, -100000.0f));
+			DeactivateToPoolState(ParkTransform);
 			if (APropManager* Manager = APropManager::Get(this))
 			{
 				Manager->RegisterProp(this);
 				if (Manager->ASMComponent)
 				{
 					Manager->ASMComponent->ASMActors.AddUnique(this);
+					if (ASMID > 0)
+					{
+						Manager->ASMComponent->EmptyASMIDs.AddUnique(ASMID);
+					}
+				}
+				if (ASMID > 0)
+				{
+					Manager->EmptyASMIDs.AddUnique(ASMID);
 				}
 			}
 		}
@@ -1260,6 +1367,18 @@ void AActivePropActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AActivePropActor, bIsInMotion);
 }
 
+void AActivePropActor::OnRep_ASMID()
+{
+	if (!PropManagerReference)
+	{
+		PropManagerReference = APropManager::Get(this);
+	}
+	if (PropManagerReference && ASMID > 0)
+	{
+		PropManagerReference->RegisterProp(this);
+	}
+}
+
 void AActivePropActor::OnRep_ISID()
 {
 	if (!PropManagerReference)
@@ -1268,8 +1387,9 @@ void AActivePropActor::OnRep_ISID()
 	}
 	if (bIsActive && ISID > 0)
 	{
+		const bool bHasMesh = (PropMesh && PropMesh->GetStaticMesh() != nullptr) || (SkeletalMeshComponent && SkeletalMeshComponent->GetSkeletalMeshAsset() != nullptr);
 		// If this ASM was already locally promoted on the Client for this exact ISID, do not re-run activation or snap its physics!
-		if (!bHasNotifiedBeforeReturnToRest && !IsHidden() && GetActorEnableCollision() && GetActorLocation().Z > -50000.0f && PropMesh && PropMesh->GetStaticMesh() != nullptr)
+		if (!bHasNotifiedBeforeReturnToRest && !IsHidden() && GetActorEnableCollision() && GetActorLocation().Z > -50000.0f && bHasMesh)
 		{
 			if (PropManagerReference && PropManagerReference->GetActiveActorFromISID(ISID) == this)
 			{
@@ -1492,7 +1612,8 @@ void AActivePropActor::OnRep_IsActive()
 
 	// If this exact ASM was already predicted & activated locally on the Client for this exact ISID,
 	// do NOT re-teleport it or reset its physics velocity when the Server's confirmation arrives!
-	if (!bHasNotifiedBeforeReturnToRest && !IsHidden() && GetActorEnableCollision() && GetActorLocation().Z > -50000.0f && PropMesh && PropMesh->GetStaticMesh() != nullptr)
+	const bool bHasMesh = (PropMesh && PropMesh->GetStaticMesh() != nullptr) || (SkeletalMeshComponent && SkeletalMeshComponent->GetSkeletalMeshAsset() != nullptr);
+	if (!bHasNotifiedBeforeReturnToRest && !IsHidden() && GetActorEnableCollision() && GetActorLocation().Z > -50000.0f && bHasMesh)
 	{
 		if (PropManagerReference && PropManagerReference->GetActiveActorFromISID(ISID) == this)
 		{

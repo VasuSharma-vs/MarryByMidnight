@@ -49,8 +49,11 @@ public:
 	// Section 30: AActivePropActor Identity & Representation Layout
 	// ---------------------------------------------------------
 	/** Unique physical ASM actor unit identifier (ASMID) assigned by PropManager */
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "ASM Identity")
+	UPROPERTY(ReplicatedUsing = OnRep_ASMID, VisibleAnywhere, BlueprintReadOnly, Category = "ASM Identity")
 	int32 ASMID = 0;
+
+	UFUNCTION()
+	void OnRep_ASMID();
 
 	/** Permanent logical prop identity (Rule 3: ISID is the permanent identity) */
 	UPROPERTY(ReplicatedUsing = OnRep_ISID, EditAnywhere, BlueprintReadWrite, Category = "ASM Identity")
@@ -474,7 +477,7 @@ public:
 	void OnRep_QuantityLevel();
 
 	/** Total number of portions (sips or bites) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
 
 	/** Current remaining portions */

@@ -145,64 +145,43 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 		Def.DisplayName = InAsset->ItemDisplayName;
 		Def.StaticMesh = InAsset->StaticMesh;
 		Def.SkeletalMesh = InAsset->SkeletalMesh;
-		Def.MaterialOverrides = InAsset->MaterialOverrides;
-		if (Def.MaterialOverrides.Num() == 0)
+		Def.MaterialOverrides.Reset();
+
+		if (InAsset->StaticMesh)
 		{
-			if (InAsset->StaticMesh)
+			const int32 NumSlots = InAsset->StaticMesh->GetStaticMaterials().Num();
+			Def.MaterialOverrides.SetNum(NumSlots);
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 			{
-				const int32 NumStaticMats = InAsset->StaticMesh->GetStaticMaterials().Num();
-				for (int32 MatIdx = 0; MatIdx < NumStaticMats; ++MatIdx)
+				if (InAsset->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(InAsset->MaterialOverrides[MatIdx]))
 				{
-					Def.MaterialOverrides.Add(InAsset->StaticMesh->GetMaterial(MatIdx));
+					Def.MaterialOverrides[MatIdx] = InAsset->MaterialOverrides[MatIdx];
+				}
+				else
+				{
+					Def.MaterialOverrides[MatIdx] = InAsset->StaticMesh->GetMaterial(MatIdx);
 				}
 			}
-			else if (InAsset->SkeletalMesh)
+		}
+		else if (InAsset->SkeletalMesh)
+		{
+			const int32 NumSlots = InAsset->SkeletalMesh->GetMaterials().Num();
+			Def.MaterialOverrides.SetNum(NumSlots);
+			for (int32 MatIdx = 0; MatIdx < NumSlots; ++MatIdx)
 			{
-				const int32 NumSkelMats = InAsset->SkeletalMesh->GetMaterials().Num();
-				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
+				if (InAsset->MaterialOverrides.IsValidIndex(MatIdx) && IsValid(InAsset->MaterialOverrides[MatIdx]))
 				{
-					Def.MaterialOverrides.Add(InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get());
+					Def.MaterialOverrides[MatIdx] = InAsset->MaterialOverrides[MatIdx];
+				}
+				else if (InAsset->SkeletalMesh->GetMaterials().IsValidIndex(MatIdx))
+				{
+					Def.MaterialOverrides[MatIdx] = InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
 				}
 			}
 		}
 		else
 		{
-			if (InAsset->StaticMesh)
-			{
-				const int32 NumStaticMats = InAsset->StaticMesh->GetStaticMaterials().Num();
-				for (int32 MatIdx = 0; MatIdx < NumStaticMats; ++MatIdx)
-				{
-					if (Def.MaterialOverrides.IsValidIndex(MatIdx))
-					{
-						if (!Def.MaterialOverrides[MatIdx])
-						{
-							Def.MaterialOverrides[MatIdx] = InAsset->StaticMesh->GetMaterial(MatIdx);
-						}
-					}
-					else
-					{
-						Def.MaterialOverrides.Add(InAsset->StaticMesh->GetMaterial(MatIdx));
-					}
-				}
-			}
-			else if (InAsset->SkeletalMesh)
-			{
-				const int32 NumSkelMats = InAsset->SkeletalMesh->GetMaterials().Num();
-				for (int32 MatIdx = 0; MatIdx < NumSkelMats; ++MatIdx)
-				{
-					if (Def.MaterialOverrides.IsValidIndex(MatIdx))
-					{
-						if (!Def.MaterialOverrides[MatIdx])
-						{
-							Def.MaterialOverrides[MatIdx] = InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get();
-						}
-					}
-					else
-					{
-						Def.MaterialOverrides.Add(InAsset->SkeletalMesh->GetMaterials()[MatIdx].MaterialInterface.Get());
-					}
-				}
-			}
+			Def.MaterialOverrides = InAsset->MaterialOverrides;
 		}
 
 		Def.ConsumableProfile.ConsumableType = InAsset->ConsumableType;
@@ -374,6 +353,14 @@ void FInteractablePropData::SyncFromISIDRecord(const FISIDRuntimeIndex& Record, 
 	}
 
 	RemainingPortions = Record.PackedRuntimeData.RemainingPortions;
+	if (ProductDef && ProductDef->ConsumableProfile.NumOfPortions <= 0)
+	{
+		RemainingPortions = 0;
+	}
+	else if (NumOfPortions <= 0)
+	{
+		RemainingPortions = 0;
+	}
 	QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
 	CurrentTemperature = Record.PackedRuntimeData.Temperature;
 	bIsGrabbable = Record.PackedRuntimeData.bIsGrabbable;

@@ -92,7 +92,7 @@ public:
 	float Price = 2.0f;
 
 	/** Total number of portions (e.g. 4 sips or bites) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
 
 	// -------------------------------------------------------------
