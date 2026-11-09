@@ -26,6 +26,8 @@
 #include "EngineUtils.h"
 #include "Async/Async.h"
 #include "TimerManager.h"
+#include "Shop/SharedTeamWalletComponent.h"
+#include "Shop/ShopCheckoutComponent.h"
 
 APropManager::APropManager()
 {
@@ -37,6 +39,8 @@ APropManager::APropManager()
 	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	SetRootComponent(SceneRoot);
 
+	SharedWallet = CreateDefaultSubobject<USharedTeamWalletComponent>(TEXT("SharedTeamWallet"));
+	ShopCheckout = CreateDefaultSubobject<UShopCheckoutComponent>(TEXT("ShopCheckout"));
 	ASMComponent = CreateDefaultSubobject<UASMComponent>(TEXT("ASMComponent"));
 	BatchUpdateComponent = CreateDefaultSubobject<UPropBatchUpdateComponent>(TEXT("BatchUpdateComponent"));
 	SenseSightComponent = CreateDefaultSubobject<UInteractablePropSenseSightComponent>(TEXT("SenseSightComponent"));
@@ -90,6 +94,7 @@ void APropManager::PreInitializeComponents()
 void APropManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APropManager, WorldElapsedSeconds);
 
 	DOREPLIFETIME(APropManager, LoadState);
 	DOREPLIFETIME(APropManager, PropManagerReady);
@@ -140,11 +145,16 @@ void APropManager::BeginPlay()
 	{
 		World->GetTimerManager().SetTimer(SettlingTimerHandle, this, &APropManager::CheckSettlingQueue, SettlingCheckInterval, true);
 		World->GetTimerManager().SetTimerForNextTick(this, &APropManager::PrepareClientPropSync);
+		if (bEnableAutosave && FMath::IsFinite(AutosaveIntervalSeconds) && AutosaveIntervalSeconds >= 1 && !AutosaveSlot.IsEmpty())
+			World->GetTimerManager().SetTimer(AutosaveTimerHandle, this, &APropManager::PerformAutosave, AutosaveIntervalSeconds, true);
 	}
 }
 
 void APropManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UWorld* TimerWorld = GetWorld()) TimerWorld->GetTimerManager().ClearTimer(AutosaveTimerHandle);
+	if (ShopCheckout) ShopCheckout->CancelAllCheckouts();
+	CancelLiquidTransfers();
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -169,6 +179,7 @@ void APropManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void APropManager::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	WorldElapsedSeconds += FMath::Max(0.0f, DeltaSeconds);
 
 	if (HasAuthority())
 	{
@@ -327,7 +338,7 @@ int32 APropManager::GetCurrentWorldMinutes() const
 {
 	if (const UWorld* World = GetWorld())
 	{
-		return FMath::Clamp(FMath::FloorToInt(World->GetTimeSeconds() / 60.0f), 0, 65535);
+		return FMath::Max(0, FMath::FloorToInt(WorldElapsedSeconds / 60.0));
 	}
 	return 0;
 }
@@ -396,7 +407,13 @@ bool APropManager::RegisterProductDefinition(const FPropProductDefinition& InDef
 	{
 		return false;
 	}
-	ProductDefinitions.Add(InDefinition.ProductID, InDefinition);
+	FPropProductDefinition Validated = InDefinition;
+	if (HasAuthority()) { Validated.FilledContentIDs.Empty(); Validated.FilledProductIDs.Empty(); for (const auto& Mapping : Validated.FilledProductIDByContentID) { Validated.FilledContentIDs.Add(Mapping.Key); Validated.FilledProductIDs.Add(Mapping.Value); } }
+	else { Validated.FilledProductIDByContentID.Empty(); for (int32 I=0; I<FMath::Min(Validated.FilledContentIDs.Num(), Validated.FilledProductIDs.Num()); ++I) Validated.FilledProductIDByContentID.Add(Validated.FilledContentIDs[I],Validated.FilledProductIDs[I]); }
+	Validated.bEnableInstanceUniqueData |= Validated.bEnableContinuousUpdateData;
+	if (HasAuthority() && Validated.ConsumableProfile.NumOfPortions > 0 && Validated.DefaultUniqueData.EventData.ContentID == 0) { FPropContentDefinition Content; Content.ContentID = Validated.ProductID; Content.DisplayName = Validated.DisplayName; Content.BasePortionPrice = Validated.ConsumableProfile.Price; Content.IdealServingTemperature = Validated.TemperatureProfile.ConsumableTemperature; Content.StimulusProfile = Validated.StimulusProfile; Content.TasteProfile = Validated.TasteProfile; Content.ExpiredTasteProfile = Validated.ExpiredTasteProfile; Content.ExpiryProfile = Validated.ExpiryProfile; if (!ContentDefinitions.Contains(Content.ContentID)) RegisterContentDefinition(Content); Validated.DefaultUniqueData.EventData.ContentID = Content.ContentID; }
+	ProductDefinitions.Add(InDefinition.ProductID, Validated);
+	if (HasAuthority()) Multicast_RegisterProductDefinition(Validated);
 
 	// Ensure any existing IISM component for this ProductID immediately receives its mesh and materials
 	for (const TPair<int32, TObjectPtr<UInteractableISMComponent>>& Pair : ComponentsByICID)
@@ -945,9 +962,9 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 				InComponent->ProductID = AllocateProductID();
 			}
 		}
-		else if (InComponent->IISMDB.ProductID > 0 && IsProductRegistered(InComponent->IISMDB.ProductID))
+		else if (ProductDefinitions.FindRef(InComponent->ProductID).ProductID > 0 && IsProductRegistered(ProductDefinitions.FindRef(InComponent->ProductID).ProductID))
 		{
-			InComponent->ProductID = InComponent->IISMDB.ProductID;
+			InComponent->ProductID = ProductDefinitions.FindRef(InComponent->ProductID).ProductID;
 		}
 		else if (InComponent->GetStaticMesh())
 		{
@@ -967,9 +984,9 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 				InComponent->ProductID = AllocateProductID();
 			}
 		}
-		else if (InComponent->IISMDB.ProductID > 0)
+		else if (ProductDefinitions.FindRef(InComponent->ProductID).ProductID > 0)
 		{
-			InComponent->ProductID = InComponent->IISMDB.ProductID;
+			InComponent->ProductID = ProductDefinitions.FindRef(InComponent->ProductID).ProductID;
 		}
 		// If the component has no mesh, no data asset, and no IISMDB, leave ProductID <= 0 until assigned
 	}
@@ -979,10 +996,10 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 		{
 			ApplyProductDefinitionToComponent(InComponent, *ExistingDef);
 		}
-		else if (InComponent->IISMDB.ProductID > 0 && InComponent->IISMDB.StaticMesh)
+		else if (ProductDefinitions.FindRef(InComponent->ProductID).ProductID > 0 && ProductDefinitions.FindRef(InComponent->ProductID).StaticMesh)
 		{
-			RegisterProductDefinition(InComponent->IISMDB);
-			ApplyProductDefinitionToComponent(InComponent, InComponent->IISMDB);
+			RegisterProductDefinition(ProductDefinitions.FindRef(InComponent->ProductID));
+			ApplyProductDefinitionToComponent(InComponent, ProductDefinitions.FindRef(InComponent->ProductID));
 		}
 		else if (InComponent->DefaultDataAsset)
 		{
@@ -1095,7 +1112,7 @@ UInteractableISMComponent* APropManager::GetOrCreateIISMComponent(int32 InProduc
 	TInlineComponentArray<UInteractableISMComponent*> AttachedComps(this);
 	for (UInteractableISMComponent* AttachedComp : AttachedComps)
 	{
-		if (AttachedComp && (AttachedComp->ProductID == InProductID || AttachedComp->IISMDB.ProductID == InProductID))
+		if (AttachedComp && (AttachedComp->ProductID == InProductID || ProductDefinitions.FindRef(AttachedComp->ProductID).ProductID == InProductID))
 		{
 			AttachedComp->ProductID = InProductID;
 			if (Def)
@@ -1298,10 +1315,6 @@ void APropManager::InitializeIISMComponents()
 			{
 				Comp->ISIDToISMI.Empty();
 				Comp->ISMIToISID.Empty();
-				for (FInteractablePropData& Entry : Comp->PropDatabase)
-				{
-					Entry.ISID = 0;
-				}
 			}
 
 			RegisterIISMComponent(Comp, Comp->IISMComponentID);
@@ -1330,6 +1343,7 @@ void APropManager::ClearLevelRuntimeState()
 	}
 
 	ISIDData.Empty();
+	UniqueDataByISID.Empty();
 	DirtyISIDs.Empty();
 	PendingReleasedToEmptyISIDs.Empty();
 	PendingDeletedISIDs.Empty();
@@ -1444,6 +1458,7 @@ bool APropManager::RegisterISID(const FISIDRuntimeIndex& InRecord)
 {
 	if (InRecord.ISID <= 0) return false;
 	ISIDData.Add(InRecord.ISID, InRecord);
+	FindUniqueData(InRecord.ISID);
 	AllActiveISIDs.AddUnique(InRecord.ISID);
 	NextISID = FMath::Max(NextISID, InRecord.ISID + 1);
 	return true;
@@ -1456,6 +1471,7 @@ bool APropManager::UnregisterISID(int32 InISID)
 		ASMComponent->UnregisterActiveActor(InISID);
 	}
 	ActiveActorByISID.Remove(InISID);
+	UniqueDataByISID.Remove(InISID);
 	DirtyISIDs.Remove(InISID);
 	AllActiveISIDs.Remove(InISID);
 	return ISIDData.Remove(InISID) > 0;
@@ -2061,6 +2077,7 @@ bool APropManager::InitializeInstance(int32 InISID, int32 InProductID, const FTr
 
 bool APropManager::InitializeInstanceData(int32 InISID, const FPropProductDefinition& ProductDef)
 {
+	if (!HasAuthority()) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 
@@ -2072,6 +2089,22 @@ bool APropManager::InitializeInstanceData(int32 InISID, const FPropProductDefini
 	Record->PackedRuntimeData.RemainingPortions = ProductDef.ConsumableProfile.NumOfPortions;
 	Record->RuntimeData.RemainingPortions = ProductDef.ConsumableProfile.NumOfPortions;
 	Record->RuntimeData.Temperature = ProductDef.TemperatureProfile.ConsumableTemperature;
+	if (ProductDef.bEnableInstanceUniqueData)
+	{
+		const FPropInstanceUniqueData* Previous = UniqueDataByISID.Find(InISID);
+		const uint32 NextSequence = Previous ? Previous->EventData.EventSequence + 1 : 1;
+		FPropInstanceUniqueData Unique = ProductDef.DefaultUniqueData;
+		Unique.EventData.EventSequence = NextSequence;
+		Unique.EventData.CreationTime = WorldElapsedSeconds;
+		Unique.EventData.ContentCreationTime = WorldElapsedSeconds;
+		Unique.ContinuousData.LastUpdatedTime = WorldElapsedSeconds;
+		UniqueDataByISID.Add(InISID, Unique);
+		Record->LastDiscreteEventTime = WorldElapsedSeconds;
+		RefreshUniqueRepresentation(InISID);
+	}
+	else UniqueDataByISID.Remove(InISID);
+	IncrementInstanceVersion(InISID);
+	MarkInstanceDirty(InISID, EPropDirtyFlags::RuntimeData);
 
 	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
 	{
@@ -2695,9 +2728,9 @@ bool APropManager::ConvertISMToASM(
 	if ((!ProductDef || !ProductDef->StaticMesh) && ISMComp)
 	{
 		const int32 ResolvedProductID = PID > 0 ? PID : ISMComp->ProductID;
-		if (ISMComp->IISMDB.StaticMesh)
+		if (ProductDefinitions.FindRef(ISMComp->ProductID).StaticMesh)
 		{
-			FallbackDef = ISMComp->IISMDB;
+			FallbackDef = ProductDefinitions.FindRef(ISMComp->ProductID);
 			FallbackDef.ProductID = ResolvedProductID;
 		}
 		else if (ISMComp->DefaultDataAsset)
@@ -2898,6 +2931,7 @@ bool APropManager::ConvertASMToISM(
 	}
 
 	AActivePropActor* ActiveActor = Record->ActiveActor.Get() ? Record->ActiveActor.Get() : GetActiveActorFromISID(SignedISID);
+	if (ActiveActor && !ActiveActor->CanDemoteToISM()) return false;
 	if (ActiveActor)
 	{
 		if (ActiveActor->PropDataAsset)
@@ -3377,6 +3411,13 @@ AActivePropActor* APropManager::MakeISMToASM(
 		return nullptr;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] MakeISMToASM called: ISID=%d, TargetState=%s, Reason=%s, bSimulatePhysics=%s | Role=%s"),
+		InISID,
+		*UEnum::GetValueAsString(TargetState),
+		*UEnum::GetValueAsString(Reason),
+		bSimulatePhysics ? TEXT("True") : TEXT("False"),
+		HasAuthority() ? TEXT("Server/Standalone") : TEXT("Client"));
+
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record)
 	{
@@ -3411,9 +3452,19 @@ AActivePropActor* APropManager::MakeISMToASM(
 					ExistingASM->PhysicsSimComponent->SetStateHeld();
 				}
 			}
-			else if (bSimulatePhysics && ExistingASM->PhysicsSimComponent)
+			else if (bSimulatePhysics)
 			{
-				ExistingASM->PhysicsSimComponent->SetStateUnsettled(3.0f);
+				if (ExistingASM->PropMesh)
+				{
+					ExistingASM->PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					ExistingASM->PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+					ExistingASM->PropMesh->SetNotifyRigidBodyCollision(true);
+					ExistingASM->PropMesh->SetSimulatePhysics(true);
+				}
+				if (ExistingASM->PhysicsSimComponent)
+				{
+					ExistingASM->PhysicsSimComponent->SetStateUnsettled(3.0f);
+				}
 			}
 		}
 		return ExistingASM;
@@ -3454,11 +3505,22 @@ AActivePropActor* APropManager::MakeISMToASM(
 			}
 			else if (bSimulatePhysics && PredictedASM->PhysicsSimComponent)
 			{
+				if (PredictedASM->PropMesh)
+				{
+					PredictedASM->PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					PredictedASM->PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+					PredictedASM->PropMesh->SetNotifyRigidBodyCollision(true);
+					PredictedASM->PropMesh->SetSimulatePhysics(true);
+				}
 				PredictedASM->PhysicsSimComponent->SetStateUnsettled(3.0f);
 			}
 			else if (EffectiveState == EPropState::InMotion && PredictedASM->PhysicsSimComponent)
 			{
 				PredictedASM->PhysicsSimComponent->SetStateInMotion();
+				if (PredictedASM->PropMesh)
+				{
+					PredictedASM->PropMesh->SetSimulatePhysics(true);
+				}
 			}
 
 			if (GetNetConnection() != nullptr)
@@ -3469,9 +3531,9 @@ AActivePropActor* APropManager::MakeISMToASM(
 		return PredictedASM;
 	}
 
-	// Server authoritative promotion
+	// Server authoritative promotion - always enable replication for active gameplay ASMs
 	AActivePropActor* PromotedASM = nullptr;
-	if (!PromoteInstanceToASM(InISID, Reason, (EffectiveState != EPropState::Held && bSimulatePhysics), PromotedASM) || !PromotedASM)
+	if (!PromoteInstanceToASM(InISID, Reason, true, PromotedASM) || !PromotedASM)
 	{
 		return nullptr;
 	}
@@ -3493,15 +3555,36 @@ AActivePropActor* APropManager::MakeISMToASM(
 			PromotedASM->PhysicsSimComponent->SetStateHeld();
 		}
 	}
-	else if (PromotedASM->PhysicsSimComponent)
+	else
 	{
 		if (bSimulatePhysics || EffectiveState == EPropState::Unsettled)
 		{
-			PromotedASM->PhysicsSimComponent->SetStateUnsettled(3.0f);
+			if (PromotedASM->PropMesh)
+			{
+				PromotedASM->PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				PromotedASM->PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+				PromotedASM->PropMesh->SetNotifyRigidBodyCollision(true);
+				PromotedASM->PropMesh->SetSimulatePhysics(true);
+			}
+			if (PromotedASM->PhysicsSimComponent)
+			{
+				PromotedASM->PhysicsSimComponent->SetStateUnsettled(3.0f);
+			}
 		}
 		else if (EffectiveState == EPropState::InMotion)
 		{
-			PromotedASM->PhysicsSimComponent->SetStateInMotion();
+			if (PromotedASM->PhysicsSimComponent)
+			{
+				PromotedASM->PhysicsSimComponent->SetStateInMotion();
+			}
+			if (PromotedASM->PropMesh)
+			{
+				PromotedASM->PropMesh->SetSimulatePhysics(true);
+			}
+		}
+		else if (bSimulatePhysics && PromotedASM->PropMesh)
+		{
+			PromotedASM->PropMesh->SetSimulatePhysics(true);
 		}
 	}
 
@@ -5504,55 +5587,65 @@ bool APropManager::GetPropData(int32 InISID, FInteractablePropData& OutData) con
 	if (!Record) return false;
 
 	const FPropProductDefinition* ProductDef = ProductDefinitions.Find(Record->ProductID);
-	OutData.SyncFromISIDRecord(*Record, ProductDef);
+	const FPropInstanceUniqueData* Unique = FindUniqueData(InISID);
+	OutData.SyncFromISIDRecord(*Record, ProductDef, Unique ? FindContentDefinition(Unique->EventData.ContentID) : nullptr, Unique, WorldElapsedSeconds);
 	return true;
 }
 
 bool APropManager::SetPropInstanceData(int32 InISID, const FISIDRuntimeIndex& InData)
 {
+	if (!HasAuthority()) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
-	if (!Record) return false;
-
-	*Record = InData;
-	Record->ISID = InISID;
+	if (!Record || InData.ProductID != Record->ProductID || InData.Representation != Record->Representation || InData.IISMComponentID != Record->IISMComponentID || InData.ISMI != Record->ISMI || InData.ASMID != Record->ASMID) return false;
+	if (!UpdatePropInstanceData(InISID, InData.PackedRuntimeData)) return false;
+	Record->RuntimeData = InData.RuntimeData;
+	Record->State = InData.State;
+	if (AActivePropActor* Actor = Record->ActiveActor.Get()) { Actor->RuntimeData = Record->RuntimeData; Actor->State = Record->State; }
+	RefreshUniqueRepresentation(InISID);
 	IncrementInstanceVersion(InISID);
-
-	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
-	{
-		Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
-	}
-	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
-	{
-		ASM->InitializeFromISIDRecord(*Record, ProductDefinitions.Find(Record->ProductID), this);
-	}
-
 	MarkInstanceDirty(InISID, EPropDirtyFlags::All);
 	return true;
 }
 
 bool APropManager::UpdatePropInstanceData(int32 InISID, const FPropPackedRuntimeData& InPackedData)
 {
+	if (!HasAuthority() || !FMath::IsFinite(InPackedData.Temperature) || InPackedData.RemainingPortions < 0) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
-
-	Record->PackedRuntimeData = InPackedData;
+	if (FPropInstanceUniqueData* Unique = FindUniqueData(InISID))
+	{
+		FPropEventSyncDelta Delta;
+		if (InPackedData.RemainingPortions != Record->PackedRuntimeData.RemainingPortions)
+		{
+			const FPropProductDefinition* Def = FindProductDefinition(Record->ProductID);
+			if (!Def || Def->ConsumableProfile.NumOfPortions <= 0) return false;
+			Delta.DirtyMask |= static_cast<uint8>(EPropEventDirtyMask::ContentLevel);
+			Delta.ContentLevel = static_cast<float>(InPackedData.RemainingPortions) / Def->ConsumableProfile.NumOfPortions;
+		}
+		if (InPackedData.bIsGrabbable != Unique->EventData.bIsGrabbable)
+		{
+			Delta.DirtyMask |= static_cast<uint8>(EPropEventDirtyMask::Grabbable); Delta.bIsGrabbable = InPackedData.bIsGrabbable;
+		}
+		if (Delta.DirtyMask && !SubmitInstanceEventUpdate(InISID, Delta)) return false;
+		Unique = FindUniqueData(InISID);
+		Unique->ContinuousData.Temperature = InPackedData.Temperature;
+		Unique->ContinuousData.LastUpdatedTime = WorldElapsedSeconds;
+		RefreshUniqueRepresentation(InISID);
+	}
+	else
+	{
+		Record->PackedRuntimeData = InPackedData;
+		Record->RuntimeData.RemainingPortions = InPackedData.RemainingPortions;
+		Record->RuntimeData.Temperature = InPackedData.Temperature;
+		if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID)) Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
+		if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
+		{
+			ASM->PackedRuntimeData = Record->PackedRuntimeData; ASM->RemainingPortions = InPackedData.RemainingPortions;
+			ASM->CurrentTemperature = InPackedData.Temperature; ASM->SetGrabbable(InPackedData.bIsGrabbable);
+		}
+	}
 	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
-	Record->RuntimeData.RemainingPortions = InPackedData.RemainingPortions;
-	Record->RuntimeData.Temperature = InPackedData.Temperature;
 	IncrementInstanceVersion(InISID);
-
-	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
-	{
-		Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
-	}
-	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
-	{
-		ASM->PackedRuntimeData = Record->PackedRuntimeData;
-		ASM->RemainingPortions = InPackedData.RemainingPortions;
-		ASM->CurrentTemperature = InPackedData.Temperature;
-		ASM->SetGrabbable(InPackedData.bIsGrabbable);
-	}
-
 	MarkInstanceDirty(InISID, EPropDirtyFlags::RuntimeData | EPropDirtyFlags::State);
 	return true;
 }
@@ -5569,9 +5662,20 @@ bool APropManager::PatchPropInstanceData(int32 InISID, const FPropInstancePatch&
 
 bool APropManager::ApplyInstancePatch(int32 InISID, const FPropInstancePatch& InPatch)
 {
+	if (!HasAuthority() || (InPatch.bModifyTemperature && !FMath::IsFinite(InPatch.NewTemperature)) || (InPatch.bModifyDurability && !FMath::IsFinite(InPatch.NewDurability))) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 
+	FPropPackedRuntimeData Packed = Record->PackedRuntimeData;
+	if (InPatch.bModifyPortions) Packed.RemainingPortions = FMath::Max(0, InPatch.NewRemainingPortions);
+	if (InPatch.bModifyTemperature) Packed.Temperature = InPatch.NewTemperature;
+	if (InPatch.bModifyGrabbable) Packed.bIsGrabbable = InPatch.bNewIsGrabbable;
+	if ((InPatch.bModifyPortions || InPatch.bModifyTemperature || InPatch.bModifyGrabbable) && !UpdatePropInstanceData(InISID, Packed)) return false;
+	if (InPatch.bModifyDurability && FindUniqueData(InISID))
+	{
+		FPropEventSyncDelta Delta; Delta.DirtyMask = static_cast<uint8>(EPropEventDirtyMask::Strength); Delta.Strength = FMath::Clamp(InPatch.NewDurability / 100.0f, 0.0f, 1.0f);
+		if (!SubmitInstanceEventUpdate(InISID, Delta)) return false;
+	}
 	int32 Flags = EPropDirtyFlags::Clean;
 
 	if (InPatch.bModifyState)
@@ -5728,26 +5832,11 @@ int32 APropManager::GetRemainingPortions(int32 InISID) const
 
 bool APropManager::SetRemainingPortions(int32 InISID, int32 NewPortions)
 {
-	FISIDRuntimeIndex* Record = FindISIDData(InISID);
+	if (!HasAuthority() || NewPortions < 0) return false;
+	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
-
-	Record->PackedRuntimeData.RemainingPortions = FMath::Max(0, NewPortions);
-	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
-	Record->RuntimeData.RemainingPortions = Record->PackedRuntimeData.RemainingPortions;
-	IncrementInstanceVersion(InISID);
-
-	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
-	{
-		Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
-	}
-	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
-	{
-		ASM->RemainingPortions = Record->PackedRuntimeData.RemainingPortions;
-		ASM->QuantityLevel = (ASM->NumOfPortions > 0) ? static_cast<float>(ASM->RemainingPortions) / static_cast<float>(ASM->NumOfPortions) : 0.0f;
-	}
-
-	MarkInstanceDirty(InISID, EPropDirtyFlags::RuntimeData);
-	return true;
+	FPropPackedRuntimeData Packed = Record->PackedRuntimeData; Packed.RemainingPortions = NewPortions;
+	return UpdatePropInstanceData(InISID, Packed);
 }
 
 bool APropManager::AddPortions(int32 InISID, int32 PortionsToAdd)
@@ -5773,26 +5862,11 @@ float APropManager::GetTemperature(int32 InISID) const
 
 bool APropManager::SetTemperature(int32 InISID, float NewTemperature)
 {
-	FISIDRuntimeIndex* Record = FindISIDData(InISID);
+	if (!HasAuthority() || !FMath::IsFinite(NewTemperature)) return false;
+	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
-
-	Record->PackedRuntimeData.Temperature = NewTemperature;
-	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
-	Record->RuntimeData.Temperature = NewTemperature;
-	IncrementInstanceVersion(InISID);
-
-	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
-	{
-		Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
-	}
-	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
-	{
-		ASM->CurrentTemperature = NewTemperature;
-		ASM->PackedRuntimeData.Temperature = NewTemperature;
-	}
-
-	MarkInstanceDirty(InISID, EPropDirtyFlags::RuntimeData);
-	return true;
+	FPropPackedRuntimeData Packed = Record->PackedRuntimeData; Packed.Temperature = NewTemperature;
+	return UpdatePropInstanceData(InISID, Packed);
 }
 
 bool APropManager::ModifyTemperature(int32 InISID, float DeltaTemperature)
@@ -5910,6 +5984,11 @@ bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 		{
 			Record->ActiveActor->bIsHeld = false;
 			Record->ActiveActor->SetGrabbable(true);
+			if (Record->ActiveActor->PropMesh)
+			{
+				Record->ActiveActor->PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+				Record->ActiveActor->PropMesh->SetNotifyRigidBodyCollision(true);
+			}
 		}
 	}
 
@@ -6195,6 +6274,7 @@ bool APropManager::SetInstanceToUnsettled(
 			{
 				ExistingASM->PropMesh->AddImpulse(SafeImpulse, NAME_None, true);
 			}
+			if (HasAuthority() && !HitImpulse.IsNearlyZero()) ExistingASM->ApplyInitialImpactFromPromotion(ImpactPoint, HitImpulse, nullptr, NextRequestID++);
 			return true;
 		}
 	}
@@ -6249,6 +6329,7 @@ bool APropManager::SetInstanceToUnsettled(
 	}
 
 	PromotedASM->ForceNetUpdate();
+	if (!HitImpulse.IsNearlyZero()) PromotedASM->ApplyInitialImpactFromPromotion(ImpactPoint, HitImpulse, nullptr, NextRequestID++);
 	return true;
 }
 
@@ -6862,9 +6943,9 @@ void APropManager::UpdateClientASM(int32 InISID)
 			if ((!ProductDef || !ProductDef->StaticMesh) && Comp)
 			{
 				const int32 ResolvedProductID = Record->ProductID > 0 ? Record->ProductID : Comp->ProductID;
-				if (Comp->IISMDB.StaticMesh)
+				if (ProductDefinitions.FindRef(Comp->ProductID).StaticMesh)
 				{
-					FallbackDef = Comp->IISMDB;
+					FallbackDef = ProductDefinitions.FindRef(Comp->ProductID);
 					FallbackDef.ProductID = ResolvedProductID;
 				}
 				else if (Comp->DefaultDataAsset)
@@ -6965,6 +7046,7 @@ void APropManager::SetClientPhysics(int32 InISID, bool bSimulate)
 FPropInstanceDelta APropManager::BuildDeltaForRecord(const FISIDRuntimeIndex& Record) const
 {
 	FPropInstanceDelta Delta;
+	if (const FPropInstanceUniqueData* U = FindUniqueData(Record.ISID)) { Delta.bHasUniqueData = true; Delta.UniqueData = *U; }
 	Delta.ISID = Record.ISID;
 	Delta.ProductID = Record.ProductID;
 	Delta.IISMComponentID = Record.IISMComponentID;
@@ -6982,6 +7064,7 @@ FPropInstanceDelta APropManager::BuildDeltaForRecord(const FISIDRuntimeIndex& Re
 	const int32 PackedASMID = (Record.Representation == EPropRepresentation::ASM && Record.ASMID > 0) ? (Record.ASMID & 0xFFFF) : 0;
 	Delta.CustomFlags = (Record.RuntimeData.CustomFlags & 0xFFFF) | (PackedASMID << 16);
 	return Delta;
+
 }
 
 bool APropManager::BuildBulkUpdateBatch(int32 MaxRecords, FPropBulkUpdateBatch& OutBatch)
@@ -7026,7 +7109,7 @@ bool APropManager::BuildBulkUpdateBatch(int32 MaxRecords, FPropBulkUpdateBatch& 
 			{
 				if (const FPropProductDefinition* Def = ProductDefinitions.Find(Record->ProductID))
 				{
-					OutBatch.ProductDefinitions.Add(*Def);
+					// Definitions are synchronized on registration and in initial snapshots.
 					IncludedProductIDs.Add(Record->ProductID);
 				}
 			}
@@ -7063,7 +7146,7 @@ void APropManager::SendInstanceDelta(int32 InISID)
 	{
 		if (const FPropProductDefinition* Def = ProductDefinitions.Find(Record->ProductID))
 		{
-			SingleBatch.ProductDefinitions.Add(*Def);
+			// Definitions are synchronized on registration and in initial snapshots.
 		}
 	}
 	SingleBatch.Records.Add(BuildDeltaForRecord(*Record));
@@ -7155,6 +7238,8 @@ void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 	}
 
 	if (!Existing) return;
+	if (Delta.Version < Existing->Version) return;
+	if (Delta.bHasUniqueData) { const auto* Local = UniqueDataByISID.Find(Delta.ISID); if (!Local || static_cast<int32>(Delta.UniqueData.EventData.EventSequence - Local->EventData.EventSequence) >= 0) UniqueDataByISID.Add(Delta.ISID, Delta.UniqueData); }
 
 	const int32 UnpackedASMID = (Delta.CustomFlags >> 16) & 0xFFFF;
 	const int32 UnpackedCustomFlags = Delta.CustomFlags & 0xFFFF;
@@ -7218,6 +7303,8 @@ void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 
 	UpdateClientASM(Delta.ISID);
 	UpdateClientISM(Delta.ISID);
+
+	RefreshUniqueRepresentation(Delta.ISID);
 }
 
 void APropManager::AcknowledgeBulkBatch_Implementation(int32 BatchSequence)
@@ -7266,6 +7353,7 @@ void APropManager::Multicast_ReceiveBulkBatch_Implementation(const FPropBulkUpda
 
 	EnsureLevelPropsInitialized();
 
+	for (const auto& Content : Batch.ContentDefinitions) ContentDefinitions.Add(Content.ContentID, Content);
 	// 1. Register or update any product definitions included in the batch on the client
 	for (const FPropProductDefinition& Def : Batch.ProductDefinitions)
 	{
@@ -7350,6 +7438,8 @@ void APropManager::BuildInitialPropSnapshot(TArray<FPropBulkUpdateBatch>& OutBat
 	CurrentBatch.bIsFullSnapshot = true;
 	CurrentBatch.bIsFirstInitBatch = true;
 	ProductDefinitions.GenerateValueArray(CurrentBatch.ProductDefinitions);
+	ContentDefinitions.GenerateValueArray(CurrentBatch.ContentDefinitions);
+	CurrentBatch.SnapshotWorldElapsedSeconds = WorldElapsedSeconds;
 
 	const int32 BoundedMax = FMath::Clamp(MaxRecordsPerBatch, 1, MaxInstancesPerFrame);
 
@@ -7419,6 +7509,8 @@ void APropManager::ApplyPropInitializationBatch(const FPropBulkUpdateBatch& Batc
 		SetLoadState(EPropManagerLoadState::SynchronizingClients);
 	}
 
+	WorldElapsedSeconds = FMath::Max(WorldElapsedSeconds, Batch.SnapshotWorldElapsedSeconds);
+	for (const auto& Content : Batch.ContentDefinitions) ContentDefinitions.Add(Content.ContentID, Content);
 	// Register all product definitions from server so client can generate products & IISM components
 	for (const FPropProductDefinition& Def : Batch.ProductDefinitions)
 	{
@@ -7652,10 +7744,16 @@ void APropManager::ProcessPendingTasks(float DeltaSeconds)
 // =========================================================================
 bool APropManager::SavePropDatabase(const FString& SlotName, int32 UserIndex)
 {
+	if (!HasAuthority() || SlotName.IsEmpty()) return false;
 	// Step 1: Flush any active ASM actor transforms/states back into ISIDData before saving
 	FlushActiveActorState();
 
 	WorldSaveData.SchemaVersion = SchemaVersion;
+	WorldSaveData.WorldElapsedSeconds = WorldElapsedSeconds;
+	WorldSaveData.SharedWallet = SharedWallet ? SharedWallet->ExportCommittedState() : FSharedWalletSaveData();
+	WorldSaveData.ShopCheckout = ShopCheckout ? ShopCheckout->ExportCommittedState() : FShopCheckoutSaveData();
+	ProductDefinitions.GenerateValueArray(WorldSaveData.ProductDefinitions);
+	ContentDefinitions.GenerateValueArray(WorldSaveData.ContentDefinitions);
 	WorldSaveData.NextISID = NextISID;
 	WorldSaveData.SavedInstances.Empty(ISIDData.Num());
 
@@ -7665,6 +7763,7 @@ bool APropManager::SavePropDatabase(const FString& SlotName, int32 UserIndex)
 		FPropSerializedInstance Serialized;
 		if (SerializeInstance(Pair.Key, Serialized))
 		{
+			if (ShopCheckout && ShopCheckout->GetCanceledStockTransform(Pair.Key, Serialized.ActiveTransform)) Serialized.State = EPropState::AtRest;
 			WorldSaveData.SavedInstances.Add(Serialized);
 		}
 	}
@@ -7678,6 +7777,7 @@ bool APropManager::SavePropDatabase(const FString& SlotName, int32 UserIndex)
 
 bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 {
+	if (!HasAuthority() || SlotName.IsEmpty()) return false;
 	// Section 36 & 51 Load Flow:
 	// Load Product Definitions -> Create IISM Components -> Rebuild EmptyInstances -> Restore/Repair ISID Data -> Rebuild ISID -> ISMI mappings -> Activate ASMs only for props that require active representation
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
@@ -7688,7 +7788,12 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 	UPropDatabaseSaveGame* LoadedObj = Cast<UPropDatabaseSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
 	if (!LoadedObj) return false;
 
+	if (LoadedObj->WorldSaveData.SchemaVersion != SchemaVersion || !USharedTeamWalletComponent::ValidateSaveData(LoadedObj->WorldSaveData.SharedWallet) || !UShopCheckoutComponent::ValidateSaveData(LoadedObj->WorldSaveData.ShopCheckout) || !FMath::IsFinite(LoadedObj->WorldSaveData.WorldElapsedSeconds) || LoadedObj->WorldSaveData.WorldElapsedSeconds < 0) return false;
+	if (ShopCheckout) ShopCheckout->CancelAllCheckouts();
+	CancelLiquidTransfers();
 	WorldSaveData = LoadedObj->WorldSaveData;
+	WorldElapsedSeconds = WorldSaveData.WorldElapsedSeconds;
+	UniqueDataByISID.Empty();
 
 	// Return all current active ASMs to pool
 	TArray<int32> CurrentActiveISIDs;
@@ -7709,7 +7814,6 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 		{
 			CompPair.Value->ClearInstances();
 			CompPair.Value->PackedInstanceData.Empty();
-			CompPair.Value->PropDatabase.Empty();
 			CompPair.Value->ISIDToISMI.Empty();
 			CompPair.Value->ISMIToISID.Empty();
 			CompPair.Value->EmptyInstances.Empty();
@@ -7720,13 +7824,17 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 	PendingDeletedISIDs.Empty();
 	PendingReleasedToEmptyISIDs.Empty();
 
-	InitializeIISMDB();
+	ProductDefinitions.Empty(); ContentDefinitions.Empty();
+	for (const FPropContentDefinition& Definition : WorldSaveData.ContentDefinitions) RegisterContentDefinition(Definition);
+	for (const FPropProductDefinition& Definition : WorldSaveData.ProductDefinitions) RegisterProductDefinition(Definition);
+	if (SharedWallet && !SharedWallet->RestoreCommittedState(WorldSaveData.SharedWallet)) return false;
+	if (ShopCheckout && !ShopCheckout->RestoreCommittedState(WorldSaveData.ShopCheckout)) return false;
 
 	// Deserialize each saved logical prop by ISID (reusing EmptyInstances or creating ISM instances via RepairLoadedISMI)
 	for (const FPropSerializedInstance& SavedInst : WorldSaveData.SavedInstances)
 	{
 		int32 RestoredISID = 0;
-		DeserializeInstance(SavedInst, RestoredISID);
+		if (!DeserializeInstance(SavedInst, RestoredISID)) return false;
 	}
 
 	NextISID = FMath::Max(NextISID, WorldSaveData.NextISID);
@@ -7740,10 +7848,17 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 
 int32 APropManager::SaveDirtyInstances(const FString& SlotName, int32 UserIndex)
 {
+	if (!HasAuthority() || SlotName.IsEmpty()) return 0;
 	FlushActiveActorState();
 
 	WorldSaveData.SchemaVersion = SchemaVersion;
+	WorldSaveData.WorldElapsedSeconds = WorldElapsedSeconds;
+	WorldSaveData.SharedWallet = SharedWallet ? SharedWallet->ExportCommittedState() : FSharedWalletSaveData();
+	WorldSaveData.ShopCheckout = ShopCheckout ? ShopCheckout->ExportCommittedState() : FShopCheckoutSaveData();
+	ProductDefinitions.GenerateValueArray(WorldSaveData.ProductDefinitions);
+	ContentDefinitions.GenerateValueArray(WorldSaveData.ContentDefinitions);
 	WorldSaveData.NextISID = NextISID;
+	WorldSaveData.SavedInstances.RemoveAll([this](const FPropSerializedInstance& Item) { return !ISIDData.Contains(Item.ISID); });
 
 	int32 SavedCount = 0;
 	for (int32 DirtyID : DirtyISIDs)
@@ -7751,6 +7866,7 @@ int32 APropManager::SaveDirtyInstances(const FString& SlotName, int32 UserIndex)
 		FPropSerializedInstance Serialized;
 		if (SerializeInstance(DirtyID, Serialized))
 		{
+			if (ShopCheckout && ShopCheckout->GetCanceledStockTransform(DirtyID, Serialized.ActiveTransform)) Serialized.State = EPropState::AtRest;
 			int32 ExistingIdx = WorldSaveData.SavedInstances.IndexOfByPredicate([DirtyID](const FPropSerializedInstance& Item)
 			{
 				return Item.ISID == DirtyID;
@@ -7808,7 +7924,7 @@ int32 APropManager::RepairLoadedISMI(int32 InISID, int32 InProductID, int32 InIC
 	}
 
 	UInteractableISMComponent* Comp = FindIISMComponent(InICID);
-	if (!Comp)
+	if (!Comp || Comp->ProductID != InProductID)
 	{
 		Comp = GetOrCreateIISMComponent(InProductID);
 	}
@@ -7849,6 +7965,7 @@ bool APropManager::SerializeInstance(int32 InISID, FPropSerializedInstance& OutS
 		}
 	}
 
+	if (const FPropInstanceUniqueData* Unique = FindUniqueData(InISID)) { OutSerialized.bHasUniqueData = true; OutSerialized.UniqueData = *Unique; }
 	OutSerialized.ISID = Record->ISID;
 	OutSerialized.ProductID = Record->ProductID;
 	OutSerialized.IISMComponentID = Record->IISMComponentID;
@@ -7877,7 +7994,7 @@ bool APropManager::DeserializeInstance(const FPropSerializedInstance& InSerializ
 	}
 
 	UInteractableISMComponent* Comp = FindIISMComponent(InSerialized.IISMComponentID);
-	if (!Comp)
+	if (!Comp || Comp->ProductID != InSerialized.ProductID)
 	{
 		Comp = GetOrCreateIISMComponent(InSerialized.ProductID);
 	}
@@ -7901,7 +8018,7 @@ bool APropManager::DeserializeInstance(const FPropSerializedInstance& InSerializ
 	Record.IISMComponentID = Comp->IISMComponentID;
 	Record.ISMI = NewISMI;
 	Record.Version = InSerialized.Version;
-	Record.State = InSerialized.State;
+	Record.State = InSerialized.State == EPropState::Held ? EPropState::Unsettled : InSerialized.State;
 	Record.Representation = EPropRepresentation::ISM; // Will promote in RestoreActiveActors if needed
 	Record.ActiveTransform = InSerialized.ActiveTransform;
 	Record.PackedRuntimeData = RestoredPacked;
@@ -7915,6 +8032,7 @@ bool APropManager::DeserializeInstance(const FPropSerializedInstance& InSerializ
 	Record.RuntimeData.Temperature = RestoredPacked.Temperature;
 
 	RegisterISID(Record);
+	if (InSerialized.bHasUniqueData) { UniqueDataByISID.Add(InSerialized.ISID, InSerialized.UniqueData); RefreshUniqueRepresentation(InSerialized.ISID); }
 	OutISID = InSerialized.ISID;
 	return true;
 }
@@ -7944,7 +8062,9 @@ void APropManager::RestoreActiveActors()
 	for (TPair<int32, FISIDRuntimeIndex>& Pair : ISIDData)
 	{
 		const EPropState PropState = Pair.Value.State;
-		if (PropState == EPropState::InMotion ||
+		const FPropInstanceUniqueData* Unique = FindUniqueData(Pair.Key);
+		const bool bOpenFilled = Unique && Unique->EventData.ContentLevel > 0 && Unique->EventData.CapSealed < 1;
+		if (bOpenFilled || PropState == EPropState::InMotion ||
 			PropState == EPropState::Held ||
 			PropState == EPropState::Settling ||
 			PropState == EPropState::Unsettled)
@@ -8404,49 +8524,14 @@ bool APropManager::GetPackedRuntimeData(int32 InISID, FPropPackedRuntimeData& Ou
 
 bool APropManager::ConsumeInstancePortion(int32 InISID, AActor* ConsumerActor, float PortionRatio)
 {
-	if (InISID <= 0) return false;
-
-	FISIDRuntimeIndex* Record = FindISIDData(InISID);
-	if (!Record) return false;
-
-	if (Record->PackedRuntimeData.RemainingPortions <= 0)
-	{
-		return false;
-	}
-
-	const int32 PortionsToConsume = FMath::Max(1, FMath::RoundToInt(PortionRatio));
-	const int32 NewPortions = FMath::Max(0, Record->PackedRuntimeData.RemainingPortions - PortionsToConsume);
-
-	if (BatchUpdateComponent)
-	{
-		BatchUpdateComponent->SetInstancePortions(InISID, NewPortions);
-		if (HasAuthority())
-		{
-			BatchUpdateComponent->FlushFieldDeltas();
-		}
-		return true;
-	}
-
-	Record->PackedRuntimeData.RemainingPortions = NewPortions;
-	Record->PackedRuntimeData.LastUpdatedMinute = GetCurrentWorldMinutes();
-
-	if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
-	{
-		Comp->SetInstanceData(InISID, Record->PackedRuntimeData);
-	}
-
-	if (HasAuthority())
-	{
-		TArray<FPropRuntimeSyncItem> SingleItemBatch;
-		FPropRuntimeSyncItem Item;
-		Item.ISID = InISID;
-		Item.Temperature = Record->PackedRuntimeData.Temperature;
-		Item.RemainingPortions = Record->PackedRuntimeData.RemainingPortions;
-		Item.LastUpdatedMinute = Record->PackedRuntimeData.LastUpdatedMinute;
-		SingleItemBatch.Add(Item);
-
-		Multicast_SyncRuntimeDataBatch(SingleItemBatch);
-	}
-
+	if (!HasAuthority() || !IsValid(ConsumerActor) || !FMath::IsFinite(PortionRatio) || PortionRatio <= 0 || PortionRatio > 1) return false;
+	FISIDRuntimeIndex* R = FindISIDData(InISID);
+	FPropInstanceUniqueData* U = FindUniqueData(InISID);
+	const FPropProductDefinition* D = R ? FindProductDefinition(R->ProductID) : nullptr;
+	if (!D || !U || U->EventData.ContentLevel <= 0 || U->EventData.CapSealed > 0 || D->ConsumableProfile.NumOfPortions <= 0) return false;
+	FPropEventSyncDelta Delta; Delta.SetFlag(EPropEventDirtyMask::ContentLevel);
+	Delta.ContentLevel = FMath::Max(0.0f, U->EventData.ContentLevel - PortionRatio / D->ConsumableProfile.NumOfPortions);
+	if (!SubmitInstanceEventUpdate(InISID, Delta)) return false;
+	if (Delta.ContentLevel <= UE_SMALL_NUMBER && D->EmptyBottleProductID > 0) ChangePropProductWithMode(InISID, D->EmptyBottleProductID, EPropProductResetMode::ContentReset);
 	return true;
 }

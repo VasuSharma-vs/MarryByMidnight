@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "file": "Content/FirstPerson/Blueprints/BP_ShopGameState.uasset",
+      "status": "modified_from_starting_worktree",
+      "sha256": "27f0f43ff2c1797e836ab2000e53fdcd9d905d089b88ecb53728a8b6839e6881",
+      "bytes": 64576
+    },
+    {
+      "file": "Content/ColaShopTests/BP_WalletReplicationFixture.uasset",
+      "status": "added_this_implementation",
+      "sha256": "ed9a537ef09f5a8aef59cf30db0519bab322aa985cb84a759bb4daf71ea01496",
+      "bytes": 114160
+    },
+    {
+      "file": "Content/ColaShopTests/WalletReplication.umap",
+      "status": "added_this_implementation",
+      "sha256": "4a3e5ece47a084d0f4bee6d3ac2947d55da7dff02a3861c90a53b664c51324af",
+      "bytes": 14948
+    }
+  ],
+  "note": "Original GameState and map disk files were backed up before save. No Git commit or rollback was performed."
+}

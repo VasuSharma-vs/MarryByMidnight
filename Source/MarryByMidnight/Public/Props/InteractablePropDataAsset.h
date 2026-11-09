@@ -3,12 +3,14 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "NPCEnumsAndTypes.h"
+#include "Props/InteractablePropDatabase.h"
 #include "InteractablePropDataAsset.generated.h"
 
 class UStaticMesh;
 class USkeletalMesh;
 class AActivePropActor;
 class UMaterialInterface;
+class UCurveFloat;
 
 /**
  * Taste types that can be chosen per index in the Data Asset
@@ -189,6 +191,164 @@ public:
 	/** Delay in seconds in Unsettled state before transitioning to Settling */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics Profile", meta = (ClampMin = "0.0"))
 	float UnsettledDelay = 3.0f;
+
+	// -------------------------------------------------------------
+	// Category 1 Feature Toggles & Unique Defaults
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data")
+	bool bEnableInstanceUniqueData = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data", meta = (EditCondition = "bEnableInstanceUniqueData"))
+	bool bEnableContinuousUpdateData = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data|Demotion")
+	bool bAllowUncappedFilledISMDemotion = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data|Thermal")
+	bool bPromoteISMOnContinuousTempFailure = false;
+
+	/** Default initial normalized ContentLevel when spawning new instances */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data", meta = (ClampMin = "0.0"))
+	float DefaultContentLevel = 1.0f;
+
+	/** Default liquid ContentID when spawning new instances (0 = None / Empty) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data")
+	int32 DefaultContentID = 0;
+
+	// -------------------------------------------------------------
+	// Bottle Containment Capacity, Shell & Transformations
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "0.01"))
+	float NormalCapacity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "1.0"))
+	float OverfillWarningThreshold = 1.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "1.0"))
+	float MaxOverfillLevel = 1.7f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity")
+	TObjectPtr<UCurveFloat> FillSlowdownCurve = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity")
+	bool bEnableOverfillFailure = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell")
+	EBottleMaterialType BottleMaterialType = EBottleMaterialType::Glass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell", meta = (ClampMin = "1.0"))
+	float MaxStrength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell", meta = (ClampMin = "0.0"))
+	float BreakageFailureThreshold = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.01"))
+	float PressureResistanceMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float PressureDamageThreshold = 1.4f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float PressureFailureThreshold = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float StrengthDamageRate = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanInflate = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanBend = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanDent = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanCrack = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanRecover = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bSupportsRepair = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float ThermalMass = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.0"))
+	float ThermalConductivity = 0.05f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float HeatingRateMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float CoolingRateMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float LowTempDamageThreshold = -5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float HighTempDamageThreshold = 55.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float MinTemperatureThreshold = -20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float MaxTemperatureThreshold = 85.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.0"))
+	float ThermalDamageRate = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float ThermalEquilibriumEpsilon = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (Bitmask, BitmaskEnum = "/Script/MarryByMidnight.EBottleCapMaskFlags"))
+	uint8 SupportedCapMask = 0xFF;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
+	EBottleCapType DefaultCapType = EBottleCapType::Twist;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
+	TObjectPtr<UStaticMesh> DefaultCapMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DefaultCapSealed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0"))
+	float CapReleasePressure = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0"))
+	float SafeOpenPressureThreshold = 1.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float TorqueSweetSpotMin = 0.41f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float TorqueSweetSpotMax = 0.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TArray<int32> SupportedContentIDs;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 EmptyBottleProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TMap<int32, int32> FilledProductIDByContentID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 BrokenProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 MeltedProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 BurstBrokenProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	bool bPersistBrokenHullAfterFracture = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TArray<FPropFractureFragmentEntry> FractureFragments;
 
 	// -------------------------------------------------------------
 	// Helper Methods

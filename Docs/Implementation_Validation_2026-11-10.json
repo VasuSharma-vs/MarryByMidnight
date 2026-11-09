@@ -1,0 +1,223 @@
+{
+  "engine": "UE 5.8",
+  "configuration": "Win64 Development Editor",
+  "module": "UnrealEditor-MarryByMidnight-11016.dll",
+  "build": "Succeeded",
+  "automation": {
+    "succeeded": 11,
+    "failed": 0,
+    "warnings": 0,
+    "tests": [
+      {
+        "name": "MarryByMidnight.Props.DeltaSchema",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Props.DemotionPolicy",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Props.PersistentSchema",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Props.PoolGrowth",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Props.StateRoundTrip",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.BottleReuse",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.CheckoutCancellation",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.CheckoutCommit",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.LiquidTransfer",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.PricingRules",
+        "state": "Success"
+      },
+      {
+        "name": "MarryByMidnight.Shop.SharedWallet",
+        "state": "Success"
+      }
+    ]
+  },
+  "savedBlueprints": {
+    "checked": 28,
+    "failed": 0,
+    "assets": [
+      {
+        "asset": "/Game/AI/AI_IntractAssets/BP_CheckInStandPosition",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/BPC_BasicNPC",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/BP_Basic_NPC",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_FindProduct",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_GetBucket",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_GetProduct",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveToColaShop",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_Bucket",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_CheckooutLine",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_CheckoutCounter",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_ProductSceaner",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/ClaShopGate",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/DirtyActors/FakeShell",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonCameraManager",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonCharacter",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonGameMode",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonPlayerController",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_ShopGameState",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/BIP_PropIntraction",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/BP_ASM_Actor",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/BP_PropManager",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_Cola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_PlastickBottel",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_SpicyCola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_SugerCrushCola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/InstanceTestLocation",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "asset": "/Game/Props/NewBlueprint",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      }
+    ]
+  },
+  "limitations": [
+    "Four-player startup/wallet replication exercised; simultaneous checkout/fill/attachment and disconnect acceptance remain untested",
+    "Saved Blueprint versions only; unsaved user work excluded",
+    "No production scale/performance acceptance",
+    "No full playable shop-loop acceptance"
+  ],
+  "multiplayer": {
+    "startup": "Four players connected; all managers ready",
+    "wallet": "All four local wallet observations reached 650 cents/revision 2; GameState views matched $6.50",
+    "evidence": "Four_Player_Wallet_Evidence_2026-11-10.json",
+    "caveat": "Initial-state barrier was not fully validated; later harness retry encountered a stale actor path after map reload."
+  },
+  "stopState": {
+    "pie": {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"returnValue\":false}"
+          }
+        ]
+      }
+    },
+    "level": {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"returnValue\":\"/Game/FirstPerson/Lvl_FirstPerson\"}"
+          }
+        ]
+      }
+    },
+    "playSettings": {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"returnValue\":\"{\\\"PlayNetMode\\\":\\\"PIE_ListenServer\\\",\\\"PlayNumberOfClients\\\":2,\\\"RunUnderOneProcess\\\":true,\\\"ClientWindowWidth\\\":640,\\\"ClientWindowHeight\\\":480}\"}"
+          }
+        ]
+      }
+    }
+  },
+  "status": "Stopped at explicit user request; resume from IMPLEMENTATION_HANDOFF.md"
+}

@@ -14,8 +14,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnISMInstanceHit, int32, ISMI, in
 
 /**
  * IISM Component (Sections 4, 23, 24, 31, 65).
- * Focuses on ISM-specific representation management while APropManager handles global orchestration.
- * Maintains bidirectional ISID <-> ISMI local slot mapping, PackedInstanceData, EmptyInstances, and ResetTransform parking for persistent ISM instances.
+ * Pure zero-copy ISM representation component: maintains only lightweight per-slot identity mappings
+ * (ISID <-> ISMI), EmptyInstances, Compact PackedInstanceData, ResetTransform parking, and 4-float GPU Custom Data.
+ * All Category 1 ProductDefinitions/ContentDefinitions and Category 2 UniqueData live centrally in APropManager.
  */
 UCLASS(ClassGroup = (Rendering, Common), meta = (BlueprintSpawnableComponent))
 class MARRYBYMIDNIGHT_API UInteractableISMComponent : public UInstancedStaticMeshComponent
@@ -47,14 +48,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "IISM Component|Identity")
 	int32 IISMComponentID = 0;
 
-	/** Shared Product Definition (IISMDB) for instances in this component */
-	UPROPERTY(ReplicatedUsing = OnRep_IISMDB, EditAnywhere, BlueprintReadWrite, Category = "IISM Component|Database")
-	FPropProductDefinition IISMDB;
-
-	UFUNCTION()
-	void OnRep_IISMDB();
-
-	/** Applies a Product Definition (StaticMesh, MaterialOverrides, IDs) to this component */
+	/** Applies a Product Definition (StaticMesh, MaterialOverrides, IDs) to this component without duplicating shared DB state */
 	void ApplyProductDefinition(const FPropProductDefinition& InDefinition);
 
 	/** Self-reference / target ISM component pointer matching Section 31 layout */
@@ -93,16 +87,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "IISM Component|Debug")
 	bool bDebugPrintInstanceHit = false;
 
-	/** Default Data Asset used to initialize instances that lack custom database entries */
+	/** Default Data Asset used to initialize instances when not yet registered with PropManager */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable Prop Database")
 	TObjectPtr<UInteractablePropDataAsset> DefaultDataAsset;
-
-	/** Replicated per-instance interactable prop database (kept synchronized with PackedInstanceData) */
-	UPROPERTY(ReplicatedUsing = OnRep_PropDatabase, EditAnywhere, BlueprintReadWrite, Category = "Interactable Prop Database")
-	TArray<FInteractablePropData> PropDatabase;
-
-	UFUNCTION()
-	void OnRep_PropDatabase();
 
 	/** Fired when an instance's portions are consumed */
 	UPROPERTY(BlueprintAssignable, Category = "Interactable Prop Database|Events")
@@ -291,11 +278,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Interactable Prop Database")
 	void SetInstanceSimulationState(int32 InstanceIndex, EPhysicsSimulationState NewState);
 
-	/** Updates the 3 Per-Instance Custom Data floats for an instance: 0 = Portions [0..1], 1 = Frost/Coldness [0..1], 2 = Expiry Age [0..1] */
+	/**
+	 * Updates the 4 GPU Per-Instance Custom Data floats for an instance:
+	 * 0 = ContentLevel, 1 = ExpiryAge [0..1], 2 = Temperature (°C), 3 = StrengthRatio [0..1].
+	 */
 	UFUNCTION(BlueprintCallable, Category = "IISM Component|Custom Data")
 	void UpdateInstanceCustomData(int32 InISMI, bool bMarkRenderStateDirty = true);
 
-	/** Updates the 3 Per-Instance Custom Data floats for all valid instances */
+	/**
+	 * Fast zero-copy direct update of all 4 GPU Per-Instance Custom Data floats using resolved pointers
+	 * without repeated TMap lookups.
+	 */
+	void UpdateInstanceCustomDataDirect(
+		int32 InISMI,
+		const FPropProductDefinition* ProductDef,
+		const FPropContentDefinition* ContentDef,
+		const FPropInstanceUniqueData* UniqueData,
+		double CurrentWorldSeconds,
+		bool bMarkRenderStateDirty = true);
+
+	/** Updates the 4 GPU Per-Instance Custom Data floats for all valid instances */
 	UFUNCTION(BlueprintCallable, Category = "IISM Component|Custom Data")
 	void UpdateAllInstancesCustomData();
 
@@ -349,7 +351,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Interactable Prop Database")
 	void SetInstanceGrabbable(int32 InstanceIndex, bool bNewGrabbable);
 
-	/** Ensures PropDatabase and PackedInstanceData arrays match the instance count */
+	/** Ensures PackedInstanceData array matches the instance count */
 	UFUNCTION(BlueprintCallable, Category = "Interactable Prop Database")
 	void SyncDatabaseWithInstanceCount();
 

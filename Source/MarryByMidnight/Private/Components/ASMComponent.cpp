@@ -720,9 +720,12 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 	const bool bIsClient = (GetOwner() && !GetOwner()->HasAuthority() && World && World->IsNetMode(NM_Client));
 	const int32 DedicatedSlot = ResolveLocalDedicatedPlayerSlot(World, bIsClient);
 
+	const TSubclassOf<AActivePropActor> DesiredClass = GetEffectiveActivePropActorClass(InProductID);
+	UClass* DesiredUClass = DesiredClass ? DesiredClass.Get() : AActivePropActor::StaticClass();
+
 	if (bIsClient)
 	{
-		// Pass 1: Prefer an inactive ASM in this Client's dedicated 25-ASM partition (e.g., ASMIDs 26..50 for Client 1)
+		// Pass 1: Prefer an inactive exact-class ASM in this Client's dedicated 25-ASM partition
 		for (int32 i = 0; i < EmptyASMIDs.Num(); ++i)
 		{
 			const int32 CandidateID = EmptyASMIDs[i];
@@ -732,7 +735,7 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 			}
 			if (AActivePropActor* CandidateASM = GetActiveActorFromASMID(CandidateID))
 			{
-				if (IsValid(CandidateASM) && !CandidateASM->bIsActive && CandidateASM->ISID <= 0)
+				if (IsValid(CandidateASM) && !CandidateASM->bIsActive && CandidateASM->ISID <= 0 && CandidateASM->GetClass() == DesiredUClass)
 				{
 					EmptyASMIDs.RemoveAt(i, EAllowShrinking::No);
 					if (PropManager)
@@ -748,7 +751,7 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 		{
 			if (IsValid(CandidateASM) && CandidateASM->ASMID > 0 && GetPlayerSlotForASMID(CandidateASM->ASMID) == DedicatedSlot)
 			{
-				if (!CandidateASM->bIsActive && CandidateASM->ISID <= 0 && !ASMIDToISID.Contains(CandidateASM->ASMID))
+				if (!CandidateASM->bIsActive && CandidateASM->ISID <= 0 && !ASMIDToISID.Contains(CandidateASM->ASMID) && CandidateASM->GetClass() == DesiredUClass)
 				{
 					EmptyASMIDs.Remove(CandidateASM->ASMID);
 					if (PropManager)
@@ -760,12 +763,14 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 			}
 		}
 
-		// Pass 2 (Overflow): If all 25 dedicated ASMs for this Client are currently active, fall back to any free non-Server-slot ASM first, then any free ASM
+		// Pass 2 (Overflow): If all dedicated ASMs of DesiredUClass are busy, fall back to any free non-Server-slot exact-class ASM first, then any exact-class ASM
 		for (int32 Pass = 0; Pass < 2; ++Pass)
 		{
 			for (AActivePropActor* CandidateASM : ASMActors)
 			{
-				if (IsValid(CandidateASM) && !CandidateASM->bIsActive && CandidateASM->ISID <= 0 && (CandidateASM->ASMID <= 0 || !ASMIDToISID.Contains(CandidateASM->ASMID)))
+				if (IsValid(CandidateASM) && !CandidateASM->bIsActive && CandidateASM->ISID <= 0 &&
+					CandidateASM->GetClass() == DesiredUClass &&
+					(CandidateASM->ASMID <= 0 || !ASMIDToISID.Contains(CandidateASM->ASMID)))
 				{
 					if (Pass == 0 && CandidateASM->ASMID > 0 && GetPlayerSlotForASMID(CandidateASM->ASMID) == 0)
 					{
@@ -786,7 +791,7 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 
 		if (ASMActors.Num() < MaxASMCount)
 		{
-			AActivePropActor* Spawned = SpawnPooledASM(GetEffectiveActivePropActorClass(InProductID));
+			AActivePropActor* Spawned = SpawnPooledASM(DesiredClass);
 			if (Spawned)
 			{
 				EmptyASMIDs.Remove(Spawned->ASMID);
@@ -806,9 +811,6 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 	{
 		EvaluatePoolCapacity();
 	}
-
-	const TSubclassOf<AActivePropActor> DesiredClass = GetEffectiveActivePropActorClass(InProductID);
-	UClass* DesiredUClass = DesiredClass ? DesiredClass.Get() : AActivePropActor::StaticClass();
 
 	// 2. Server prefers an available Empty ASMID in the Server's dedicated Slot 0 (ASMIDs 1..25) first, then falls back to any empty slot
 	int32 AcquiredASMID = 0;
@@ -844,7 +846,7 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 	{
 		AcquiredASMID = ConsumeEmptyASMID();
 		AActivePropActor* CandidateASM = (AcquiredASMID > 0) ? GetActiveActorFromASMID(AcquiredASMID) : nullptr;
-		if (!IsValid(CandidateASM) || CandidateASM->bIsActive || CandidateASM->ISID > 0 || CandidateASM->GetOwner() != PropManager || CandidateASM->ProductID > 0)
+		if (!IsValid(CandidateASM) || CandidateASM->bIsActive || CandidateASM->ISID > 0 || CandidateASM->GetOwner() != PropManager)
 		{
 			continue;
 		}
@@ -862,7 +864,13 @@ AActivePropActor* UASMComponent::AcquireActiveActor(int32 InProductID)
 		break;
 	}
 
-	// 3. If no empty ASM was available and we are below MaxASMCount (500), spawn with DesiredClass
+	// Grow the soft limit in small batches; never demote mandatory active objects to free slots.
+	if (!IsValid(AcquiredASM) && ASMActors.Num() >= MaxASMCount)
+	{
+		MaxASMCount = FMath::Max(MaxASMCount, ASMActors.Num()) + FMath::Max(1, ExpandBatchSize);
+		if (AddASMUnits(FMath::Max(1, ExpandBatchSize)) > 0) return AcquireActiveActor(InProductID);
+	}
+	// Acquire the requested class after expanding the soft ceiling.
 	if (!IsValid(AcquiredASM) && ASMActors.Num() < MaxASMCount)
 	{
 		AcquiredASM = SpawnPooledASM(DesiredClass);
@@ -925,13 +933,15 @@ bool UASMComponent::PromoteRecordToASM(
 		}
 	}
 
-	// If Record.ASMID was pre-selected (e.g., matching a client-predicted ASMID on the server), prefer that exact pooled actor if free
+	// If Record.ASMID was pre-selected (e.g., matching a client-predicted ASMID on the server), prefer that exact pooled actor if free AND class matches
+	const TSubclassOf<AActivePropActor> DesiredClass = GetEffectiveActivePropActorClass(Record.ProductID);
+	UClass* DesiredUClass = DesiredClass ? DesiredClass.Get() : AActivePropActor::StaticClass();
 	AActivePropActor* ASM = nullptr;
 	if (Record.ASMID > 0)
 	{
 		if (AActivePropActor* PreferredASM = GetActiveActorFromASMID(Record.ASMID))
 		{
-			if (IsValid(PreferredASM) && !PreferredASM->bIsActive && PreferredASM->ISID <= 0)
+			if (IsValid(PreferredASM) && !PreferredASM->bIsActive && PreferredASM->ISID <= 0 && PreferredASM->GetClass() == DesiredUClass)
 			{
 				EmptyASMIDs.Remove(PreferredASM->ASMID);
 				if (PropManager)
@@ -969,21 +979,29 @@ bool UASMComponent::PromoteRecordToASM(
 			break;
 		case EPropActivationReason::Drop:
 		case EPropActivationReason::Damage:
+		case EPropActivationReason::Interaction:
 			InitialASMState = EPropState::Unsettled;
 			break;
 		default:
+			InitialASMState = EPropState::Unsettled;
 			break;
 		}
 	}
 	Record.State = InitialASMState;
 
-	// Update Record, Copy ISID/PID/State/Runtime Data/Version to ASM, and register active binding BEFORE activating representation
+	// Update Record, resolve Category 2 UniqueData + Category 1 ContentDef, and bind ASM BEFORE activating representation
 	Record.Representation = EPropRepresentation::ASM;
 	Record.ActiveActor = ASM;
 	Record.ASMID = ASM->ASMID;
 	Record.Version++;
 
-	ASM->InitializeFromISIDRecord(Record, ProductDef, PropManager);
+	const FPropInstanceUniqueData* UniqueData = PropManager ? PropManager->FindUniqueData(SignedISID) : nullptr;
+	const FPropContentDefinition* ContentDef = (UniqueData && UniqueData->EventData.ContentID > 0 && PropManager)
+		? PropManager->FindContentDefinition(UniqueData->EventData.ContentID)
+		: nullptr;
+
+	ASM->bPendingServerPromoteAck = (GetOwner() && !GetOwner()->HasAuthority());
+	ASM->InitializeFromISIDRecord(Record, ProductDef, ContentDef, UniqueData, PropManager);
 	ASM->Version = Record.Version;
 	RegisterActiveActor(SignedISID, ASM);
 
@@ -1013,7 +1031,12 @@ bool UASMComponent::DemoteRecordFromASM(
 		ASM->NotifyBeforeReturnToRestPosition();
 
 		FTransform SavedTransform = Record.ActiveTransform;
-		ASM->WriteToISIDRecord(Record);
+		FPropInstanceUniqueData* UniquePtr = PropManager ? PropManager->FindUniqueData(SignedISID) : nullptr;
+		ASM->WriteToISIDRecord(Record, UniquePtr);
+		if (UniquePtr && PropManager)
+		{
+			Record.SyncLegacyPackedFromUniqueData(*UniquePtr, PropManager->FindProductDefinition(Record.ProductID));
+		}
 		if (!bWriteBackTransform)
 		{
 			Record.ActiveTransform = SavedTransform;
@@ -1022,6 +1045,10 @@ bool UASMComponent::DemoteRecordFromASM(
 
 	Record.State = NewState;
 	Record.PackedRuntimeData.bIsGrabbable = (NewState != EPropState::Held);
+	if (FPropInstanceUniqueData* UniquePtr = (PropManager ? PropManager->FindUniqueData(SignedISID) : nullptr))
+	{
+		UniquePtr->EventData.bIsGrabbable = Record.PackedRuntimeData.bIsGrabbable;
+	}
 	Record.RuntimeData.InteractionState = EPropInteractionLockState::Free;
 	Record.RuntimeData.InteractionOwner = nullptr;
 	Record.RuntimeData.CurrentInteractor = nullptr;
@@ -1050,6 +1077,101 @@ bool UASMComponent::DemoteRecordFromASM(
 		{
 			RemoveASMByASMID(ASM->ASMID);
 		}
+	}
+
+	return true;
+}
+
+bool UASMComponent::SwapActiveActorClass(FISIDRuntimeIndex& Record, const FPropProductDefinition* NewProductDef, AActivePropActor* ReservedActor)
+{
+	const int32 SignedISID = Record.ISID;
+	if (SignedISID <= 0 || !NewProductDef)
+	{
+		return false;
+	}
+
+	AActivePropActor* ExistingASM = GetActiveActorFromISID(SignedISID);
+	if (!ExistingASM && IsValid(Record.ActiveActor))
+	{
+		ExistingASM = Record.ActiveActor.Get();
+	}
+
+	const TSubclassOf<AActivePropActor> DesiredClass = GetEffectiveActivePropActorClass(NewProductDef->ProductID);
+	UClass* DesiredUClass = DesiredClass ? DesiredClass.Get() : AActivePropActor::StaticClass();
+
+	if (ExistingASM && ExistingASM->GetClass() == DesiredUClass)
+	{
+		// Same class: no actor swap required
+		if (ReservedActor) ReturnActiveActorToPool(ReservedActor);
+		return true;
+	}
+
+	const FTransform CapturedTransform = ExistingASM ? ExistingASM->GetActorTransform() : Record.ActiveTransform;
+	const EPropState SavedState = ExistingASM ? ExistingASM->State : Record.State;
+	const bool bWasHeld = ExistingASM ? ExistingASM->bIsHeld : (SavedState == EPropState::Held);
+	const bool bWasReplicated = ExistingASM ? ExistingASM->GetIsReplicated() : true;
+
+	USceneComponent* AttachParentComp = (ExistingASM && ExistingASM->GetRootComponent()) ? ExistingASM->GetRootComponent()->GetAttachParent() : nullptr;
+	const FName AttachSocketName = ExistingASM ? ExistingASM->GetAttachParentSocketName() : NAME_None;
+
+	FVector CapturedLinearVel = FVector::ZeroVector;
+	FVector CapturedAngularVelDeg = FVector::ZeroVector;
+	bool bHadPhysicsVel = false;
+	if (ExistingASM && ExistingASM->PropMesh && ExistingASM->PropMesh->IsSimulatingPhysics())
+	{
+		CapturedLinearVel = ExistingASM->PropMesh->GetComponentVelocity();
+		CapturedAngularVelDeg = ExistingASM->PropMesh->GetPhysicsAngularVelocityInDegrees();
+		bHadPhysicsVel = true;
+	}
+
+	// Reserve the replacement before releasing the live representation.
+	AActivePropActor* NewASM = ReservedActor ? ReservedActor : AcquireActiveActor(NewProductDef->ProductID);
+	if (!NewASM || NewASM->GetClass() != DesiredUClass) return false;
+
+	UnregisterActiveActor(SignedISID);
+	Record.ActiveActor = nullptr;
+	Record.ASMID = 0;
+
+	if (ExistingASM)
+	{
+		if (AttachParentComp)
+		{
+			ExistingASM->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		}
+		ReturnActiveActorToPool(ExistingASM);
+	}
+
+	Record.ProductID = NewProductDef->ProductID;
+	Record.Representation = EPropRepresentation::ASM;
+	Record.ActiveActor = NewASM;
+	Record.ASMID = NewASM->ASMID;
+	Record.State = SavedState;
+	Record.ActiveTransform = CapturedTransform;
+
+	const FPropInstanceUniqueData* UniqueData = PropManager ? PropManager->FindUniqueData(SignedISID) : nullptr;
+	const FPropContentDefinition* ContentDef = (UniqueData && UniqueData->EventData.ContentID > 0 && PropManager)
+		? PropManager->FindContentDefinition(UniqueData->EventData.ContentID)
+		: nullptr;
+
+	NewASM->bPendingServerPromoteAck = (GetOwner() && !GetOwner()->HasAuthority());
+	NewASM->InitializeFromISIDRecord(Record, NewProductDef, ContentDef, UniqueData, PropManager);
+	NewASM->Version = Record.Version;
+	RegisterActiveActor(SignedISID, NewASM);
+	NewASM->ActivateASMRepresentation(CapturedTransform, SavedState, bWasReplicated);
+
+	if (bWasHeld && AttachParentComp)
+	{
+		NewASM->OnPlayerGrab(AttachParentComp, AttachSocketName);
+	}
+	else if (bHadPhysicsVel && NewASM->PropMesh && NewASM->PropMesh->IsSimulatingPhysics())
+	{
+		NewASM->PropMesh->SetPhysicsLinearVelocity(CapturedLinearVel, false);
+		NewASM->PropMesh->SetPhysicsAngularVelocityInDegrees(CapturedAngularVelDeg, false);
+	}
+
+	if (PropManager)
+	{
+		PropManager->OnPropRepresentationChanged.Broadcast(SignedISID, EPropRepresentation::ASM, NewASM);
 	}
 
 	return true;
@@ -1173,43 +1295,9 @@ void UASMComponent::UnregisterSettlingComponent(UStaticMeshPhysicsSimulationComp
 
 void UASMComponent::UpdateDistributedASMs(float DeltaSeconds, float AmbientTemperature, int32 PropsUpdatedPerFrame)
 {
-	ASMActors.RemoveAll([](const TObjectPtr<AActivePropActor>& Ptr) { return !IsValid(Ptr); });
-
-	if (ASMActors.Num() == 0)
-	{
-		return;
-	}
-
-	const int32 CountToUpdate = FMath::Min(FMath::Max(1, PropsUpdatedPerFrame), ASMActors.Num());
-	for (int32 i = 0; i < CountToUpdate; ++i)
-	{
-		if (CurrentASMUpdateIndex >= ASMActors.Num())
-		{
-			CurrentASMUpdateIndex = 0;
-		}
-
-		if (ASMActors.IsValidIndex(CurrentASMUpdateIndex))
-		{
-			if (AActivePropActor* Prop = ASMActors[CurrentASMUpdateIndex])
-			{
-				if (Prop->bIsActive && Prop->bEnableTemperatureUpdate)
-				{
-					const float EffectiveDelta = DeltaSeconds * static_cast<float>(ASMActors.Num());
-					Prop->UpdateTemperature(AmbientTemperature, EffectiveDelta);
-					if (Prop->ISID > 0 && PropManager)
-					{
-						if (FISIDRuntimeIndex* Record = PropManager->FindISIDData(Prop->ISID))
-						{
-							Record->PackedRuntimeData.Temperature = Prop->CurrentTemperature;
-							Record->RuntimeData.Temperature = Prop->CurrentTemperature;
-						}
-					}
-				}
-			}
-		}
-
-		CurrentASMUpdateIndex = (CurrentASMUpdateIndex + 1) % ASMActors.Num();
-	}
+	// Continuous Category 2.1 thermal updates now live exclusively in UPropBatchUpdateComponent::ProcessBatchUpdate
+	// and AColaPropActor::UpdateThermalSimulation (when HasActiveThermalSources() is true).
+	return;
 }
 
 void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
@@ -1240,6 +1328,15 @@ void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
 
 				if (SimComp->CurrentState == EPhysicsSimulationState::Settling)
 				{
+					if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
+					{
+						if (!PropOwner->CanDemoteToISM())
+						{
+							// Keep in queue until thermal equilibrium / foam decay / cap sealing completes
+							continue;
+						}
+					}
+
 					if (SimComp->CheckSettled())
 					{
 						RestedComponents.Add(SimComp);
@@ -1260,8 +1357,15 @@ void UASMComponent::CheckSettlingQueue(bool bUseAsyncSettlingCheck)
 				continue;
 			}
 
+			AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner());
+			if (PropOwner && (!PropOwner->CanDemoteToISM() || !SimComp->CheckSettled()))
+			{
+				RegisterSettlingComponent(SimComp);
+				continue;
+			}
+
 			SimComp->SetStateAtRest();
-			if (AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
+			if (PropOwner)
 			{
 				if (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion)
 				{
@@ -1311,6 +1415,14 @@ void UASMComponent::ProcessSettlingQueueAsync()
 		{
 			if (!SimComp->IsHeldOrInMotion() && SimComp->CurrentState == EPhysicsSimulationState::Settling)
 			{
+				if (const AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
+				{
+					if (!PropOwner->CanDemoteToISM())
+					{
+						continue;
+					}
+				}
+
 				UPrimitiveComponent* Prim = SimComp->TargetMesh;
 				const FVector LinVel = Prim ? Prim->GetComponentVelocity() : FVector::ZeroVector;
 				const FVector AngVel = Prim ? Prim->GetPhysicsAngularVelocityInDegrees() : FVector::ZeroVector;
@@ -1358,14 +1470,25 @@ void UASMComponent::ProcessSettlingQueueAsync()
 
 							if (SimComp->CurrentState == EPhysicsSimulationState::Settling)
 							{
+								AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner());
+								if (PropOwner && (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion))
+								{
+									StrongThis->ActiveSettlingComponents.Remove(WeakComp);
+									continue;
+								}
+								if (PropOwner && !PropOwner->CanDemoteToISM())
+								{
+									continue;
+								}
+								if (!SimComp->CheckSettled())
+								{
+									continue;
+								}
+
 								SimComp->SetStateAtRest();
 								StrongThis->ActiveSettlingComponents.Remove(WeakComp);
-								if (AActivePropActor* PropOwner = Cast<AActivePropActor>(SimComp->GetOwner()))
+								if (PropOwner)
 								{
-									if (PropOwner->State == EPropState::Held || PropOwner->State == EPropState::InMotion || PropOwner->bIsHeld || PropOwner->bIsInMotion)
-									{
-										continue;
-									}
 									if (URocketProjectileComponent* RocketComp = PropOwner->FindComponentByClass<URocketProjectileComponent>())
 									{
 										if (RocketComp->IsActive() &&
@@ -1407,7 +1530,12 @@ void UASMComponent::FlushActiveActorState()
 		{
 			if (FISIDRuntimeIndex* Record = PropManager->FindISIDData(Pair.Key))
 			{
-				ASM->WriteToISIDRecord(*Record);
+				FPropInstanceUniqueData* UniquePtr = PropManager->FindUniqueData(Pair.Key);
+				ASM->WriteToISIDRecord(*Record, UniquePtr);
+				if (UniquePtr)
+				{
+					Record->SyncLegacyPackedFromUniqueData(*UniquePtr, PropManager->FindProductDefinition(Record->ProductID));
+				}
 			}
 		}
 	}

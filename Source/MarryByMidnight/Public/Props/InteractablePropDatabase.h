@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Shop/SharedWalletTypes.h"
+#include "Shop/ShopCheckoutTypes.h"
 #include "Engine/DataAsset.h"
 #include "Engine/NetSerialization.h"
 #include "NPCEnumsAndTypes.h"
@@ -11,6 +13,7 @@
 class UStaticMesh;
 class USkeletalMesh;
 class UMaterialInterface;
+class UCurveFloat;
 class UInteractablePropDataAsset;
 class AActivePropActor;
 class UInteractableISMComponent;
@@ -193,6 +196,197 @@ enum class EPropTaskType : uint8
 	RemoveProp     UMETA(DisplayName = "Remove Prop"),
 	BulkSync       UMETA(DisplayName = "Bulk Client Sync"),
 	Custom         UMETA(DisplayName = "Custom Task")
+};
+
+/**
+ * Product conversion behavior when changing a prop's ProductID at runtime.
+ */
+UENUM(BlueprintType)
+enum class EPropProductResetMode : uint8
+{
+	PreserveUniqueState UMETA(DisplayName = "Preserve Unique State (Keep Content, Strength, Temp, CreationTime)"),
+	ContentReset        UMETA(DisplayName = "Content Reset (Zero Content & Cap; Keep Strength, Temp, CreationTime)"),
+	FullReset           UMETA(DisplayName = "Full Reset (Restore Product Defaults & Fresh CreationTime)")
+};
+
+/**
+ * Dirty mask bitflags for discrete Category 2 Event Update Data replication.
+ */
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EPropEventDirtyMask : uint8
+{
+	None         = 0       UMETA(Hidden),
+	ContentLevel = 1 << 0  UMETA(DisplayName = "Content Level"),
+	ContentID    = 1 << 1  UMETA(DisplayName = "Content ID"),
+	Strength     = 1 << 2  UMETA(DisplayName = "Strength"),
+	CapSealed    = 1 << 3  UMETA(DisplayName = "Cap Sealed"),
+	CreationTime = 1 << 4  UMETA(DisplayName = "Creation Time"),
+	Grabbable    = 1 << 5  UMETA(DisplayName = "Is Grabbable"),
+	ProductID    = 1 << 6  UMETA(DisplayName = "Product ID"),
+	CapType      = 1 << 7  UMETA(DisplayName = "Cap Type")
+};
+ENUM_CLASS_FLAGS(EPropEventDirtyMask);
+
+namespace EPropExtendedEventMask
+{
+	constexpr uint8 Clean = 1 << 0;
+	constexpr uint8 ContentCreationTime = 1 << 1;
+	constexpr uint8 AttachedCap = 1 << 2;
+	constexpr uint8 AttachedBottle = 1 << 3;
+}
+
+/**
+ * Transformation topology triggered by structural, thermal, or overpressure failure.
+ */
+UENUM(BlueprintType)
+enum class EPropTransformationType : uint8
+{
+	None              UMETA(DisplayName = "None"),
+	BreakageFracture  UMETA(DisplayName = "Breakage Fracture (1-to-Many Fragments)"),
+	ThermalMelt       UMETA(DisplayName = "Thermal Melt (1-to-1)"),
+	OverpressureBurst UMETA(DisplayName = "Overpressure Burst (1-to-1)")
+};
+
+/**
+ * Physical shell material classification for container deformation and breakage rules.
+ */
+UENUM(BlueprintType)
+enum class EBottleMaterialType : uint8
+{
+	Glass          UMETA(DisplayName = "Glass (Cracks + Breakage Fracture)"),
+	Plastic        UMETA(DisplayName = "Plastic (WPO Dents + Inflation)"),
+	HeavyMetal     UMETA(DisplayName = "Heavy Metal"),
+	EnchantedStone UMETA(DisplayName = "Enchanted Stone (Legacy)"),
+	Diamond UMETA(DisplayName = "Diamond"),
+	Concrete UMETA(DisplayName = "Concrete")
+};
+
+/**
+ * Attached bottle cap mechanism identifier packed into FPropEventUpdateData::CapType.
+ */
+UENUM(BlueprintType)
+enum class EBottleCapType : uint8
+{
+	None     = 0 UMETA(DisplayName = "None"),
+	Twist    = 1 UMETA(DisplayName = "Twist Cap"),
+	Cork     = 2 UMETA(DisplayName = "Cork"),
+	BoltLock = 3 UMETA(DisplayName = "Bolt Lock"),
+	RuneSeal = 4 UMETA(DisplayName = "Rune Seal")
+};
+
+/**
+ * Bitflags for configuring which bottle cap types a product supports.
+ */
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EBottleCapMaskFlags : uint8
+{
+	None     = 0      UMETA(Hidden),
+	Twist    = 1 << 0 UMETA(DisplayName = "Twist"),
+	Cork     = 1 << 1 UMETA(DisplayName = "Cork"),
+	BoltLock = 1 << 2 UMETA(DisplayName = "Bolt Lock"),
+	RuneSeal = 1 << 3 UMETA(DisplayName = "Rune Seal")
+};
+ENUM_CLASS_FLAGS(EBottleCapMaskFlags);
+
+inline bool IsBottleCapTypeSupportedInMask(uint8 SupportedMask, uint8 CapTypeValue)
+{
+	if (CapTypeValue == 0)
+	{
+		return false;
+	}
+	const uint8 BitIndex = CapTypeValue - 1;
+	return (BitIndex < 8) && ((SupportedMask & static_cast<uint8>(1u << BitIndex)) != 0);
+}
+
+/**
+ * Transient ASM state machine for 4-stage bottle cap installation and removal.
+ */
+UENUM(BlueprintType)
+enum class EBottleCapState : uint8
+{
+	None      UMETA(DisplayName = "Not Installed"),
+	Validated UMETA(DisplayName = "Validated"),
+	Attached  UMETA(DisplayName = "Attached"),
+	Closing   UMETA(DisplayName = "Closing"),
+	Closed    UMETA(DisplayName = "Closed"),
+	Sealed    UMETA(DisplayName = "Sealed"),
+	Failed    UMETA(DisplayName = "Failed Seal"),
+	Removed   UMETA(DisplayName = "Removed"),
+	Broken    UMETA(DisplayName = "Broken")
+};
+
+/**
+ * Removal method supplied to RemoveCap.
+ */
+UENUM(BlueprintType)
+enum class EBottleCapRemovalType : uint8
+{
+	Twist UMETA(DisplayName = "Twist"),
+	Pop   UMETA(DisplayName = "Pop"),
+	Break UMETA(DisplayName = "Break"),
+	Pull  UMETA(DisplayName = "Pull"),
+	Cut   UMETA(DisplayName = "Cut")
+};
+
+/**
+ * Containment hazard payload released on catastrophic bottle burst or breakage.
+ */
+UENUM(BlueprintType)
+enum class EColaHazardType : uint8
+{
+	FoamRocket  UMETA(DisplayName = "Foam Rocket"),
+	FirePatch   UMETA(DisplayName = "Fire Patch"),
+	ToxicCloud  UMETA(DisplayName = "Toxic Cloud"),
+	SpiderSwarm UMETA(DisplayName = "Spider Swarm"),
+	StickySlow  UMETA(DisplayName = "Sticky Slow"),
+	Radiation   UMETA(DisplayName = "Radiation")
+};
+
+/**
+ * Containment failure classification ordered by priority in Containment Failure Manager.
+ */
+UENUM(BlueprintType)
+enum class EContainmentFailureType : uint8
+{
+	None              UMETA(DisplayName = "None"),
+	BottleBreakage    UMETA(DisplayName = "Bottle Breakage (Priority 1)"),
+	OverpressureBurst UMETA(DisplayName = "Overpressure Burst (Priority 2)"),
+	ThermalFailure    UMETA(DisplayName = "Thermal Failure (Priority 3)"),
+	PressureRelease   UMETA(DisplayName = "Pressure Release (Priority 4)"),
+	CapFailure        UMETA(DisplayName = "Cap Failure (Priority 5)"),
+	Other             UMETA(DisplayName = "Other (Priority 6)")
+};
+
+/**
+ * Execution lifecycle state of Containment Failure Manager on an ASM bottle.
+ */
+UENUM(BlueprintType)
+enum class EContainmentFailureState : uint8
+{
+	Normal         UMETA(DisplayName = "Normal"),
+	PendingFailure UMETA(DisplayName = "Pending Failure"),
+	Failing        UMETA(DisplayName = "Failing"),
+	Broken         UMETA(DisplayName = "Broken")
+};
+
+/**
+ * Pressure venting modes distinguishing agitation bleed from full headspace depressurization.
+ */
+UENUM(BlueprintType)
+enum class EPressureReleaseMode : uint8
+{
+	ReleaseInteractionPressure UMETA(DisplayName = "Release Interaction Pressure"),
+	FullPressureVent           UMETA(DisplayName = "Full Pressure Vent")
+};
+
+/**
+ * Closing validation trigger strategy for Stage 4 of AddCap.
+ */
+UENUM(BlueprintType)
+enum class ECapValidationMode : uint8
+{
+	AutoTrigger  UMETA(DisplayName = "Auto Trigger (Retriggerable Delay)"),
+	EventTrigger UMETA(DisplayName = "Event Trigger (External Signal)")
 };
 
 /**
@@ -462,6 +656,383 @@ struct MARRYBYMIDNIGHT_API FPropPackedRuntimeData
 
 	/** Explicit archive serialization */
 	void SerializeExplicit(FArchive& Ar);
+};
+
+/**
+ * Category 2.1: Continuous Update Data (16 bytes).
+ * Mutated in background batches over time without direct interaction (Temperature & LastUpdatedTime only).
+ * Never overwrites discrete Event Update Data such as CreationTime or ContentLevel.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropContinuousUpdateData
+{
+	GENERATED_BODY()
+
+	/** Double-precision WorldElapsedSeconds at the last thermal integration step */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Continuous")
+	double LastUpdatedTime = 0.0;
+
+	/** Authoritative equilibrium shell temperature in Celsius (drives GPU Slot 2) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Continuous", meta = (Units = "Celsius"))
+	float Temperature = 21.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Continuous", meta = (ClampMin = "0"))
+	float SealedPressure = 0.0f;
+};
+
+/**
+ * Category 2.2: Event Update Data (32 bytes).
+ * Mutated ONLY at spawn or on discrete gameplay events (Fill, Consume, Cap, Damage, Repair, PID Swap).
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropEventUpdateData
+{
+	GENERATED_BODY()
+
+	/** Immutable creation timestamp in WorldElapsedSeconds (only set at spawn or FullReset) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	double CreationTime = 0.0;
+
+	/** Content age restarts on an eligible empty refill; container creation remains unchanged. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	double ContentCreationTime = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	int32 AttachedCapISID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	int32 AttachedBottleISID = 0;
+
+	/** Normalized fill volume (0.0 = Empty, 1.0 = NormalCapacity, > 1.0 = Overfill; resting BasePressure) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event", meta = (ClampMin = "0.0"))
+	float ContentLevel = 0.0f;
+
+	/** Shared ContentID keying APropManager::ContentDefinitions (0 = None / Empty) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	int32 ContentID = 0;
+
+	/** Unified structural integrity (0.0..MaxStrength); replaces PermanentDeformation, CrackProgression, ThermalDamageLevel */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event", meta = (ClampMin = "0.0"))
+	float Strength = 1.0f;
+
+	/** Normalized cap seal state (0.0 = None/Removed/Broken, 0.01..0.99 = Loose/Compromised, 1.0 = Sealed) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CapSealed = 0.0f;
+
+	/** Monotonically incremented event counter guarding against out-of-order network updates */
+	UPROPERTY(EditAnywhere, SaveGame, Category = "Unique Data|Event")
+	uint32 EventSequence = 1;
+
+	/** Attached EBottleCapType byte packed alongside bIsGrabbable */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	uint8 CapType = 0;
+
+	/** Whether this instance can currently be picked up / grabbed */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data|Event")
+	bool bIsGrabbable = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Unique Data|Event") bool bClean = true;
+};
+
+/**
+ * Sparse per-ISID Category 2 container allocated ONLY when ProductDef->bEnableInstanceUniqueData == true.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropInstanceUniqueData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data")
+	FPropContinuousUpdateData ContinuousData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Unique Data")
+	FPropEventUpdateData EventData;
+};
+
+/**
+ * Category 1B: Shared liquid / content definition keyed by ContentID in APropManager::ContentDefinitions.
+ * Prevents duplicating liquid arrays, materials, prices, and expiry settings per bottle instance.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropContentDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	int32 ContentID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	FText DisplayName = FText::FromString(TEXT("None"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	TObjectPtr<UMaterialInterface> LiquidMaterial = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	FLinearColor LiquidColor = FLinearColor(0.25f, 0.08f, 0.02f, 1.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.01"))
+	float PressureStrengthMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.0"))
+	float BasePortionPrice = 2.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (Units = "Celsius"))
+	float IdealServingTemperature = 4.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Content Definition", meta=(ClampMin="0.01"))
+	float TemperaturePenaltyRange = 20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.01"))
+	float SpecificHeatCapacity = 4.18f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.01"))
+	float Viscosity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	EColaHazardType HazardType = EColaHazardType::FoamRocket;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	TArray<FNPCSimulationStatModifier> StimulusProfile;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	FNPCTasteVector TasteProfile;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	FNPCTasteVector ExpiredTasteProfile;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition")
+	FPropExpiryProfile ExpiryProfile;
+
+	bool IsValidDefinition() const { return ContentID > 0; }
+};
+
+/**
+ * Fracture shard recipe entry mapping a broken bottle product into independent Glass Fragment 1..N child products.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropFractureFragmentEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture")
+	int32 FragmentProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture")
+	FTransform LocalSpawnTransform = FTransform::Identity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture")
+	FVector LocalScatterDirection = FVector(0.0f, 0.0f, 1.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture", meta = (ClampMin = "0.0"))
+	float MinImpulseSpeed = 120.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture", meta = (ClampMin = "0.0"))
+	float MaxImpulseSpeed = 380.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fracture", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float VelocityInheritance = 0.65f;
+};
+
+/**
+ * Context passed from a failing ASM bottle to APropManager & ABrokenBottlePropActor during 1-to-Many fracture or 1-to-1 transform.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropTransformationContext
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	int32 SourceISID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	int32 SourceProductID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	EPropTransformationType TransformationType = EPropTransformationType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	EBottleMaterialType SourceMaterialType = EBottleMaterialType::Glass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FTransform WorldTransform = FTransform::Identity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FVector ImpactPoint = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FVector ImpactNormal = FVector::UpVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FVector LinearVelocity = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FVector AngularVelocity = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	int32 FractureSeed = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transformation")
+	FPropInstanceUniqueData InheritedUniqueData;
+};
+
+/**
+ * Standardized failure request routed into AColaPropActor's Containment Failure Manager.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FContainmentFailureRequest
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	int32 FailureEventID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	EContainmentFailureType FailureType = EContainmentFailureType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure", meta = (ClampMin = "0.0"))
+	float Severity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	FVector FailureLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	FVector FailureDirection = FVector::UpVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	bool bReleaseContent = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Failure")
+	bool bReleasePressure = true;
+};
+
+/**
+ * Active heating or cooling source registered against a bottle during multi-source ASM thermal simulation.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropThermalSource
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Thermal")
+	FName SourceID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Thermal", meta = (Units = "Celsius"))
+	float TargetTemperature = 21.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Thermal", meta = (ClampMin = "0.0"))
+	float Conductance = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Thermal")
+	float DirectHeatPower = 0.0f;
+};
+
+/**
+ * Channel A: Compact unreliable Continuous sync item sent inside Multicast_SyncContinuousBatch.
+ */
+USTRUCT()
+struct MARRYBYMIDNIGHT_API FPropContinuousSyncItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 ISID = 0;
+
+	UPROPERTY()
+	float Temperature = 21.0f;
+
+	UPROPERTY() float SealedPressure = 0.0f;
+
+	UPROPERTY()
+	float RelativeTimeOffset = 0.0f;
+
+	UPROPERTY()
+	float ThermalStrength = 1.0f;
+
+	UPROPERTY()
+	bool bHasThermalStrengthUpdate = false;
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+};
+
+template<>
+struct TStructOpsTypeTraits<FPropContinuousSyncItem> : public TStructOpsTypeTraitsBase2<FPropContinuousSyncItem>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
+};
+
+/**
+ * Channel B: Reliable per-ISID discrete Event sync delta containing only mutated fields via NetSerialize.
+ */
+USTRUCT(BlueprintType)
+struct MARRYBYMIDNIGHT_API FPropEventSyncDelta
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 ISID = 0;
+
+	UPROPERTY()
+	uint32 EventSequence = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	uint8 DirtyMask = 0;
+
+	UPROPERTY() uint8 ExtendedDirtyMask = 0;
+	UPROPERTY() double ContentCreationTime = 0;
+	UPROPERTY() int32 AttachedCapISID = 0;
+	UPROPERTY() int32 AttachedBottleISID = 0;
+	UPROPERTY() bool bClean = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	float ContentLevel = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 ContentID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	float Strength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	float CapSealed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	double CreationTime = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	bool bIsGrabbable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	uint8 CapType = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	int32 NewProductID = 0;
+
+	bool HasFlag(EPropEventDirtyMask Flag) const
+	{
+		return (DirtyMask & static_cast<uint8>(Flag)) != 0;
+	}
+
+	void SetFlag(EPropEventDirtyMask Flag)
+	{
+		DirtyMask |= static_cast<uint8>(Flag);
+	}
+
+	void ClearFlag(EPropEventDirtyMask Flag)
+	{
+		DirtyMask &= ~static_cast<uint8>(Flag);
+	}
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+};
+
+template<>
+struct TStructOpsTypeTraits<FPropEventSyncDelta> : public TStructOpsTypeTraitsBase2<FPropEventSyncDelta>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
 };
 
 /**
@@ -822,6 +1393,181 @@ struct MARRYBYMIDNIGHT_API FPropProductDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition")
 	FPropPackedRuntimeData RuntimeDefaults;
 
+	// -------------------------------------------------------------
+	// Category 1 Feature Toggles (Zero-Copy Unique Data & Continuous Ticks)
+	// -------------------------------------------------------------
+	/** Enables allocating, replicating, and saving FPropInstanceUniqueData per ISID (false = 0 B static overhead) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data")
+	bool bEnableInstanceUniqueData = false;
+
+	/** Enables UPropBatchUpdateComponent continuous ticks (Temperature, thermal Strength drain, GPU Slots 1..3) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data", meta = (EditCondition = "bEnableInstanceUniqueData"))
+	bool bEnableContinuousUpdateData = false;
+
+	/** Allows settled uncapped partial/open bottles to demote to resting ISM keeping ContentLevel and CapSealed = 0 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data|Demotion")
+	bool bAllowUncappedFilledISMDemotion = true;
+
+	/** If true, continuous thermal breach promotes resting ISM to ASM for 3D shatter/VFX; if false, converts silently in ISM */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data|Thermal")
+	bool bPromoteISMOnContinuousTempFailure = false;
+
+	/** Default initial Category 2 UniqueData copied onto newly spawned instances when bEnableInstanceUniqueData is true */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unique Data", meta = (EditCondition = "bEnableInstanceUniqueData"))
+	FPropInstanceUniqueData DefaultUniqueData;
+
+	// -------------------------------------------------------------
+	// Bottle Containment Capacity & Overfill Rules
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "0.01"))
+	float NormalCapacity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "1.0"))
+	float OverfillWarningThreshold = 1.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity", meta = (ClampMin = "1.0"))
+	float MaxOverfillLevel = 1.7f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity")
+	TObjectPtr<UCurveFloat> FillSlowdownCurve = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Capacity")
+	bool bEnableOverfillFailure = false;
+
+	// -------------------------------------------------------------
+	// Bottle Shell Material, Structural Strength & Deformation
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell")
+	EBottleMaterialType BottleMaterialType = EBottleMaterialType::Glass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell", meta = (ClampMin = "1.0"))
+	float MaxStrength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Shell", meta = (ClampMin = "0.0"))
+	float BreakageFailureThreshold = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.01"))
+	float PressureResistanceMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float PressureDamageThreshold = 1.4f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float PressureFailureThreshold = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Pressure", meta = (ClampMin = "0.0"))
+	float StrengthDamageRate = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanInflate = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanBend = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanDent = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanCrack = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bCanRecover = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Deformation")
+	bool bSupportsRepair = false;
+
+	// -------------------------------------------------------------
+	// Bottle Thermal Physics & Thresholds
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float ThermalMass = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.0"))
+	float ThermalConductivity = 0.05f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float HeatingRateMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float CoolingRateMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float LowTempDamageThreshold = -5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float HighTempDamageThreshold = 55.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float MinTemperatureThreshold = -20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (Units = "Celsius"))
+	float MaxTemperatureThreshold = 85.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.0"))
+	float ThermalDamageRate = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Thermal", meta = (ClampMin = "0.01"))
+	float ThermalEquilibriumEpsilon = 0.25f;
+
+	// -------------------------------------------------------------
+	// Cap Hardware, Compatible Contents & Product Transformations
+	// -------------------------------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (Bitmask, BitmaskEnum = "/Script/MarryByMidnight.EBottleCapMaskFlags"))
+	uint8 SupportedCapMask = 0xFF;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
+	EBottleCapType DefaultCapType = EBottleCapType::Twist;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
+	TObjectPtr<UStaticMesh> DefaultCapMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0"))
+	float CapReleasePressure = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0"))
+	float SafeOpenPressureThreshold = 1.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float TorqueSweetSpotMin = 0.41f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float TorqueSweetSpotMax = 0.75f;
+
+	/** Compatible liquid ContentIDs for SetBottleContentType (empty = accepts all registered ContentIDs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TArray<int32> SupportedContentIDs;
+
+	/** Target ProductID when bottle becomes empty (ContentReset); 0 = single-use or no auto-conversion */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 EmptyBottleProductID = 0;
+
+	/** Optional mapping ContentID -> Filled resting ProductID for flavor-specific ISM meshes/labels */
+	UPROPERTY(NotReplicated, EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TMap<int32, int32> FilledProductIDByContentID;
+	/** Parallel key/value wire representation; local map stays available to existing callers. */
+	UPROPERTY() TArray<int32> FilledContentIDs;
+	UPROPERTY() TArray<int32> FilledProductIDs;
+
+	/** Target BrokenGlass orchestrator ProductID for 1-to-Many breakage transformation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 BrokenProductID = 0;
+
+	/** Target Melted ProductID for 1-to-1 extreme heat transformation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 MeltedProductID = 0;
+
+	/** Target Burst ProductID for 1-to-1 overpressure rupture transformation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	int32 BurstBrokenProductID = 0;
+
+	/** If false (Pure Fragments), BrokenGlass orchestrator despawns cleanly once shards spawn; if true, retains broken hull ISM */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	bool bPersistBrokenHullAfterFracture = false;
+
+	/** Independent child fragment recipes spawned by BreakageFracture */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TArray<FPropFractureFragmentEntry> FractureFragments;
+
 	/** Populates a product definition from a UInteractablePropDataAsset */
 	static FPropProductDefinition FromDataAsset(const UInteractablePropDataAsset* InAsset, int32 InProductID, int32 InStaticMeshID = 0);
 
@@ -894,7 +1640,24 @@ struct MARRYBYMIDNIGHT_API FISIDRuntimeIndex
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ISID Record")
 	int32 DirtyFlags = 0;
 
+	/** Server/local WorldElapsedSeconds timestamp of latest reliable Event Update (guards stale Continuous sync packets) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ISID Record")
+	double LastDiscreteEventTime = 0.0;
+
 	bool IsValidRecord() const { return ISID > 0; }
+
+	/** Mirrors key derived fields into legacy PackedRuntimeData for backwards compatibility */
+	void SyncLegacyPackedFromUniqueData(const FPropInstanceUniqueData& Unique, const FPropProductDefinition* ProductDef = nullptr)
+	{
+		PackedRuntimeData.CreationMinute = FMath::Max(0, FMath::FloorToInt(Unique.EventData.ContentCreationTime / 60.0));
+		PackedRuntimeData.LastUpdatedMinute = FMath::Max(0, FMath::FloorToInt(Unique.ContinuousData.LastUpdatedTime / 60.0));
+		PackedRuntimeData.Temperature = Unique.ContinuousData.Temperature;
+		PackedRuntimeData.bIsGrabbable = Unique.EventData.bIsGrabbable;
+		const int32 MaxPortions = (ProductDef && ProductDef->ConsumableProfile.NumOfPortions > 0)
+			? ProductDef->ConsumableProfile.NumOfPortions
+			: 4;
+		PackedRuntimeData.RemainingPortions = FMath::Clamp(FMath::RoundToInt(Unique.EventData.ContentLevel * static_cast<float>(MaxPortions)), 0, 255);
+	}
 };
 
 /** Alias matching Section 6 (FPropInstanceRecord) and Section 30 (FISIDRuntimeIndex) */
@@ -974,6 +1737,13 @@ struct MARRYBYMIDNIGHT_API FPropInstanceDelta
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	int32 CustomFlags = 0;
+
+	/** True when this delta carries full sparse Category 2 UniqueData (initial snapshot / creation / full sync) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	bool bHasUniqueData = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	FPropInstanceUniqueData UniqueData;
 };
 
 /**
@@ -1015,9 +1785,17 @@ struct MARRYBYMIDNIGHT_API FPropBulkUpdateBatch
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	bool bIsFinalInitBatch = false;
 
-	/** Product definitions required to generate products and IISM components on the client side */
+	/** Product definitions required to generate products and IISM components on the client side (populated ONLY in initial snapshot) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	TArray<FPropProductDefinition> ProductDefinitions;
+
+	/** Shared liquid ContentDefinitions synced alongside initial snapshot */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	TArray<FPropContentDefinition> ContentDefinitions;
+
+	/** Server monotonic clock snapshot aligned with initial batch */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
+	double SnapshotWorldElapsedSeconds = 0.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	TArray<FPropInstanceDelta> Records;
@@ -1034,6 +1812,7 @@ struct MARRYBYMIDNIGHT_API FPropBulkUpdateBatch
 	{
 		return sizeof(FPropBulkUpdateBatch)
 			+ (ProductDefinitions.Num() * sizeof(FPropProductDefinition))
+			+ (ContentDefinitions.Num() * sizeof(FPropContentDefinition))
 			+ (Records.Num() * sizeof(FPropInstanceDelta))
 			+ (ReleasedToEmptyISIDs.Num() * sizeof(int32))
 			+ (DeletedISIDs.Num() * sizeof(int32));
@@ -1223,6 +2002,14 @@ struct MARRYBYMIDNIGHT_API FPropSerializedInstance
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	int32 CustomFlags = 0;
+
+	/** True when this instance stores sparse Category 2 unique data (SchemaVersion >= 2) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
+	bool bHasUniqueData = false;
+
+	/** Persisted Continuous + Event Unique Data (SchemaVersion >= 2) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
+	FPropInstanceUniqueData UniqueData;
 };
 
 /**
@@ -1234,7 +2021,10 @@ struct MARRYBYMIDNIGHT_API FPropWorldSaveData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
+	double WorldElapsedSeconds = 0.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	int32 NextISID = 10001;
@@ -1244,6 +2034,18 @@ struct MARRYBYMIDNIGHT_API FPropWorldSaveData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	TArray<int32> DestroyedISIDs;
+
+	UPROPERTY(SaveGame)
+	FSharedWalletSaveData SharedWallet;
+
+	UPROPERTY(SaveGame)
+	FShopCheckoutSaveData ShopCheckout;
+
+	UPROPERTY(SaveGame)
+	TArray<FPropProductDefinition> ProductDefinitions;
+
+	UPROPERTY(SaveGame)
+	TArray<FPropContentDefinition> ContentDefinitions;
 };
 
 /**
@@ -1449,6 +2251,11 @@ struct MARRYBYMIDNIGHT_API FInteractablePropData
 	/** Updates temperature toward ambient */
 	void UpdateTemperature(float AmbientTemperature, float DeltaSeconds);
 
-	/** Synchronizes from an authoritative FISIDRuntimeIndex and FPropProductDefinition */
-	void SyncFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef = nullptr);
+	/** Synchronizes an ephemeral stack snapshot from an authoritative FISIDRuntimeIndex, shared definitions, and Category 2 UniqueData */
+	void SyncFromISIDRecord(
+		const FISIDRuntimeIndex& Record,
+		const FPropProductDefinition* ProductDef = nullptr,
+		const FPropContentDefinition* ContentDef = nullptr,
+		const FPropInstanceUniqueData* UniqueData = nullptr,
+		double CurrentWorldSeconds = 0.0);
 };

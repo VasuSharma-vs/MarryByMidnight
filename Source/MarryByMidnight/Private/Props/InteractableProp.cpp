@@ -27,6 +27,8 @@ AActivePropActor::AActivePropActor()
 	PropMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PropMesh"));
 	SetRootComponent(PropMesh);
 	PropMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	PropMesh->SetNotifyRigidBodyCollision(true);
 	PropMesh->SetGenerateOverlapEvents(false);
 	MeshComponent = PropMesh;
 
@@ -315,6 +317,7 @@ void AActivePropActor::ApplyDataAsset(const UInteractablePropDataAsset* InDataAs
 
 void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InProductDef)
 {
+	if (!PropManagerReference) { CachedFallbackProductDef = InProductDef; bHasCachedFallbackProductDef = true; }
 	ProductID = InProductDef.ProductID;
 	if (InProductDef.SourceDataAsset)
 	{
@@ -494,45 +497,13 @@ void AActivePropActor::ApplyProductDefinition(const FPropProductDefinition& InPr
 
 void AActivePropActor::UpdateMaterialCustomPrimitiveData()
 {
-	const float PortionRatio = (NumOfPortions > 0) ? FMath::Clamp(static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions), 0.0f, 1.0f) : 0.0f;
-	const float FrostFactor = FMath::Clamp((AmbientRoomTemperature - CurrentTemperature) / FMath::Max(1.0f, AmbientRoomTemperature), 0.0f, 1.0f);
-	const float ExpiryAge = (bHasExpiry && ExpiryLifetimeMinutes > 0.0f) ? FMath::Clamp(AgeMinutes / ExpiryLifetimeMinutes, 0.0f, 1.0f) : 0.0f;
-
-	if (PropMesh)
-	{
-		PropMesh->SetCustomPrimitiveDataFloat(0, PortionRatio);
-		PropMesh->SetCustomPrimitiveDataFloat(1, FrostFactor);
-		PropMesh->SetCustomPrimitiveDataFloat(2, ExpiryAge);
-	}
-	if (SkeletalMeshComponent)
-	{
-		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(0, PortionRatio);
-		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(1, FrostFactor);
-		SkeletalMeshComponent->SetCustomPrimitiveDataFloat(2, ExpiryAge);
-	}
+	const float Values[] = {GetContentLevel(), GetExpiryAge(), GetCurrentTemperature(), GetStrengthRatio()};
+	for (int32 Index=0; Index<4; ++Index) { if (PropMesh) PropMesh->SetCustomPrimitiveDataFloat(Index, Values[Index]); if (SkeletalMeshComponent) SkeletalMeshComponent->SetCustomPrimitiveDataFloat(Index, Values[Index]); }
 }
 
 bool AActivePropActor::ChangeProduct(int32 NewProductID, bool bResetRuntimeData)
 {
-	if (NewProductID <= 0 || NewProductID == ProductID)
-	{
-		return false;
-	}
-
-	APropManager* Mgr = PropManagerReference ? PropManagerReference.Get() : APropManager::Get(this);
-	if (Mgr)
-	{
-		if (!Mgr->ChangePropProduct(ISID, NewProductID, bResetRuntimeData))
-		{
-			return false;
-		}
-	}
-	else
-	{
-		ProductID = NewProductID;
-	}
-
-	return true;
+	return ChangeProductWithMode(NewProductID, bResetRuntimeData ? EPropProductResetMode::FullReset : EPropProductResetMode::PreserveUniqueState);
 }
 
 bool AActivePropActor::ChangeProductFromDataAsset(UInteractablePropDataAsset* NewDataAsset, bool bResetRuntimeData)
@@ -564,9 +535,11 @@ bool AActivePropActor::ChangeProductFromDataAsset(UInteractablePropDataAsset* Ne
 	return false;
 }
 
-void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef, APropManager* InManager)
+void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef, const FPropContentDefinition* ContentDef, const FPropInstanceUniqueData* UniqueData, APropManager* InManager)
 {
 	PropManagerReference = InManager;
+	if (!UniqueData && InManager) UniqueData = InManager->FindUniqueData(Record.ISID);
+	if (!ContentDef && UniqueData && InManager) ContentDef = InManager->FindContentDefinition(UniqueData->EventData.ContentID);
 	MeshComponent = PropMesh;
 
 	if (ProductDef)
@@ -612,9 +585,15 @@ void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record,
 	}
 
 	UpdateDebugBillboard();
+
+	ResetTransientPoolState();
+	bHasValidUniqueData = UniqueData != nullptr;
+	if (UniqueData) { LocalUniqueData = *UniqueData; OnApplyEventData(UniqueData->EventData); OnApplyContinuousData(UniqueData->ContinuousData); }
+	OnApplySharedDefinitions(ProductDef, ContentDef);
+	UpdateMaterialCustomPrimitiveData();
 }
 
-void AActivePropActor::WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord) const
+void AActivePropActor::WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord, FPropInstanceUniqueData* OutUniqueData) const
 {
 	// Read ASM transform, runtime data, state, velocity, and interaction info (Section 7.3 Step 13 & 14)
 	InOutRecord.ActiveTransform = GetActorTransform();
@@ -636,6 +615,8 @@ void AActivePropActor::WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord) const
 	InOutRecord.RuntimeData.Temperature = CurrentTemperature;
 	InOutRecord.RuntimeData.InteractionState = InteractionState;
 	InOutRecord.RuntimeData.InteractionOwner = InteractionOwner;
+
+	if (bHasValidUniqueData) { if (OutUniqueData) *OutUniqueData = LocalUniqueData; InOutRecord.SyncLegacyPackedFromUniqueData(LocalUniqueData, ResolveProductDefinition()); }
 }
 
 void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTransform, EPropState InitialPropState, bool bEnableReplication)
@@ -722,9 +703,21 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 	{
 		SetActorEnableCollision(true);
 	}
-	if (PropMesh && PropMesh->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics)
+	if (PropMesh)
 	{
-		PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		if (PropMesh->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics)
+		{
+			PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		}
+		PropMesh->SetNotifyRigidBodyCollision(true);
+		if (InitialPropState == EPropState::Held)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		}
+		else
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		}
 	}
 
 	SetActorTickEnabled(true);
@@ -750,7 +743,25 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 		PhysicsSimComponent->SetPhysicsState(ConvertPropStateToPhysicsState(InitialPropState));
 	}
 
-	if (InitialPropState == EPropState::Held)
+	if (InitialPropState == EPropState::Unsettled || InitialPropState == EPropState::InMotion)
+	{
+		if (PropMesh)
+		{
+			PropMesh->SetSimulatePhysics(true);
+		}
+		if (PhysicsSimComponent)
+		{
+			if (InitialPropState == EPropState::Unsettled)
+			{
+				PhysicsSimComponent->SetStateUnsettled(3.0f);
+			}
+			else
+			{
+				PhysicsSimComponent->SetStateInMotion();
+			}
+		}
+	}
+	else if (InitialPropState == EPropState::Held)
 	{
 		bIsHeld = true;
 		bIsGrabbable = false;
@@ -799,6 +810,7 @@ void AActivePropActor::NotifyBeforeReturnToRestPosition()
 
 void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 {
+	OnBeforePoolDeactivate();
 	// Run pre-return logic BEFORE stripping collision/physics and BEFORE moving to ResetTransform
 	if (bIsActive)
 	{
@@ -824,6 +836,8 @@ void AActivePropActor::DeactivateToPoolState(const FTransform& ResetTransform)
 	State = EPropState::AtRest;
 	InteractionState = EPropInteractionLockState::Free;
 	InteractionOwner = nullptr;
+	ISID = 0;
+	ProductID = 0;
 	LinearVelocity = FVector::ZeroVector;
 	AngularVelocity = FVector::ZeroVector;
 
@@ -1336,7 +1350,8 @@ void AActivePropActor::Tick(float DeltaSeconds)
 		AngularVelocity = PropMesh->GetPhysicsAngularVelocityInDegrees();
 	}
 
-	if (!bEnableTemperatureUpdate && HasAuthority())
+	if (bHasValidUniqueData) { AgeMinutes = GetAgeMinutes(); ExpiryFreshness = GetExpiryFreshness(); UpdateMaterialCustomPrimitiveData(); }
+	if (!bHasValidUniqueData && !bEnableTemperatureUpdate && HasAuthority())
 	{
 		if (bHasExpiry)
 		{
@@ -1352,6 +1367,8 @@ void AActivePropActor::Tick(float DeltaSeconds)
 void AActivePropActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AActivePropActor, LocalUniqueData);
+	DOREPLIFETIME(AActivePropActor, bHasValidUniqueData);
 
 	DOREPLIFETIME(AActivePropActor, ASMID);
 	DOREPLIFETIME(AActivePropActor, ISID);
@@ -1404,6 +1421,15 @@ void AActivePropActor::OnRep_ISID()
 	}
 }
 
+void AActivePropActor::OnRep_ProductID()
+{
+
+	if (!PropManagerReference) PropManagerReference = APropManager::Get(this);
+	if (const FPropProductDefinition* Def = ResolveProductDefinition()) ApplyProductDefinition(*Def);
+	OnRep_LocalUniqueData();
+
+}
+
 void AActivePropActor::OnRep_State(EPropState PreviousState)
 {
 	if (bIsActive && ISID > 0 && (bHasNotifiedBeforeReturnToRest || !GetActorEnableCollision() || IsHidden()))
@@ -1422,11 +1448,20 @@ void AActivePropActor::OnRep_State(EPropState PreviousState)
 			PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		}
 	}
-	else if (PreviousState == EPropState::Held)
+	else
 	{
-		bIsHeld = false;
+		if (PreviousState == EPropState::Held)
+		{
+			bIsHeld = false;
+		}
+		if (PropMesh)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+		}
 	}
 
 	if (bIsActive && PhysicsSimComponent)
@@ -1470,11 +1505,20 @@ void AActivePropActor::SetPropState(EPropState NewState)
 			PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		}
 	}
-	else if (PrevState == EPropState::Held)
+	else
 	{
-		bIsHeld = false;
+		if (PrevState == EPropState::Held)
+		{
+			bIsHeld = false;
+		}
+		if (PropMesh)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+		}
 	}
 
 	if (PhysicsSimComponent)
@@ -1665,7 +1709,9 @@ void AActivePropActor::OnRep_IsActive()
 		PropManagerReference->UpdateClientASM(ISID);
 	}
 
-	if (PropMesh && !PropMesh->GetStaticMesh())
+	const bool bNeedsMeshOrMat = (!PropMesh || !PropMesh->GetStaticMesh()) ||
+		(SkeletalMeshComponent && (!SkeletalMeshComponent->GetSkeletalMeshAsset() || SkeletalMeshComponent->GetMaterial(0) == nullptr));
+	if (bNeedsMeshOrMat)
 	{
 		if (PropDataAsset)
 		{
@@ -1807,6 +1853,18 @@ void AActivePropActor::OnRep_IsHeld()
 	if (bIsHeld)
 	{
 		bIsInMotion = false;
+		if (PropMesh)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		}
+	}
+	else
+	{
+		if (PropMesh)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+		}
 	}
 }
 
@@ -1816,6 +1874,8 @@ void AActivePropActor::OnRep_IsInMotion()
 	{
 		PropMesh->SetSimulatePhysics(true);
 		PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		PropMesh->SetNotifyRigidBodyCollision(true);
 	}
 }
 
@@ -1830,10 +1890,15 @@ void AActivePropActor::SetInMotion(bool bNewInMotion)
 		{
 			PhysicsSimComponent->SetInMotion(true);
 		}
-		if (PropMesh && !PropMesh->IsSimulatingPhysics())
+		if (PropMesh)
 		{
-			PropMesh->SetSimulatePhysics(true);
-			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+			if (!PropMesh->IsSimulatingPhysics())
+			{
+				PropMesh->SetSimulatePhysics(true);
+				PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			}
 		}
 	}
 	else
@@ -1868,6 +1933,7 @@ void AActivePropActor::SetHeld(bool bNewHeld)
 			PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		}
 	}
 	else
@@ -1879,6 +1945,12 @@ void AActivePropActor::SetHeld(bool bNewHeld)
 		RuntimeData.CurrentInteractor = nullptr;
 		RuntimeData.InteractionOwner = nullptr;
 		RuntimeData.InteractionState = EPropInteractionLockState::Free;
+
+		if (PropMesh)
+		{
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+		}
 
 		if (PhysicsSimComponent)
 		{
@@ -2011,6 +2083,7 @@ bool AActivePropActor::OnPlayerGrab_Implementation(USceneComponent* AttachToPare
 		PropMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		PropMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	}
 
 	if (PhysicsSimComponent)
@@ -2047,8 +2120,10 @@ bool AActivePropActor::OnPlayerRelease_Implementation(FVector LaunchVelocity)
 		}
 		if (PropMesh)
 		{
-			PropMesh->SetSimulatePhysics(true);
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+			PropMesh->SetSimulatePhysics(true);
 			PropMesh->AddImpulse(LaunchVelocity, NAME_None, true);
 		}
 	}
@@ -2063,8 +2138,10 @@ bool AActivePropActor::OnPlayerRelease_Implementation(FVector LaunchVelocity)
 		}
 		if (PropMesh)
 		{
-			PropMesh->SetSimulatePhysics(true);
 			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			PropMesh->SetNotifyRigidBodyCollision(true);
+			PropMesh->SetSimulatePhysics(true);
 		}
 	}
 
@@ -2102,7 +2179,7 @@ void AActivePropActor::OnConsumedByPlayer_Implementation(APawn* PlayerPawn, floa
 
 bool AActivePropActor::ConsumePortion(AActor* ConsumerActor, float PortionRatio)
 {
-	if (IsEmpty()) return false;
+	if (IsEmpty() || GetCapSealed() > 0 || !FMath::IsFinite(PortionRatio) || PortionRatio <= 0 || PortionRatio > 1) return false;
 	if (!ConsumerActor) return false;
 
 	if (!HasAuthority())
@@ -2115,6 +2192,15 @@ bool AActivePropActor::ConsumePortion(AActor* ConsumerActor, float PortionRatio)
 	const bool bItemExpired = IsExpired() || IsSpoiled();
 	const float AutoBodyTempDelta = FInteractablePropData::CalculateBodyTemperatureDelta(CurrentTemperature, AmbientRoomTemperature) * Ratio;
 
+	if (PropManagerReference && ISID > 0)
+	{
+		if (!PropManagerReference->ConsumeInstancePortion(ISID, ConsumerActor, PortionRatio)) return false;
+	}
+	else
+	{
+		LocalUniqueData.EventData.ContentLevel = FMath::Max(0.0f, GetContentLevel() - Ratio / FMath::Max(1, GetNumPortions()));
+		bHasValidUniqueData = true; OnRep_LocalUniqueData();
+	}
 	ANPCCharacter* NPC = Cast<ANPCCharacter>(ConsumerActor);
 	if (NPC)
 	{
@@ -2169,28 +2255,13 @@ bool AActivePropActor::ConsumePortion(AActor* ConsumerActor, float PortionRatio)
 		OnConsumedByPlayer(PlayerPawn, AutoBodyTempDelta, CurrentTemperature, bItemExpired);
 	}
 
-	RemainingPortions = FMath::Max(0, RemainingPortions - 1);
-	QuantityLevel = NumOfPortions > 0 ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
-	PackedRuntimeData.RemainingPortions = RemainingPortions;
-	RuntimeData.RemainingPortions = RemainingPortions;
-	Version++;
 
-	if (ISID > 0)
-	{
-		if (!PropManagerReference)
-		{
-			PropManagerReference = APropManager::Get(this);
-		}
-		if (PropManagerReference)
-		{
-			PropManagerReference->ConsumeInstancePortion(ISID, ConsumerActor, PortionRatio);
-		}
-	}
+	Version++;
 
 	Multicast_OnPortionConsumed(ConsumerActor, RemainingPortions);
 	UpdateDebugBillboard();
 
-	if (RemainingPortions <= 0 && bDestroyWhenEmpty)
+	if (IsEmpty() && GetDestroyWhenEmpty() && GetEmptyBottleProductID() <= 0)
 	{
 		if (ISID > 0 && PropManagerReference)
 		{
@@ -2246,22 +2317,12 @@ bool AActivePropActor::GetRuntimeDefaults(FPropPackedRuntimeData& OutData) const
 
 float AActivePropActor::GetAuthoritativeTemperature() const
 {
-	FPropPackedRuntimeData Data;
-	if (GetRuntimeDefaults(Data))
-	{
-		return Data.Temperature;
-	}
-	return CurrentTemperature;
+	return GetCurrentTemperature();
 }
 
 int32 AActivePropActor::GetAuthoritativeRemainingPortions() const
 {
-	FPropPackedRuntimeData Data;
-	if (GetRuntimeDefaults(Data))
-	{
-		return Data.RemainingPortions;
-	}
-	return RemainingPortions;
+	return GetRemainingPortions();
 }
 
 // -------------------------------------------------------------

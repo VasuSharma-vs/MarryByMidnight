@@ -155,6 +155,10 @@ public:
 	/** Applies received field deltas on client */
 	void ApplyFieldDeltasOnClient(const TArray<FPropRuntimeFieldDelta>& Deltas);
 
+	/** Tolerance in Celsius below which continuous thermal updates are not emitted over the wire unless strength changed */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Batch Update|Performance", meta = (ClampMin = "0.001"))
+	float TemperatureNetSyncEpsilon = 0.05f;
+
 	/** Returns cached or resolved owning APropManager */
 	UFUNCTION(BlueprintPure, Category = "Prop Batch Update")
 	APropManager* GetPropManager();

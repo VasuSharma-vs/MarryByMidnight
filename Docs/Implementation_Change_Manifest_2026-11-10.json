@@ -1,0 +1,222 @@
+{
+  "baseline": "Saved/ImplementationBaseline/Source",
+  "note": "Compared with the starting working tree, not Git HEAD; preserves attribution of pre-existing user edits.",
+  "files": [
+    {
+      "file": "Source/MarryByMidnight/Private/Components/ASMComponent.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "fd26f0b995e42419ca9ed2884605dfa4b2f9485dc57c6342765a2279ed482c0b",
+      "bytes": 43415
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "1370f64cfe32e31781ca661f97d244e5190948da303c3af79b6b6e312719c2e6",
+      "bytes": 50597
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "69aacac2b65002d7b2cfef0c1d73fdebe030c292dce86ecb0b201848ced15f10",
+      "bytes": 23288
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/ActivePropState.cpp",
+      "status": "added_this_implementation",
+      "sha256": "794f204c0587dc8044493e14688ab5c5da4775538ff41083a0bfbcd64ea81f0c",
+      "bytes": 12917
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/ColaContainment.cpp",
+      "status": "added_this_implementation",
+      "sha256": "d8e3e487eec424f68fa24f9c1a4410eabf75d7d26aa1188f2cb2be74f72ce9f1",
+      "bytes": 6545
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/ColaPricingLibrary.cpp",
+      "status": "added_this_implementation",
+      "sha256": "ba342a227c967b410784f1485383282b1c975534ef3f4fe85c105967411f0e14",
+      "bytes": 1690
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/ColaPropActor.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "9a867a60faf2222dbd8f35da49fce85b431471728f1550741d82e257b09a747d",
+      "bytes": 20917
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/InteractableProp.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "0d5c67632888b75b0503beeee58ad4a7fa9a0778570f83bd3577642af619dc39",
+      "bytes": 72012
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "e6b57f3ac9802c41c240071a2a75d75bd4371d4265d0e0f4755797add44eb7b6",
+      "bytes": 24074
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "status": "modified_from_starting_worktree",
+      "sha256": "d4b8f0d4df7f0cae3db874621da19ab11635023de9d6c501b469d3a082d120d2",
+      "bytes": 264572
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/PropLiquidTransfer.cpp",
+      "status": "added_this_implementation",
+      "sha256": "936c99113e0da67e7bf823d47b3adaaad1dbb6ec77cd7e111b8cd77f5fe1c8d8",
+      "bytes": 7349
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Props/PropManagerState.cpp",
+      "status": "added_this_implementation",
+      "sha256": "2b74d3c680d4f003b9a9c94fc4cd74c643f6c39d7bd7d6086b8a4b3842dae762",
+      "bytes": 11513
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Shop/BottleFillingComponent.cpp",
+      "status": "added_this_implementation",
+      "sha256": "776a2d86b4027a4adecdc29b09b6cea20634b346850d97a1f53d44d8cf80c23b",
+      "bytes": 2834
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Shop/SharedTeamWalletComponent.cpp",
+      "status": "added_this_implementation",
+      "sha256": "6a46b89f66fb4e7f971e91efb71683762217d1dcb79197c265405415eceb80a5",
+      "bytes": 2163
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Shop/SharedWalletTypes.cpp",
+      "status": "added_this_implementation",
+      "sha256": "18dbef64358544093cfc39346588e9ffaf91aa7c6de05617b581f780f7d7d0de",
+      "bytes": 1796
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Shop/ShopAutosave.cpp",
+      "status": "added_this_implementation",
+      "sha256": "3adf985cf8ee6b6af3f442b161ebb4b639d23f82fe03874d1a355c02c1e827fe",
+      "bytes": 307
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp",
+      "status": "added_this_implementation",
+      "sha256": "ed227d8a32e9bae7569d24b55794a75cee108d79633a83a63b8d85847c90ca1b",
+      "bytes": 11516
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/ColaPricingTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "f9f1d23e311dd30a969cc5d2a9611d1b95e45c9a5eee0972ef824c51cddb5569",
+      "bytes": 2457
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/LiquidTransferTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "d313acac3ebd689a69a52c280e7e979a34ffece31e37dd1b5507a72641140e80",
+      "bytes": 4428
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/PropPersistenceTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "d8959178e0acb752c89c325f73adad39096fb936a66995cd2c3d909326d0a037",
+      "bytes": 5189
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/PropPoolTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "7bc6ca3573f2b8035027b4e9ea884799d8ec7ed4fcf81bd6b91a721372469ccc",
+      "bytes": 2346
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/PropStateTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "8295e4c38e01c7cec9ff9efbb12b2429f6a4c0483f6daaaa7f5f8f4182c96d32",
+      "bytes": 3980
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/SharedWalletTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "86a05477a6bea285dfe9df91f25171381b45d48b12970e4ba39807fb49344be3",
+      "bytes": 2506
+    },
+    {
+      "file": "Source/MarryByMidnight/Private/Tests/ShopCheckoutTests.cpp",
+      "status": "added_this_implementation",
+      "sha256": "c2c113d5fd66ae571ef4fffe75f6e753e7e9d5ba13e618314aacf8a0ddf33b8f",
+      "bytes": 6760
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Components/ASMComponent.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "815fb640b465175681dcc9cdc11f65b029ec34fa8bb0fed465afaf37d9451fca",
+      "bytes": 16051
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/ColaPricingLibrary.h",
+      "status": "added_this_implementation",
+      "sha256": "8ee708ddb873b4a1271217b1d265920ba85ff47eb0afb92d2cb5fbcdab6c73c4",
+      "bytes": 1146
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/ColaPropActor.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "0e06f88613e9a79eae433f47d8001463ff3b544289a12dac3b4356fe8b8c477f",
+      "bytes": 8343
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "04425fea47589c9a9e71e04d0e416ff958996070f9a81939f81228e6bcb5815f",
+      "bytes": 44680
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "243d6960e80fc927aafdf9e9761c0b9a6a4b91d55ba19f8edf4ae957ff749f1a",
+      "bytes": 16137
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "0aa59f1c4d29f78e72c3aaade4613d948e5f44d14bba892ee71950a333ed03e0",
+      "bytes": 83980
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "status": "modified_from_starting_worktree",
+      "sha256": "91a41283a34cb4e8f4d10bec01f30c923d83683d9e06a6b0f95fe06548024cc8",
+      "bytes": 83977
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Shop/BottleFillingComponent.h",
+      "status": "added_this_implementation",
+      "sha256": "24425eb25e2d312950e4fa97e574a42614e12265dd1479145a8feab197a79687",
+      "bytes": 1593
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Shop/SharedTeamWalletComponent.h",
+      "status": "added_this_implementation",
+      "sha256": "8adc40123e92f9a2b0efd6a1eb06a27bf43ecf62867289b30fb51604df11e2f2",
+      "bytes": 1748
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Shop/SharedWalletTypes.h",
+      "status": "added_this_implementation",
+      "sha256": "b55c763d2aef1c9301e8f9b476e45c450addd7ede60adb5590d92d7882603281",
+      "bytes": 1700
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "status": "added_this_implementation",
+      "sha256": "da020412087d2e43bed95c44ab35d6554104d0e90cd6a9950c83e9855a6626bf",
+      "bytes": 3127
+    },
+    {
+      "file": "Source/MarryByMidnight/Public/Shop/ShopCheckoutTypes.h",
+      "status": "added_this_implementation",
+      "sha256": "16518412d9b66043924bdae85eac6d5353ceec0a5863cd71c5f2ed07ef0addc5",
+      "bytes": 2406
+    }
+  ]
+}

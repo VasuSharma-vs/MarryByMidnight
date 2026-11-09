@@ -20,7 +20,7 @@ UInteractableISMComponent::UInteractableISMComponent()
 	SetCollisionProfileName(UCollisionProfile::BlockAllDynamic_ProfileName);
 	SetGenerateOverlapEvents(false);
 	ISMComponent = this;
-	NumCustomDataFloats = 3;
+	NumCustomDataFloats = 4;
 
 	// Default ResetTransform places parked ISM instances far below the gameplay world with near-zero scale
 	ResetTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -100000.0f), FVector(0.0001f));
@@ -31,9 +31,9 @@ void UInteractableISMComponent::OnRegister()
 	Super::OnRegister();
 
 	ISMComponent = this;
-	if (NumCustomDataFloats < 3)
+	if (NumCustomDataFloats < 4)
 	{
-		NumCustomDataFloats = 3;
+		NumCustomDataFloats = 4;
 	}
 	SetGenerateOverlapEvents(false);
 	SetNotifyRigidBodyCollision(true);
@@ -65,51 +65,51 @@ void UInteractableISMComponent::BeginPlay()
 		CachedGameplayTransformsByISID.Empty();
 	}
 
+	APropManager* Manager = APropManager::Get(this);
+
 	// If ProductID is not explicitly set, try to find an existing registered ProductID from PropManager
-	if (ProductID <= 0)
+	if (ProductID <= 0 && Manager)
 	{
-		if (APropManager* Manager = APropManager::Get(this))
+		if (DefaultDataAsset)
 		{
-			if (DefaultDataAsset)
+			const int32 FoundPID = Manager->FindProductIDByDataAsset(DefaultDataAsset);
+			if (FoundPID > 0)
 			{
-				const int32 FoundPID = Manager->FindProductIDByDataAsset(DefaultDataAsset);
-				if (FoundPID > 0)
-				{
-					ProductID = FoundPID;
-				}
+				ProductID = FoundPID;
 			}
-			else if (GetStaticMesh())
+		}
+		else if (GetStaticMesh())
+		{
+			TArray<UMaterialInterface*> CompMats;
+			const int32 NumMats = GetNumMaterials();
+			for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 			{
-				TArray<UMaterialInterface*> CompMats;
-				const int32 NumMats = GetNumMaterials();
-				for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
-				{
-					CompMats.Add(GetMaterial(MatIdx));
-				}
-				const int32 FoundPID = Manager->FindProductIDByMeshAndMaterials(GetStaticMesh(), CompMats);
-				if (FoundPID > 0)
-				{
-					ProductID = FoundPID;
-				}
+				CompMats.Add(GetMaterial(MatIdx));
+			}
+			const int32 FoundPID = Manager->FindProductIDByMeshAndMaterials(GetStaticMesh(), CompMats);
+			if (FoundPID > 0)
+			{
+				ProductID = FoundPID;
 			}
 		}
 	}
 
-	if (DefaultDataAsset)
+	if (ProductID > 0 && Manager)
 	{
-		IISMDB = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
+		if (const FPropProductDefinition* SharedDef = Manager->FindProductDefinition(ProductID))
+		{
+			ApplyProductDefinition(*SharedDef);
+		}
+		else if (DefaultDataAsset)
+		{
+			const FPropProductDefinition TempDef = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
+			ApplyProductDefinition(TempDef);
+		}
 	}
-	else if (GetStaticMesh() && ProductID > 0)
+	else if (DefaultDataAsset)
 	{
-		IISMDB.ProductID = ProductID;
-		IISMDB.StaticMeshID = (StaticMeshID > 0) ? StaticMeshID : ProductID;
-		IISMDB.StaticMesh = GetStaticMesh();
-		IISMDB.DisplayName = FText::FromName(GetStaticMesh()->GetFName());
-	}
-
-	if (IISMDB.ProductID > 0)
-	{
-		ApplyProductDefinition(IISMDB);
+		const FPropProductDefinition TempDef = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
+		ApplyProductDefinition(TempDef);
 	}
 
 	SyncDatabaseWithInstanceCount();
@@ -120,7 +120,7 @@ void UInteractableISMComponent::BeginPlay()
 
 	if (ComponentRuntimeSettings.bAutoRegisterWithPropManager)
 	{
-		if (APropManager* Manager = APropManager::Get(this))
+		if (Manager)
 		{
 			Manager->RegisterISMComponent(this);
 		}
@@ -152,29 +152,8 @@ void UInteractableISMComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(UInteractableISMComponent, ProductID);
 	DOREPLIFETIME(UInteractableISMComponent, StaticMeshID);
 	DOREPLIFETIME(UInteractableISMComponent, IISMComponentID);
-	DOREPLIFETIME(UInteractableISMComponent, IISMDB);
 	DOREPLIFETIME(UInteractableISMComponent, PackedInstanceData);
-	DOREPLIFETIME(UInteractableISMComponent, PropDatabase);
 	DOREPLIFETIME(UInteractableISMComponent, bDebugPrintInstanceHit);
-}
-
-void UInteractableISMComponent::OnRep_IISMDB()
-{
-	ApplyProductDefinition(IISMDB);
-	if (IISMDB.ProductID > 0)
-	{
-		if (APropManager* Manager = APropManager::Get(this))
-		{
-			if (!Manager->ProductDefinitions.Contains(IISMDB.ProductID))
-			{
-				Manager->ProductDefinitions.Add(IISMDB.ProductID, IISMDB);
-			}
-			if (IISMComponentID > 0)
-			{
-				Manager->RegisterIISMComponent(this, IISMComponentID);
-			}
-		}
-	}
 }
 
 void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinition& InDefinition)
@@ -187,7 +166,6 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 	{
 		StaticMeshID = InDefinition.StaticMeshID;
 	}
-	IISMDB = InDefinition;
 	if (InDefinition.SourceDataAsset)
 	{
 		DefaultDataAsset = InDefinition.SourceDataAsset;
@@ -260,18 +238,6 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 	}
 }
 
-void UInteractableISMComponent::OnRep_PropDatabase()
-{
-	RebuildLocalIndexMap();
-	if (APropManager* Manager = APropManager::Get(this))
-	{
-		if (IISMComponentID > 0)
-		{
-			Manager->RegisterIISMComponent(this, IISMComponentID);
-		}
-	}
-}
-
 // -----------------------------------------------------------------------------
 // Section 31 & 65: UInteractableISMComponent Core & Empty Instance API
 // -----------------------------------------------------------------------------
@@ -292,26 +258,6 @@ int32 UInteractableISMComponent::AddInstanceWithISID(int32 InISID, const FTransf
 		PackedInstanceData.SetNum(NewISMI + 1);
 	}
 	PackedInstanceData[NewISMI] = InitialData;
-
-	FInteractablePropData LegacyEntry = DefaultDataAsset ? CreatePropDataFromAsset(DefaultDataAsset, NewISMI) : FInteractablePropData();
-	LegacyEntry.InstanceId = NewISMI;
-	LegacyEntry.ISID = InISID;
-	LegacyEntry.ProductID = ProductID;
-	LegacyEntry.IISMComponentID = IISMComponentID;
-	LegacyEntry.RemainingPortions = InitialData.RemainingPortions;
-	LegacyEntry.CurrentTemperature = InitialData.Temperature;
-	LegacyEntry.bIsGrabbable = InitialData.bIsGrabbable;
-	LegacyEntry.SimulationState = EPhysicsSimulationState::AtRest;
-	if (LegacyEntry.NumOfPortions > 0)
-	{
-		LegacyEntry.QuantityLevel = static_cast<float>(LegacyEntry.RemainingPortions) / static_cast<float>(LegacyEntry.NumOfPortions);
-	}
-
-	if (PropDatabase.Num() <= NewISMI)
-	{
-		PropDatabase.SetNum(NewISMI + 1);
-	}
-	PropDatabase[NewISMI] = LegacyEntry;
 
 	BindISIDToISMI(InISID, NewISMI);
 	UpdateInstanceCustomData(NewISMI, true);
@@ -384,26 +330,6 @@ int32 UInteractableISMComponent::ReuseOrAddInstanceWithISID(int32 InISID, const 
 		}
 		PackedInstanceData[ReusedISMI] = InitialData;
 
-		FInteractablePropData LegacyEntry = DefaultDataAsset ? CreatePropDataFromAsset(DefaultDataAsset, ReusedISMI) : FInteractablePropData();
-		LegacyEntry.InstanceId = ReusedISMI;
-		LegacyEntry.ISID = InISID;
-		LegacyEntry.ProductID = ProductID;
-		LegacyEntry.IISMComponentID = IISMComponentID;
-		LegacyEntry.RemainingPortions = InitialData.RemainingPortions;
-		LegacyEntry.CurrentTemperature = InitialData.Temperature;
-		LegacyEntry.bIsGrabbable = InitialData.bIsGrabbable;
-		LegacyEntry.SimulationState = EPhysicsSimulationState::AtRest;
-		if (LegacyEntry.NumOfPortions > 0)
-		{
-			LegacyEntry.QuantityLevel = static_cast<float>(LegacyEntry.RemainingPortions) / static_cast<float>(LegacyEntry.NumOfPortions);
-		}
-
-		if (PropDatabase.Num() <= ReusedISMI)
-		{
-			PropDatabase.SetNum(GetInstanceCount());
-		}
-		PropDatabase[ReusedISMI] = LegacyEntry;
-
 		BindISIDToISMI(InISID, ReusedISMI);
 		UpdateInstanceCustomData(ReusedISMI, true);
 		if (!InstanceTransform.GetLocation().Equals(EffectiveReset.GetLocation(), 100.0f) && InstanceTransform.GetScale3D().GetMax() >= 0.005f)
@@ -467,10 +393,6 @@ bool UInteractableISMComponent::RemoveInstanceByISIDWithRepair(int32 InISID, TMa
 	{
 		PackedInstanceData.RemoveAt(TargetISMI);
 	}
-	if (PropDatabase.IsValidIndex(TargetISMI))
-	{
-		PropDatabase.RemoveAt(TargetISMI);
-	}
 
 	OrderedISIDs.RemoveAt(TargetISMI);
 	ISIDToISMI.Remove(InISID);
@@ -495,12 +417,6 @@ bool UInteractableISMComponent::RemoveInstanceByISIDWithRepair(int32 InISID, TMa
 		{
 			ISMIToISID.Add(NewIdx, RemainingISID);
 			ISIDToISMI.Add(RemainingISID, NewIdx);
-
-			if (PropDatabase.IsValidIndex(NewIdx))
-			{
-				PropDatabase[NewIdx].InstanceId = NewIdx;
-				PropDatabase[NewIdx].ISID = RemainingISID;
-			}
 
 			if (NewIdx >= TargetISMI)
 			{
@@ -532,13 +448,6 @@ int32 UInteractableISMComponent::FindISMI(int32 InISID) const
 			return Pair.Key;
 		}
 	}
-	for (int32 Idx = 0; Idx < PropDatabase.Num(); ++Idx)
-	{
-		if (PropDatabase[Idx].ISID == InISID && IsValidInstance(Idx) && !EmptyInstances.Contains(Idx))
-		{
-			return Idx;
-		}
-	}
 	return INDEX_NONE;
 }
 
@@ -551,10 +460,6 @@ int32 UInteractableISMComponent::FindISID(int32 InISMI) const
 	if (const int32* FoundISID = ISMIToISID.Find(InISMI))
 	{
 		return *FoundISID;
-	}
-	if (PropDatabase.IsValidIndex(InISMI) && PropDatabase[InISMI].ISID > 0)
-	{
-		return PropDatabase[InISMI].ISID;
 	}
 	return 0;
 }
@@ -577,14 +482,6 @@ void UInteractableISMComponent::BindISIDToISMI(int32 InISID, int32 InISMI)
 
 	ISIDToISMI.Add(InISID, InISMI);
 	ISMIToISID.Add(InISMI, InISID);
-
-	if (PropDatabase.IsValidIndex(InISMI))
-	{
-		PropDatabase[InISMI].ISID = InISID;
-		PropDatabase[InISMI].InstanceId = InISMI;
-		PropDatabase[InISMI].ProductID = ProductID;
-		PropDatabase[InISMI].IISMComponentID = IISMComponentID;
-	}
 }
 
 bool UInteractableISMComponent::GetInstanceTransformByISID(int32 InISID, FTransform& OutTransform, bool bWorldSpace) const
@@ -787,18 +684,6 @@ bool UInteractableISMComponent::SetInstanceDataByISMI(int32 InISMI, const FPropP
 	}
 	PackedInstanceData[InISMI] = InData;
 
-	if (PropDatabase.IsValidIndex(InISMI))
-	{
-		PropDatabase[InISMI].RemainingPortions = InData.RemainingPortions;
-		PropDatabase[InISMI].CurrentTemperature = InData.Temperature;
-		PropDatabase[InISMI].bIsGrabbable = InData.bIsGrabbable;
-		PropDatabase[InISMI].SimulationState = EPhysicsSimulationState::AtRest;
-		if (PropDatabase[InISMI].NumOfPortions > 0)
-		{
-			PropDatabase[InISMI].QuantityLevel = static_cast<float>(InData.RemainingPortions) / static_cast<float>(PropDatabase[InISMI].NumOfPortions);
-		}
-	}
-
 	UpdateInstanceCustomData(InISMI, true);
 
 	return true;
@@ -811,70 +696,161 @@ void UInteractableISMComponent::UpdateInstanceCustomData(int32 InISMI, bool bMar
 		return;
 	}
 
-	if (NumCustomDataFloats < 3)
+	APropManager* Manager = APropManager::Get(this);
+	const FPropProductDefinition* ProductDef = Manager ? Manager->FindProductDefinition(ProductID) : nullptr;
+	FPropProductDefinition FallbackDef;
+	if (!ProductDef && DefaultDataAsset)
 	{
-		NumCustomDataFloats = 3;
+		FallbackDef = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
+		ProductDef = &FallbackDef;
 	}
 
-	// 1. Portion Level [0.0 = Empty, 1.0 = Full]
-	float PortionRatio = 1.0f;
-	if (PropDatabase.IsValidIndex(InISMI) && PropDatabase[InISMI].NumOfPortions > 0)
+	const int32 BoundISID = FindISID(InISMI);
+	const FPropInstanceUniqueData* UniqueData = (Manager && BoundISID > 0) ? Manager->FindUniqueData(BoundISID) : nullptr;
+	const FPropContentDefinition* ContentDef = (Manager && UniqueData && UniqueData->EventData.ContentID > 0)
+		? Manager->FindContentDefinition(UniqueData->EventData.ContentID)
+		: nullptr;
+	const double WorldSeconds = Manager
+		? Manager->WorldElapsedSeconds
+		: (GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0);
+
+	UpdateInstanceCustomDataDirect(InISMI, ProductDef, ContentDef, UniqueData, WorldSeconds, bMarkRenderStateDirty);
+}
+
+void UInteractableISMComponent::UpdateInstanceCustomDataDirect(
+	int32 InISMI,
+	const FPropProductDefinition* ProductDef,
+	const FPropContentDefinition* ContentDef,
+	const FPropInstanceUniqueData* UniqueData,
+	double CurrentWorldSeconds,
+	bool bMarkRenderStateDirty)
+{
+	if (InISMI < 0 || InISMI >= GetInstanceCount())
 	{
-		PortionRatio = FMath::Clamp(static_cast<float>(PropDatabase[InISMI].RemainingPortions) / static_cast<float>(PropDatabase[InISMI].NumOfPortions), 0.0f, 1.0f);
+		return;
+	}
+
+	if (NumCustomDataFloats < 4)
+	{
+		NumCustomDataFloats = 4;
+	}
+
+	// Slot 0: ContentLevel [0.0 .. MaxOverfillLevel]
+	float ContentLevelValue = 1.0f;
+	if (UniqueData)
+	{
+		ContentLevelValue = FMath::Max(0.0f, UniqueData->EventData.ContentLevel);
 	}
 	else if (PackedInstanceData.IsValidIndex(InISMI))
 	{
-		const int32 TotalPortions = IISMDB.ConsumableProfile.NumOfPortions;
-		PortionRatio = (TotalPortions > 0)
-			? FMath::Clamp(static_cast<float>(PackedInstanceData[InISMI].RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f)
-			: 0.0f;
+		const int32 TotalPortions = (ProductDef && ProductDef->ConsumableProfile.NumOfPortions > 0)
+			? ProductDef->ConsumableProfile.NumOfPortions
+			: (DefaultDataAsset ? FMath::Max(1, DefaultDataAsset->NumOfPortions) : 4);
+		ContentLevelValue = FMath::Clamp(static_cast<float>(PackedInstanceData[InISMI].RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f);
 	}
 
-	// 2. Frost / Coldness Factor [0.0 = Warm / Room Temp 22C, 1.0 = Freezing 0C or below]
+	// Slot 1: ExpiryAge normalized [0.0 = Fresh, 1.0 = Expired]
+	float ExpiryAge = 0.0f;
+	bool bHasExpiry = false;
+	float LifetimeMinutes = 60.0f;
+	if (ContentDef && ContentDef->ContentID > 0)
+	{
+		bHasExpiry = ContentDef->ExpiryProfile.bHasExpiry;
+		LifetimeMinutes = ContentDef->ExpiryProfile.ExpiryLifetimeMinutes;
+	}
+	else if (ProductDef)
+	{
+		bHasExpiry = ProductDef->ExpiryProfile.bHasExpiry;
+		LifetimeMinutes = ProductDef->ExpiryProfile.ExpiryLifetimeMinutes;
+	}
+	else if (DefaultDataAsset)
+	{
+		bHasExpiry = DefaultDataAsset->bHasExpiry;
+		LifetimeMinutes = DefaultDataAsset->ExpiryLifetimeMinutes;
+	}
+
+	if (bHasExpiry && LifetimeMinutes > KINDA_SMALL_NUMBER)
+	{
+		if (UniqueData)
+		{
+			const double AgeSeconds = FMath::Max(0.0, CurrentWorldSeconds - UniqueData->EventData.ContentCreationTime);
+			ExpiryAge = FMath::Clamp(static_cast<float>(AgeSeconds / (static_cast<double>(LifetimeMinutes) * 60.0)), 0.0f, 1.0f);
+		}
+		else if (PackedInstanceData.IsValidIndex(InISMI))
+		{
+			const int32 CurrentMinutes = FMath::FloorToInt(CurrentWorldSeconds / 60.0);
+			const float AgeMinutes = FMath::Max(0.0f, static_cast<float>(CurrentMinutes - PackedInstanceData[InISMI].CreationMinute));
+			ExpiryAge = FMath::Clamp(AgeMinutes / LifetimeMinutes, 0.0f, 1.0f);
+		}
+	}
+
+	// Slot 2: Temperature in Celsius (raw float, drives shader frost/heat directly)
 	float TempCelsius = 21.0f;
-	if (PackedInstanceData.IsValidIndex(InISMI))
+	if (UniqueData)
+	{
+		TempCelsius = UniqueData->ContinuousData.Temperature;
+	}
+	else if (PackedInstanceData.IsValidIndex(InISMI))
 	{
 		TempCelsius = PackedInstanceData[InISMI].Temperature;
 	}
-	else if (PropDatabase.IsValidIndex(InISMI))
+	else if (ProductDef)
 	{
-		TempCelsius = PropDatabase[InISMI].CurrentTemperature;
+		TempCelsius = ProductDef->TemperatureProfile.ConsumableTemperature;
 	}
-	const float FrostFactor = FMath::Clamp((22.0f - TempCelsius) / 22.0f, 0.0f, 1.0f);
-
-	// 3. Expiry Age [0.0 = Brand New, 1.0 = Fully Expired / Rotten]
-	float ExpiryAge = 0.0f;
-	if (PropDatabase.IsValidIndex(InISMI))
+	else if (DefaultDataAsset)
 	{
-		if (PropDatabase[InISMI].bHasExpiry && PropDatabase[InISMI].ExpiryLifetimeMinutes > 0.0f)
-		{
-			const float AgeMins = FMath::Max(0.0f, PropDatabase[InISMI].AgeMinutes);
-			ExpiryAge = FMath::Clamp(AgeMins / PropDatabase[InISMI].ExpiryLifetimeMinutes, 0.0f, 1.0f);
-		}
-	}
-	else if (PackedInstanceData.IsValidIndex(InISMI))
-	{
-		const float AgeMins = FMath::Max(0.0f, static_cast<float>(PackedInstanceData[InISMI].LastUpdatedMinute - PackedInstanceData[InISMI].CreationMinute));
-		const float Lifetime = (IISMDB.ExpiryProfile.ExpiryLifetimeMinutes > 0.0f) ? IISMDB.ExpiryProfile.ExpiryLifetimeMinutes : 60.0f;
-		ExpiryAge = FMath::Clamp(AgeMins / Lifetime, 0.0f, 1.0f);
+		TempCelsius = DefaultDataAsset->ConsumableTemperature;
 	}
 
-	SetCustomDataValue(InISMI, 0, PortionRatio, false);
-	SetCustomDataValue(InISMI, 1, FrostFactor, false);
-	SetCustomDataValue(InISMI, 2, ExpiryAge, bMarkRenderStateDirty);
+	// Slot 3: Normalized Structural Strength [0.0 = Broken/Deformed, 1.0 = Intact]
+	float StrengthRatio = 1.0f;
+	if (UniqueData)
+	{
+		const float MaxStr = (ProductDef && ProductDef->MaxStrength > KINDA_SMALL_NUMBER) ? ProductDef->MaxStrength : 100.0f;
+		StrengthRatio = FMath::Clamp(UniqueData->EventData.Strength / MaxStr, 0.0f, 1.0f);
+	}
+
+	SetCustomDataValue(InISMI, 0, ContentLevelValue, false);
+	SetCustomDataValue(InISMI, 1, ExpiryAge, false);
+	SetCustomDataValue(InISMI, 2, TempCelsius, false);
+	SetCustomDataValue(InISMI, 3, StrengthRatio, bMarkRenderStateDirty);
 }
 
 void UInteractableISMComponent::UpdateAllInstancesCustomData()
 {
 	const int32 Total = GetInstanceCount();
+	if (Total <= 0)
+	{
+		return;
+	}
+
+	APropManager* Manager = APropManager::Get(this);
+	const FPropProductDefinition* ProductDef = Manager ? Manager->FindProductDefinition(ProductID) : nullptr;
+	FPropProductDefinition FallbackDef;
+	if (!ProductDef && DefaultDataAsset)
+	{
+		FallbackDef = FPropProductDefinition::FromDataAsset(DefaultDataAsset, ProductID, StaticMeshID);
+		ProductDef = &FallbackDef;
+	}
+	const double WorldSeconds = Manager
+		? Manager->WorldElapsedSeconds
+		: (GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0);
+
 	for (int32 i = 0; i < Total; ++i)
 	{
-		UpdateInstanceCustomData(i, false);
+		if (IsEmptyInstance(i))
+		{
+			continue;
+		}
+		const int32 BoundISID = FindISID(i);
+		const FPropInstanceUniqueData* UniqueData = (Manager && BoundISID > 0) ? Manager->FindUniqueData(BoundISID) : nullptr;
+		const FPropContentDefinition* ContentDef = (Manager && UniqueData && UniqueData->EventData.ContentID > 0)
+			? Manager->FindContentDefinition(UniqueData->EventData.ContentID)
+			: nullptr;
+		UpdateInstanceCustomDataDirect(i, ProductDef, ContentDef, UniqueData, WorldSeconds, false);
 	}
-	if (Total > 0)
-	{
-		MarkRenderStateDirty();
-	}
+	MarkRenderStateDirty();
 }
 
 bool UInteractableISMComponent::GetInstanceRuntimeInfo(int32 InISMI, FISMInstanceRuntimeInfo& OutInfo) const
@@ -943,16 +919,6 @@ bool UInteractableISMComponent::AddEmptyInstance(int32 InISMI)
 		PackedInstanceData[InISMI].RemainingPortions = 0;
 		PackedInstanceData[InISMI].bIsGrabbable = false;
 	}
-	if (PropDatabase.IsValidIndex(InISMI))
-	{
-		PropDatabase[InISMI] = FInteractablePropData();
-		PropDatabase[InISMI].InstanceId = InISMI;
-		PropDatabase[InISMI].ISID = 0;
-		PropDatabase[InISMI].ProductID = 0;
-		PropDatabase[InISMI].RemainingPortions = 0;
-		PropDatabase[InISMI].QuantityLevel = 0.0f;
-		PropDatabase[InISMI].bIsGrabbable = false;
-	}
 
 	// - Should remain at the component's Reset/Parking transform
 	UpdateInstanceTransform(InISMI, GetEffectiveResetTransform(), true, true, true);
@@ -1014,10 +980,6 @@ void UInteractableISMComponent::ClearEmptyInstances(bool bRemovePhysicalISMInsta
 				{
 					PackedInstanceData.RemoveAt(EmptyISMI);
 				}
-				if (PropDatabase.IsValidIndex(EmptyISMI))
-				{
-					PropDatabase.RemoveAt(EmptyISMI);
-				}
 			}
 		}
 
@@ -1051,6 +1013,7 @@ void UInteractableISMComponent::RebuildLocalIndexMap()
 	ISMIToISID.Empty();
 
 	const int32 NumInstances = GetInstanceCount();
+	APropManager* Manager = APropManager::Get(this);
 	for (int32 ISMI = 0; ISMI < NumInstances; ++ISMI)
 	{
 		if (EmptyInstances.Contains(ISMI))
@@ -1059,14 +1022,13 @@ void UInteractableISMComponent::RebuildLocalIndexMap()
 		}
 
 		int32 EntryISID = 0;
-		if (PropDatabase.IsValidIndex(ISMI) && PropDatabase[ISMI].ISID > 0)
-		{
-			EntryISID = PropDatabase[ISMI].ISID;
-			PropDatabase[ISMI].InstanceId = ISMI;
-		}
-		else if (const int32* PrevISID = PreviousISMIToISID.Find(ISMI))
+		if (const int32* PrevISID = PreviousISMIToISID.Find(ISMI))
 		{
 			EntryISID = *PrevISID;
+		}
+		else if (Manager && IISMComponentID > 0)
+		{
+			EntryISID = Manager->GetISIDFromISMI(IISMComponentID, ISMI);
 		}
 
 		if (EntryISID > 0)
@@ -1116,44 +1078,28 @@ bool UInteractableISMComponent::Validate() const
 }
 
 // -----------------------------------------------------------------------------
-// Legacy & Convenience API
+// Legacy & Convenience API (Assembled Ephemerally Zero-Copy from APropManager)
 // -----------------------------------------------------------------------------
 int32 UInteractableISMComponent::AddInteractableInstance(const FTransform& InstanceTransform, const FInteractablePropData& InitialData)
 {
-	const int32 NewIndex = AddInstance(InstanceTransform);
+	const int32 NewIndex = AddInstance(InstanceTransform, true);
 	if (NewIndex != INDEX_NONE)
 	{
-		FInteractablePropData DataCopy = InitialData;
-		DataCopy.InstanceId = NewIndex;
-		DataCopy.ProductID = ProductID;
-		DataCopy.IISMComponentID = IISMComponentID;
-
-		if (NewIndex < PropDatabase.Num())
-		{
-			PropDatabase[NewIndex] = DataCopy;
-		}
-		else
-		{
-			PropDatabase.Add(DataCopy);
-		}
-
 		FPropPackedRuntimeData Packed;
-		Packed.RemainingPortions = DataCopy.RemainingPortions;
-		Packed.Temperature = DataCopy.CurrentTemperature;
-		Packed.bIsGrabbable = DataCopy.bIsGrabbable;
-		if (NewIndex < PackedInstanceData.Num())
+		Packed.RemainingPortions = InitialData.RemainingPortions;
+		Packed.Temperature = InitialData.CurrentTemperature;
+		Packed.bIsGrabbable = InitialData.bIsGrabbable;
+		if (PackedInstanceData.Num() <= NewIndex)
 		{
-			PackedInstanceData[NewIndex] = Packed;
+			PackedInstanceData.SetNum(NewIndex + 1);
 		}
-		else
-		{
-			PackedInstanceData.Add(Packed);
-		}
+		PackedInstanceData[NewIndex] = Packed;
 
-		if (DataCopy.ISID > 0)
+		if (InitialData.ISID > 0)
 		{
-			BindISIDToISMI(DataCopy.ISID, NewIndex);
+			BindISIDToISMI(InitialData.ISID, NewIndex);
 		}
+		UpdateInstanceCustomData(NewIndex, true);
 	}
 	return NewIndex;
 }
@@ -1171,14 +1117,6 @@ bool UInteractableISMComponent::RemoveInteractableInstance(int32 InstanceIndex)
 	const bool bRemoved = RemoveInstance(InstanceIndex);
 	if (bRemoved)
 	{
-		if (PropDatabase.IsValidIndex(InstanceIndex))
-		{
-			PropDatabase.RemoveAt(InstanceIndex);
-			for (int32 i = InstanceIndex; i < PropDatabase.Num(); ++i)
-			{
-				PropDatabase[i].InstanceId = i;
-			}
-		}
 		if (PackedInstanceData.IsValidIndex(InstanceIndex))
 		{
 			PackedInstanceData.RemoveAt(InstanceIndex);
@@ -1190,37 +1128,133 @@ bool UInteractableISMComponent::RemoveInteractableInstance(int32 InstanceIndex)
 
 bool UInteractableISMComponent::GetPropDataForInstance(int32 InstanceIndex, FInteractablePropData& OutData) const
 {
-	if (PropDatabase.IsValidIndex(InstanceIndex))
+	if (!IsValidInstance(InstanceIndex) || IsEmptyInstance(InstanceIndex))
 	{
-		OutData = PropDatabase[InstanceIndex];
-		return true;
+		return false;
 	}
-	return false;
+
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+
+	if (Manager && BoundISID > 0)
+	{
+		if (const FISIDRuntimeIndex* Record = Manager->FindISIDData(BoundISID))
+		{
+			const FPropProductDefinition* ProductDef = Manager->FindProductDefinition(Record->ProductID);
+			const FPropInstanceUniqueData* UniqueData = Manager->FindUniqueData(BoundISID);
+			const FPropContentDefinition* ContentDef = (UniqueData && UniqueData->EventData.ContentID > 0)
+				? Manager->FindContentDefinition(UniqueData->EventData.ContentID)
+				: nullptr;
+
+			OutData.SyncFromISIDRecord(*Record, ProductDef, ContentDef, UniqueData, Manager->WorldElapsedSeconds);
+			OutData.InstanceId = InstanceIndex;
+			OutData.IISMComponentID = IISMComponentID;
+			OutData.ProductID = ProductID;
+			return true;
+		}
+	}
+
+	if (DefaultDataAsset)
+	{
+		OutData = CreatePropDataFromAsset(DefaultDataAsset, InstanceIndex);
+	}
+	else
+	{
+		OutData = FInteractablePropData();
+		OutData.InstanceId = InstanceIndex;
+		OutData.ProductID = ProductID;
+		OutData.IISMComponentID = IISMComponentID;
+		OutData.StaticMesh = GetStaticMesh();
+	}
+
+	OutData.ISID = BoundISID;
+	if (PackedInstanceData.IsValidIndex(InstanceIndex))
+	{
+		const FPropPackedRuntimeData& Packed = PackedInstanceData[InstanceIndex];
+		OutData.RemainingPortions = Packed.RemainingPortions;
+		OutData.CurrentTemperature = Packed.Temperature;
+		OutData.bIsGrabbable = Packed.bIsGrabbable;
+		if (OutData.NumOfPortions > 0)
+		{
+			OutData.QuantityLevel = static_cast<float>(OutData.RemainingPortions) / static_cast<float>(OutData.NumOfPortions);
+		}
+		if (Manager)
+		{
+			OutData.AgeMinutes = FMath::Max(0.0f, static_cast<float>(Manager->GetCurrentWorldMinutes() - Packed.CreationMinute));
+		}
+	}
+
+	return true;
 }
 
 bool UInteractableISMComponent::SetPropDataForInstance(int32 InstanceIndex, const FInteractablePropData& NewData)
 {
-	if (PropDatabase.IsValidIndex(InstanceIndex))
+	if (!IsValidInstance(InstanceIndex))
 	{
-		PropDatabase[InstanceIndex] = NewData;
-		if (PackedInstanceData.IsValidIndex(InstanceIndex))
-		{
-			PackedInstanceData[InstanceIndex].RemainingPortions = NewData.RemainingPortions;
-			PackedInstanceData[InstanceIndex].Temperature = NewData.CurrentTemperature;
-			PackedInstanceData[InstanceIndex].bIsGrabbable = NewData.bIsGrabbable;
-		}
-		return true;
+		return false;
 	}
-	return false;
+
+	if (PackedInstanceData.Num() <= InstanceIndex)
+	{
+		PackedInstanceData.SetNum(GetInstanceCount());
+	}
+	PackedInstanceData[InstanceIndex].RemainingPortions = NewData.RemainingPortions;
+	PackedInstanceData[InstanceIndex].Temperature = NewData.CurrentTemperature;
+	PackedInstanceData[InstanceIndex].bIsGrabbable = NewData.bIsGrabbable;
+
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+	if (Manager && BoundISID > 0)
+	{
+		if (FISIDRuntimeIndex* Record = Manager->FindISIDData(BoundISID))
+		{
+			Record->PackedRuntimeData.RemainingPortions = NewData.RemainingPortions;
+			Record->PackedRuntimeData.Temperature = NewData.CurrentTemperature;
+			Record->PackedRuntimeData.bIsGrabbable = NewData.bIsGrabbable;
+			Record->RuntimeData.RemainingPortions = NewData.RemainingPortions;
+			Record->RuntimeData.Temperature = NewData.CurrentTemperature;
+			if (FPropInstanceUniqueData* Unique = Manager->FindUniqueData(BoundISID))
+			{
+				Unique->ContinuousData.Temperature = NewData.CurrentTemperature;
+				Unique->EventData.bIsGrabbable = NewData.bIsGrabbable;
+				const int32 TotalPortions = FMath::Max(1, NewData.NumOfPortions);
+				Unique->EventData.ContentLevel = FMath::Clamp(static_cast<float>(NewData.RemainingPortions) / static_cast<float>(TotalPortions), 0.0f, 1.0f);
+			}
+		}
+	}
+
+	UpdateInstanceCustomData(InstanceIndex, true);
+	return true;
 }
 
 bool UInteractableISMComponent::ConsumeInstancePortions(int32 InstanceIndex, int32 SipsToConsume, AActor* ConsumerActor, int32& OutSipsConsumed)
 {
 	OutSipsConsumed = 0;
-	if (!PropDatabase.IsValidIndex(InstanceIndex)) return false;
+	if (!IsValidInstance(InstanceIndex) || IsEmptyInstance(InstanceIndex))
+	{
+		return false;
+	}
 
-	FInteractablePropData& Data = PropDatabase[InstanceIndex];
-	if (Data.IsEmpty()) return false;
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+
+	if (Manager && BoundISID > 0)
+	{
+		if (const FPropInstanceUniqueData* UniqueData = Manager->FindUniqueData(BoundISID))
+		{
+			// Sealed cap prevents drinking/consuming from an ISM bottle until opened
+			if (UniqueData->EventData.CapSealed > 0.0f)
+			{
+				return false;
+			}
+		}
+	}
+
+	FInteractablePropData Data;
+	if (!GetPropDataForInstance(InstanceIndex, Data) || Data.IsEmpty())
+	{
+		return false;
+	}
 
 	OutSipsConsumed = Data.ConsumePortions(SipsToConsume);
 	if (OutSipsConsumed <= 0) return false;
@@ -1228,6 +1262,32 @@ bool UInteractableISMComponent::ConsumeInstancePortions(int32 InstanceIndex, int
 	if (PackedInstanceData.IsValidIndex(InstanceIndex))
 	{
 		PackedInstanceData[InstanceIndex].RemainingPortions = Data.RemainingPortions;
+	}
+
+	if (Manager && BoundISID > 0)
+	{
+		if (const FPropInstanceUniqueData* ExistingUnique = Manager->FindUniqueData(BoundISID))
+		{
+			FPropEventSyncDelta Delta;
+			Delta.ISID = BoundISID;
+			Delta.SetFlag(EPropEventDirtyMask::ContentLevel);
+			Delta.ContentLevel = FMath::Max(0.0f, Data.QuantityLevel);
+			if (Delta.ContentLevel <= KINDA_SMALL_NUMBER)
+			{
+				Delta.ContentLevel = 0.0f;
+				Delta.SetFlag(EPropEventDirtyMask::ContentID);
+				Delta.ContentID = 0;
+			}
+			Manager->SubmitInstanceEventUpdate(BoundISID, Delta);
+		}
+		else
+		{
+			UpdateInstanceCustomData(InstanceIndex, true);
+		}
+	}
+	else
+	{
+		UpdateInstanceCustomData(InstanceIndex, true);
 	}
 
 	const float Ratio = (Data.NumOfPortions > 0) ? static_cast<float>(OutSipsConsumed) / static_cast<float>(Data.NumOfPortions) : 1.0f;
@@ -1284,21 +1344,63 @@ bool UInteractableISMComponent::ConsumeInstancePortions(int32 InstanceIndex, int
 
 void UInteractableISMComponent::UpdateInstanceTemperature(int32 InstanceIndex, float AmbientTemperature, float DeltaSeconds)
 {
-	if (PropDatabase.IsValidIndex(InstanceIndex))
+	if (!IsValidInstance(InstanceIndex) || DeltaSeconds <= 0.0f)
 	{
-		PropDatabase[InstanceIndex].UpdateTemperature(AmbientTemperature, DeltaSeconds);
-		if (PackedInstanceData.IsValidIndex(InstanceIndex))
+		return;
+	}
+
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+
+	if (Manager && BoundISID > 0)
+	{
+		if (FPropInstanceUniqueData* Unique = Manager->FindUniqueData(BoundISID))
 		{
-			PackedInstanceData[InstanceIndex].Temperature = PropDatabase[InstanceIndex].CurrentTemperature;
+			const FPropProductDefinition* ProductDef = Manager->FindProductDefinition(ProductID);
+			const FPropContentDefinition* ContentDef = (Unique->EventData.ContentID > 0)
+				? Manager->FindContentDefinition(Unique->EventData.ContentID)
+				: nullptr;
+
+			const float RateMult = (AmbientTemperature >= Unique->ContinuousData.Temperature)
+				? (ProductDef ? ProductDef->HeatingRateMultiplier : 1.0f)
+				: (ProductDef ? ProductDef->CoolingRateMultiplier : 1.0f);
+			const float SpecificHeat = (ContentDef && Unique->EventData.ContentLevel > KINDA_SMALL_NUMBER)
+				? FMath::Max(0.1f, ContentDef->SpecificHeatCapacity)
+				: 1.0f;
+			const float Conductivity = ProductDef ? ProductDef->ThermalConductivity : 0.05f;
+			const float Mass = ProductDef ? FMath::Max(0.01f, ProductDef->ThermalMass) : 1.0f;
+			const float K = (Conductivity * RateMult) / (Mass * SpecificHeat);
+
+			Unique->ContinuousData.Temperature = AmbientTemperature + (Unique->ContinuousData.Temperature - AmbientTemperature) * FMath::Exp(-K * DeltaSeconds);
+			Unique->ContinuousData.LastUpdatedTime = Manager->WorldElapsedSeconds;
+
+			if (PackedInstanceData.IsValidIndex(InstanceIndex))
+			{
+				PackedInstanceData[InstanceIndex].Temperature = Unique->ContinuousData.Temperature;
+			}
+			UpdateInstanceCustomDataDirect(InstanceIndex, ProductDef, ContentDef, Unique, Manager->WorldElapsedSeconds, true);
+			return;
 		}
+	}
+
+	if (PackedInstanceData.IsValidIndex(InstanceIndex))
+	{
+		const float Alpha = FMath::Clamp(DeltaSeconds * 0.015f, 0.0f, 1.0f);
+		PackedInstanceData[InstanceIndex].Temperature = FMath::Lerp(PackedInstanceData[InstanceIndex].Temperature, AmbientTemperature, Alpha);
+		UpdateInstanceCustomData(InstanceIndex, true);
 	}
 }
 
 void UInteractableISMComponent::SetInstanceSimulationState(int32 InstanceIndex, EPhysicsSimulationState NewState)
 {
-	if (PropDatabase.IsValidIndex(InstanceIndex))
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+	if (Manager && BoundISID > 0)
 	{
-		PropDatabase[InstanceIndex].SimulationState = NewState;
+		if (FISIDRuntimeIndex* Record = Manager->FindISIDData(BoundISID))
+		{
+			Record->State = ConvertPhysicsStateToPropState(NewState);
+		}
 	}
 }
 
@@ -1383,27 +1485,40 @@ bool UInteractableISMComponent::OnInstanceHit(int32 InISMI, AActor* OtherActor, 
 		return false;
 	}
 
-	FVector EffectiveImpulse = FVector::ZeroVector;
+	FVector RawImpulse = FVector::ZeroVector;
 	if (OtherComp && OtherComp->IsSimulatingPhysics())
 	{
-		EffectiveImpulse = OtherComp->GetComponentVelocity() * 0.65f;
+		RawImpulse = OtherComp->GetComponentVelocity() * 0.65f;
 	}
 	else if (OtherActor)
 	{
-		EffectiveImpulse = OtherActor->GetVelocity() * 0.55f;
+		RawImpulse = OtherActor->GetVelocity() * 0.55f;
 	}
 
-	if (EffectiveImpulse.IsNearlyZero() && !NormalImpulse.IsNearlyZero())
+	if (RawImpulse.IsNearlyZero() && !NormalImpulse.IsNearlyZero())
 	{
-		EffectiveImpulse = NormalImpulse.GetSafeNormal() * FMath::Min(NormalImpulse.Size() * 0.05f, 180.0f);
+		RawImpulse = NormalImpulse.GetSafeNormal() * (NormalImpulse.Size() * 0.05f);
 	}
 
-	// Clamp impulse magnitude and vertical pop so cans topple/roll smoothly without a popcorn bounce
-	EffectiveImpulse.Z = FMath::Clamp(EffectiveImpulse.Z, -40.0f, 35.0f);
-	EffectiveImpulse = EffectiveImpulse.GetClampedToMaxSize(220.0f);
+	// Clamp physics kick separately so bottles topple naturally while preserving unclamped RawImpulse for impact damage
+	FVector SafeImpulse = RawImpulse;
+	SafeImpulse.Z = FMath::Clamp(SafeImpulse.Z, -40.0f, 35.0f);
+	SafeImpulse = SafeImpulse.GetClampedToMaxSize(220.0f);
 
-	// 2. Transition the hit ISID into Unsettled state (promoted to ASM)
-	return SetInstanceUnsettledByISMI(InISMI, EffectiveImpulse, Hit.ImpactPoint);
+	// 2. Forward hit with unclamped RawImpulse on Authority (or predicted SafeImpulse on Client)
+	if (Manager && CompOwner && CompOwner->HasAuthority())
+	{
+		return Manager->SendISMHitByICIDToPropManager(
+			IISMComponentID,
+			InISMI,
+			Hit.ImpactPoint,
+			Hit.ImpactNormal,
+			Hit.Normal,
+			RawImpulse,
+			OtherActor);
+	}
+
+	return SetInstanceUnsettledByISMI(InISMI, SafeImpulse, Hit.ImpactPoint);
 }
 
 bool UInteractableISMComponent::SetInstanceUnsettledByISMI(int32 InISMI, FVector HitImpulse, FVector HitLocation)
@@ -1443,49 +1558,45 @@ bool UInteractableISMComponent::SetInstanceToInMotion(int32 InstanceIndex, FVect
 
 void UInteractableISMComponent::SetInstanceGrabbable(int32 InstanceIndex, bool bNewGrabbable)
 {
-	if (PropDatabase.IsValidIndex(InstanceIndex))
-	{
-		PropDatabase[InstanceIndex].bIsGrabbable = bNewGrabbable;
-	}
 	if (PackedInstanceData.IsValidIndex(InstanceIndex))
 	{
 		PackedInstanceData[InstanceIndex].bIsGrabbable = bNewGrabbable;
+	}
+	APropManager* Manager = APropManager::Get(this);
+	const int32 BoundISID = FindISID(InstanceIndex);
+	if (Manager && BoundISID > 0)
+	{
+		if (FPropInstanceUniqueData* Unique = Manager->FindUniqueData(BoundISID))
+		{
+			Unique->EventData.bIsGrabbable = bNewGrabbable;
+		}
+		if (FISIDRuntimeIndex* Record = Manager->FindISIDData(BoundISID))
+		{
+			Record->PackedRuntimeData.bIsGrabbable = bNewGrabbable;
+		}
 	}
 }
 
 void UInteractableISMComponent::SyncDatabaseWithInstanceCount()
 {
 	const int32 NumInstances = GetInstanceCount();
-	if (PropDatabase.Num() < NumInstances)
-	{
-		const int32 PrevNum = PropDatabase.Num();
-		PropDatabase.SetNum(NumInstances);
-		for (int32 i = PrevNum; i < NumInstances; ++i)
-		{
-			if (DefaultDataAsset)
-			{
-				PropDatabase[i] = CreatePropDataFromAsset(DefaultDataAsset, i);
-			}
-			else
-			{
-				PropDatabase[i].InstanceId = i;
-			}
-		}
-	}
-
 	if (PackedInstanceData.Num() < NumInstances)
 	{
 		const int32 PrevPackedNum = PackedInstanceData.Num();
 		PackedInstanceData.SetNum(NumInstances);
 		for (int32 i = PrevPackedNum; i < NumInstances; ++i)
 		{
-			if (PropDatabase.IsValidIndex(i))
+			if (DefaultDataAsset)
 			{
-				PackedInstanceData[i].RemainingPortions = PropDatabase[i].RemainingPortions;
-				PackedInstanceData[i].Temperature = PropDatabase[i].CurrentTemperature;
-				PackedInstanceData[i].bIsGrabbable = PropDatabase[i].bIsGrabbable;
+				PackedInstanceData[i].RemainingPortions = DefaultDataAsset->NumOfPortions;
+				PackedInstanceData[i].Temperature = DefaultDataAsset->ConsumableTemperature;
+				PackedInstanceData[i].bIsGrabbable = true;
 			}
 		}
+	}
+	else if (PackedInstanceData.Num() > NumInstances)
+	{
+		PackedInstanceData.SetNum(NumInstances);
 	}
 }
 

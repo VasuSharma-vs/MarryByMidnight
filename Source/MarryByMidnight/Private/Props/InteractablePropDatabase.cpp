@@ -217,6 +217,75 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 		Def.RuntimeDefaults.RemainingPortions = InAsset->NumOfPortions;
 		Def.RuntimeDefaults.Temperature = InAsset->ConsumableTemperature;
 		Def.RuntimeDefaults.bIsGrabbable = InAsset->bCanGrab;
+
+		// Feature toggles & Zero-Copy UniqueData defaults
+		Def.bEnableContinuousUpdateData = InAsset->bEnableContinuousUpdateData || InAsset->bEnableTemperatureUpdate;
+		Def.bEnableInstanceUniqueData = InAsset->bEnableInstanceUniqueData || Def.bEnableContinuousUpdateData || InAsset->bHasExpiry || InAsset->NumOfPortions > 0;
+		Def.bAllowUncappedFilledISMDemotion = InAsset->bAllowUncappedFilledISMDemotion;
+		Def.bPromoteISMOnContinuousTempFailure = InAsset->bPromoteISMOnContinuousTempFailure;
+		Def.bPersistBrokenHullAfterFracture = InAsset->bPersistBrokenHullAfterFracture;
+
+		// Capacity & overfill
+		Def.NormalCapacity = InAsset->NormalCapacity;
+		Def.OverfillWarningThreshold = InAsset->OverfillWarningThreshold;
+		Def.MaxOverfillLevel = InAsset->MaxOverfillLevel;
+		Def.FillSlowdownCurve = InAsset->FillSlowdownCurve;
+		Def.bEnableOverfillFailure = InAsset->bEnableOverfillFailure;
+
+		// Shell & damage
+		Def.BottleMaterialType = InAsset->BottleMaterialType;
+		Def.MaxStrength = 1.0f;
+		Def.BreakageFailureThreshold = InAsset->BreakageFailureThreshold;
+		Def.PressureResistanceMultiplier = FMath::Max(0.01f, InAsset->PressureResistanceMultiplier);
+		Def.PressureDamageThreshold = InAsset->PressureDamageThreshold;
+		Def.PressureFailureThreshold = InAsset->PressureFailureThreshold;
+		Def.StrengthDamageRate = InAsset->StrengthDamageRate;
+		Def.bCanInflate = InAsset->bCanInflate;
+		Def.bCanBend = InAsset->bCanBend;
+		Def.bCanDent = InAsset->bCanDent;
+		Def.bCanCrack = InAsset->bCanCrack;
+		Def.bCanRecover = InAsset->bCanRecover;
+		Def.bSupportsRepair = InAsset->bSupportsRepair;
+
+		// Thermal physics
+		Def.ThermalMass = FMath::Max(0.01f, InAsset->ThermalMass);
+		Def.ThermalConductivity = FMath::Max(0.0f, InAsset->ThermalConductivity);
+		Def.HeatingRateMultiplier = FMath::Max(0.01f, InAsset->HeatingRateMultiplier);
+		Def.CoolingRateMultiplier = FMath::Max(0.01f, InAsset->CoolingRateMultiplier);
+		Def.LowTempDamageThreshold = InAsset->LowTempDamageThreshold;
+		Def.HighTempDamageThreshold = InAsset->HighTempDamageThreshold;
+		Def.MinTemperatureThreshold = InAsset->MinTemperatureThreshold;
+		Def.MaxTemperatureThreshold = InAsset->MaxTemperatureThreshold;
+		Def.ThermalDamageRate = InAsset->ThermalDamageRate;
+		Def.ThermalEquilibriumEpsilon = FMath::Max(0.01f, InAsset->ThermalEquilibriumEpsilon);
+
+		// Cap & transformations
+		Def.SupportedCapMask = InAsset->SupportedCapMask;
+		Def.DefaultCapType = InAsset->DefaultCapType;
+		Def.DefaultCapMesh = InAsset->DefaultCapMesh;
+		Def.CapReleasePressure = InAsset->CapReleasePressure;
+		Def.SafeOpenPressureThreshold = InAsset->SafeOpenPressureThreshold;
+		Def.TorqueSweetSpotMin = InAsset->TorqueSweetSpotMin;
+		Def.TorqueSweetSpotMax = InAsset->TorqueSweetSpotMax;
+		Def.SupportedContentIDs = InAsset->SupportedContentIDs;
+		Def.EmptyBottleProductID = InAsset->EmptyBottleProductID;
+		Def.FilledProductIDByContentID = InAsset->FilledProductIDByContentID;
+		Def.BrokenProductID = InAsset->BrokenProductID;
+		Def.MeltedProductID = InAsset->MeltedProductID;
+		Def.BurstBrokenProductID = InAsset->BurstBrokenProductID;
+		Def.FractureFragments = InAsset->FractureFragments;
+
+		// Populate DefaultUniqueData
+		Def.DefaultUniqueData.ContinuousData.Temperature = InAsset->ConsumableTemperature;
+		Def.DefaultUniqueData.ContinuousData.LastUpdatedTime = 0.0;
+		Def.DefaultUniqueData.EventData.CreationTime = 0.0;
+		Def.DefaultUniqueData.EventData.ContentLevel = (InAsset->NumOfPortions > 0) ? FMath::Clamp(InAsset->DefaultContentLevel, 0.0f, Def.MaxOverfillLevel) : 0.0f;
+		Def.DefaultUniqueData.EventData.ContentID = InAsset->DefaultContentID;
+		Def.DefaultUniqueData.EventData.Strength = Def.MaxStrength;
+		Def.DefaultUniqueData.EventData.CapSealed = FMath::Clamp(InAsset->DefaultCapSealed, 0.0f, 1.0f);
+		Def.DefaultUniqueData.EventData.CapType = (Def.DefaultUniqueData.EventData.CapSealed > 0.0f) ? static_cast<uint8>(InAsset->DefaultCapType) : 0;
+		Def.DefaultUniqueData.EventData.bIsGrabbable = InAsset->bCanGrab;
+		Def.DefaultUniqueData.EventData.EventSequence = 1;
 	}
 
 	return Def;
@@ -317,7 +386,12 @@ void FInteractablePropData::UpdateTemperature(float AmbientTemperature, float De
 	}
 }
 
-void FInteractablePropData::SyncFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef)
+void FInteractablePropData::SyncFromISIDRecord(
+	const FISIDRuntimeIndex& Record,
+	const FPropProductDefinition* ProductDef,
+	const FPropContentDefinition* ContentDef,
+	const FPropInstanceUniqueData* UniqueData,
+	double CurrentWorldSeconds)
 {
 	ISID = Record.ISID;
 	ProductID = Record.ProductID;
@@ -331,10 +405,12 @@ void FInteractablePropData::SyncFromISIDRecord(const FISIDRuntimeIndex& Record, 
 		StaticMesh = ProductDef->StaticMesh;
 		DataAsset = ProductDef->SourceDataAsset;
 
-		bEnableTemperatureUpdate = ProductDef->TemperatureProfile.bEnableTemperatureUpdate;
+		bEnableTemperatureUpdate = ProductDef->bEnableContinuousUpdateData || ProductDef->TemperatureProfile.bEnableTemperatureUpdate;
 		ConsumableTemperature = ProductDef->TemperatureProfile.ConsumableTemperature;
 		TemperatureDopamineBonus = ProductDef->TemperatureProfile.TemperatureDopamineBonus;
-		ThermalExchangeRate = ProductDef->TemperatureProfile.ThermalExchangeRate;
+		ThermalExchangeRate = (ProductDef->ThermalConductivity > 0.0f)
+			? ProductDef->ThermalConductivity
+			: ProductDef->TemperatureProfile.ThermalExchangeRate;
 
 		Price = ProductDef->ConsumableProfile.Price;
 		NumOfPortions = ProductDef->ConsumableProfile.NumOfPortions;
@@ -352,20 +428,132 @@ void FInteractablePropData::SyncFromISIDRecord(const FISIDRuntimeIndex& Record, 
 		TasteProfile = ProductDef->TasteProfile;
 	}
 
-	RemainingPortions = Record.PackedRuntimeData.RemainingPortions;
-	if (ProductDef && ProductDef->ConsumableProfile.NumOfPortions <= 0)
+	// Definition precedence rule: active ContentID (>0) overrides liquid display, serving temp, price, stimuli, taste & expiry
+	if (ContentDef && ContentDef->ContentID > 0)
 	{
-		RemainingPortions = 0;
+		if (!ContentDef->DisplayName.IsEmpty())
+		{
+			ItemDisplayName = ContentDef->DisplayName;
+		}
+		ConsumableTemperature = ContentDef->IdealServingTemperature;
+		const float EffectiveMaxPortions = (NumOfPortions > 0) ? static_cast<float>(NumOfPortions) : 1.0f;
+		if (ContentDef->BasePortionPrice > 0.0f)
+		{
+			Price = ContentDef->BasePortionPrice * EffectiveMaxPortions;
+		}
+		if (ContentDef->StimulusProfile.Num() > 0)
+		{
+			StimuliPerPortion = ContentDef->StimulusProfile;
+		}
+		TasteProfile = ContentDef->TasteProfile;
+		bHasExpiry = ContentDef->ExpiryProfile.bHasExpiry;
+		ExpiryLifetimeMinutes = ContentDef->ExpiryProfile.ExpiryLifetimeMinutes;
+		SicknessLevel = ContentDef->ExpiryProfile.SicknessLevel;
+		ExpiredDopaminePenalty = ContentDef->ExpiryProfile.ExpiredDopaminePenalty;
+		if (ContentDef->ExpiryProfile.ExpiryStimulusProfile.Num() > 0)
+		{
+			ExpiryStimulusProfile = ContentDef->ExpiryProfile.ExpiryStimulusProfile;
+		}
 	}
-	else if (NumOfPortions <= 0)
+
+	if (UniqueData && (!ProductDef || ProductDef->bEnableInstanceUniqueData))
 	{
-		RemainingPortions = 0;
+		QuantityLevel = FMath::Max(0.0f, UniqueData->EventData.ContentLevel);
+		RemainingPortions = (NumOfPortions > 0)
+			? FMath::Max(0, FMath::CeilToInt(QuantityLevel * static_cast<float>(NumOfPortions) - KINDA_SMALL_NUMBER))
+			: 0;
+		CurrentTemperature = UniqueData->ContinuousData.Temperature;
+		bIsGrabbable = UniqueData->EventData.bIsGrabbable;
+		const double RefWorldSec = (CurrentWorldSeconds > 0.0) ? CurrentWorldSeconds : UniqueData->ContinuousData.LastUpdatedTime;
+		AgeMinutes = FMath::Max(0.0f, static_cast<float>((RefWorldSec - UniqueData->EventData.ContentCreationTime) / 60.0));
 	}
-	QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
-	CurrentTemperature = Record.PackedRuntimeData.Temperature;
-	bIsGrabbable = Record.PackedRuntimeData.bIsGrabbable;
+	else
+	{
+		RemainingPortions = Record.PackedRuntimeData.RemainingPortions;
+		if (NumOfPortions <= 0)
+		{
+			RemainingPortions = 0;
+		}
+		QuantityLevel = (NumOfPortions > 0) ? static_cast<float>(RemainingPortions) / static_cast<float>(NumOfPortions) : 0.0f;
+		CurrentTemperature = Record.PackedRuntimeData.Temperature;
+		bIsGrabbable = Record.PackedRuntimeData.bIsGrabbable;
+		AgeMinutes = FMath::Max(0.0f, static_cast<float>(Record.PackedRuntimeData.LastUpdatedMinute - Record.PackedRuntimeData.CreationMinute));
+	}
+
 	SimulationState = ConvertPropStateToPhysicsState(Record.State);
-	AgeMinutes = FMath::Max(0.0f, static_cast<float>(Record.PackedRuntimeData.LastUpdatedMinute - Record.PackedRuntimeData.CreationMinute));
+}
+
+// -----------------------------------------------------------------------------
+// FPropContinuousSyncItem & FPropEventSyncDelta NetSerialize
+// -----------------------------------------------------------------------------
+bool FPropContinuousSyncItem::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+{
+	Ar << ISID;
+	Ar << Temperature;
+	Ar << RelativeTimeOffset;
+	Ar << SealedPressure;
+
+	uint8 HasStrengthBit = bHasThermalStrengthUpdate ? 1 : 0;
+	Ar.SerializeBits(&HasStrengthBit, 1);
+	bHasThermalStrengthUpdate = (HasStrengthBit != 0);
+
+	if (bHasThermalStrengthUpdate)
+	{
+		Ar << ThermalStrength;
+	}
+
+	bOutSuccess = true;
+	return true;
+}
+
+bool FPropEventSyncDelta::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+{
+	Ar << ISID;
+	Ar << EventSequence;
+	Ar << DirtyMask;
+	Ar << ExtendedDirtyMask;
+	if (ExtendedDirtyMask & EPropExtendedEventMask::Clean) Ar << bClean;
+	if (ExtendedDirtyMask & EPropExtendedEventMask::ContentCreationTime) Ar << ContentCreationTime;
+	if (ExtendedDirtyMask & EPropExtendedEventMask::AttachedCap) Ar << AttachedCapISID;
+	if (ExtendedDirtyMask & EPropExtendedEventMask::AttachedBottle) Ar << AttachedBottleISID;
+
+	if (HasFlag(EPropEventDirtyMask::ContentLevel))
+	{
+		Ar << ContentLevel;
+	}
+	if (HasFlag(EPropEventDirtyMask::ContentID))
+	{
+		Ar << ContentID;
+	}
+	if (HasFlag(EPropEventDirtyMask::Strength))
+	{
+		Ar << Strength;
+	}
+	if (HasFlag(EPropEventDirtyMask::CapSealed))
+	{
+		Ar << CapSealed;
+	}
+	if (HasFlag(EPropEventDirtyMask::CreationTime))
+	{
+		Ar << CreationTime;
+	}
+	if (HasFlag(EPropEventDirtyMask::Grabbable))
+	{
+		uint8 GrabBit = bIsGrabbable ? 1 : 0;
+		Ar.SerializeBits(&GrabBit, 1);
+		bIsGrabbable = (GrabBit != 0);
+	}
+	if (HasFlag(EPropEventDirtyMask::CapType))
+	{
+		Ar << CapType;
+	}
+	if (HasFlag(EPropEventDirtyMask::ProductID))
+	{
+		Ar << NewProductID;
+	}
+
+	bOutSuccess = true;
+	return true;
 }
 
 // -----------------------------------------------------------------------------

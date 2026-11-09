@@ -7,6 +7,8 @@
 
 class AActivePropActor;
 class UASMComponent;
+class USharedTeamWalletComponent;
+class UShopCheckoutComponent;
 class UPropBatchUpdateComponent;
 class UInteractablePropSenseSightComponent;
 class UInteractableISMComponent;
@@ -42,6 +44,59 @@ class MARRYBYMIDNIGHT_API APropManager : public AActor
 
 public:
 	APropManager();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prop Manager|Database")
+	TMap<int32,FPropContentDefinition> ContentDefinitions;
+	UPROPERTY(Transient) TMap<int32,FPropInstanceUniqueData> UniqueDataByISID;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category="Prop Manager|Time")
+	double WorldElapsedSeconds = 0.0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	TObjectPtr<USharedTeamWalletComponent> SharedWallet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	TObjectPtr<UShopCheckoutComponent> ShopCheckout;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad")
+	bool bEnableAutosave = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad", meta = (ClampMin = "1"))
+	float AutosaveIntervalSeconds = 60.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad")
+	FString AutosaveSlot = TEXT("ShopAutosave");
+
+	UPROPERTY(BlueprintReadOnly, Category = "SaveLoad")
+	bool bLastAutosaveSucceeded = false;
+
+	FTimerHandle AutosaveTimerHandle;
+	void PerformAutosave();
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Prop Manager|Database")
+	bool RegisterContentDefinition(const FPropContentDefinition& Definition);
+	const FPropContentDefinition* FindContentDefinition(int32 ContentID) const;
+	FPropInstanceUniqueData* FindUniqueData(int32 InISID);
+	const FPropInstanceUniqueData* FindUniqueData(int32 InISID) const;
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Prop Manager|Replication")
+	bool SubmitInstanceEventUpdate(int32 InISID, const FPropEventSyncDelta& Delta);
+	bool SubmitAtomicInstanceEventUpdates(const TArray<FPropEventSyncDelta>& Deltas);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Shop|Filling")
+	FGuid BeginLiquidTransfer(int32 SourceISID, int32 TargetISID);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Shop|Filling")
+	float TransferLiquid(FGuid SessionID, float RequestedPortions);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Shop|Filling")
+	void EndLiquidTransfer(FGuid SessionID);
+	void CancelLiquidTransfers();
+	struct FFillSession { int32 SourceISID = 0; int32 TargetISID = 0; int32 ContentID = 0; };
+	TMap<FGuid, FFillSession> FillSessions;
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Prop Manager|Product Conversion")
+	bool ChangePropProductWithMode(int32 InISID, int32 NewProductID, EPropProductResetMode ResetMode);
+	UFUNCTION(NetMulticast, Reliable) void Multicast_RegisterContentDefinition(const FPropContentDefinition& Definition);
+	UFUNCTION(NetMulticast, Reliable) void Multicast_RegisterProductDefinition(const FPropProductDefinition& Definition);
+	UFUNCTION(NetMulticast, Reliable) void Multicast_SyncEventDeltaBatch(double EventTime, const TArray<FPropEventSyncDelta>& Deltas);
+	UFUNCTION(NetMulticast, Unreliable) void Multicast_SyncContinuousBatch(double BaseWorldSeconds, const TArray<FPropContinuousSyncItem>& Items);
+	void RefreshUniqueRepresentation(int32 InISID, uint8 DirtyMask = 0xFF);
+
 
 	/** Static helper to obtain the active Prop Manager in the world */
 	UFUNCTION(BlueprintPure, Category = "Prop Manager", meta = (WorldContext = "WorldContextObject"))
@@ -198,7 +253,7 @@ public:
 
 	/** Save schema version (Section 30) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Manager|SaveLoad")
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 3;
 
 	/** Current level initialization and synchronization state (Section 59) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Prop Manager|Loading")

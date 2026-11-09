@@ -27,6 +27,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnActivePropBeforeReturnToRest, A
  * As an ASM, it represents the active physical form of a permanent logical prop identity (ISID) during
  * physics simulation, grabbing/carrying, throwing, movement, or complex interactions, and returns to the
  * actor pool at ResetTransform when demoted back to an ISM.
+ *
+ * Zero-Copy Category 1 / Sparse Category 2 Architecture:
+ * - Category 1 (Shared Data): All product-wide immutable data is read from FPropProductDefinition via
+ *   CachedFallbackProductDef. It is NEVER copied per-instance; getters always read from the definition.
+ * - Category 2 (Unique Data): Per-instance mutable data is stored in LocalUniqueData (FPropInstanceUniqueData).
+ *   This contains ContinuousData (temperature, lastUpdated) and EventData (contentLevel, strength, capSealed, etc.).
+ *   Instances whose product has bEnableInstanceUniqueData=false omit this entirely (zero overhead).
  */
 UCLASS(BlueprintType, Blueprintable)
 class MARRYBYMIDNIGHT_API AActivePropActor : public AActor, public IWorldAffordanceInterface
@@ -35,6 +42,8 @@ class MARRYBYMIDNIGHT_API AActivePropActor : public AActor, public IWorldAfforda
 
 public:
 	AActivePropActor();
+	const FPropProductDefinition* ResolveProductDefinition() const;
+	const FPropContentDefinition* ResolveContentDefinition() const;
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -63,8 +72,11 @@ public:
 	void OnRep_ISID();
 
 	/** Shared Product Definition Identifier (PID) */
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "ASM Identity")
+	UPROPERTY(ReplicatedUsing = OnRep_ProductID, EditAnywhere, BlueprintReadWrite, Category = "ASM Identity")
 	int32 ProductID = 0;
+
+	UFUNCTION()
+	virtual void OnRep_ProductID();
 
 	/** Authoritative physics & interaction state of this ASM (Held, InMotion, Unsettled, Settling, AtRest) */
 	UPROPERTY(ReplicatedUsing = OnRep_State, EditAnywhere, BlueprintReadWrite, Category = "ASM State")
@@ -145,13 +157,97 @@ public:
 	TObjectPtr<APropManager> PropManagerReference = nullptr;
 
 	// ---------------------------------------------------------
-	// ASM Promotion / Demotion / Pooling Lifecycle Helpers & BP Hooks
+	// Category 2: Per-Instance Unique Data (Zero-Copy Architecture)
 	// ---------------------------------------------------------
-	/** Populates this ASM from an authoritative ISID record and Product Definition during ISM -> ASM promotion (Section 7.2) */
-	void InitializeFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef, APropManager* InManager);
+	/**
+	 * Per-instance unique runtime data for this ASM. Contains:
+	 *   ContinuousData: temperature, lastUpdatedTime (updated continuously by PropBatchUpdateComponent).
+	 *   EventData: contentLevel, strength, capSealed, capType, contentID, creationTime, etc. (updated on discrete events).
+	 * Only allocated/replicated when product's bEnableInstanceUniqueData=true.
+	 * Replicated with OnRep_LocalUniqueData so clients receive discrete event deltas.
+	 */
+	UPROPERTY(ReplicatedUsing = OnRep_LocalUniqueData, VisibleAnywhere, BlueprintReadOnly, Category = "Unique Data")
+	FPropInstanceUniqueData LocalUniqueData;
 
-	/** Reads current ASM transform, velocities, state, and runtime data back into the authoritative ISID record during ASM -> ISM demotion (Section 7.3) */
-	void WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord) const;
+	UFUNCTION()
+	virtual void OnRep_LocalUniqueData();
+
+	/** True when LocalUniqueData has been initialized from an authoritative ISID record */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Unique Data")
+	bool bHasValidUniqueData = false;
+
+	// ---------------------------------------------------------
+	// Pool Lifecycle State (not replicated — transient per-unit)
+	// ---------------------------------------------------------
+	/**
+	 * Monotonically increasing generation counter. Incremented each time this pooled unit is activated
+	 * for a new ISID. Used by timer/lambda captures to detect stale callbacks after pool reuse.
+	 * int32 (not uint32) for UHT/Blueprint safety.
+	 */
+	int32 PoolGeneration = 0;
+
+	/** True while awaiting server acknowledgement of a client-predicted ISM->ASM promotion */
+	bool bPendingServerPromoteAck = false;
+
+	/** WorldElapsedSeconds of the last authoritative discrete event applied to this actor (guards stale continuous sync packets) */
+	double LastDiscreteEventTime = 0.0;
+
+	/** Returns the current pool generation (safe for TWeakObjectPtr captures and timer lambdas) */
+	int32 GetPoolGeneration() const { return PoolGeneration; }
+
+	// ---------------------------------------------------------
+	// Cached Category 1 Product Definition (zero-copy read path)
+	// ---------------------------------------------------------
+	/**
+	 * Server/client-cached copy of the FPropProductDefinition for the current ProductID.
+	 * Populated by ApplyProductDefinition() / InitializeFromISIDRecord().
+	 * All Category 1 getters (GetDisplayName, GetMaxStrength, GetNumPortions, etc.) read from this.
+	 * NOT replicated — clients rebuild from ProductDefinitions on PropManager.
+	 */
+	FPropProductDefinition CachedFallbackProductDef;
+
+	/** True when CachedFallbackProductDef has been populated with valid data for the current ProductID */
+	bool bHasCachedFallbackProductDef = false;
+
+	// ---------------------------------------------------------
+	// ASM Promotion / Demotion / Pooling Lifecycle
+	// ---------------------------------------------------------
+	/**
+	 * 5-arg: Populates this ASM from an authoritative ISID record, its product definition, content definition,
+	 * and optional Category 2 unique data during ISM->ASM promotion (Section 7.2).
+	 * This is the canonical promotion path used by ASMComponent.
+	 */
+	void InitializeFromISIDRecord(
+		const FISIDRuntimeIndex& Record,
+		const FPropProductDefinition* ProductDef,
+		const FPropContentDefinition* ContentDef,
+		const FPropInstanceUniqueData* UniqueData,
+		APropManager* InManager);
+
+	/**
+	 * 3-arg compatibility wrapper: calls 5-arg with nullptr ContentDef and UniqueData.
+	 * Keeps existing call sites that pre-date the Category 2 architecture compiling.
+	 */
+	void InitializeFromISIDRecord(const FISIDRuntimeIndex& Record, const FPropProductDefinition* ProductDef, APropManager* InManager)
+	{
+		InitializeFromISIDRecord(Record, ProductDef, nullptr, nullptr, InManager);
+	}
+
+	/**
+	 * 2-arg: Reads current ASM transform, velocities, state, and runtime data back into the
+	 * authoritative ISID record during ASM->ISM demotion. When OutUniqueData is non-null,
+	 * also exports LocalUniqueData into it (for PropManager UniqueDataByISID persistence).
+	 */
+	void WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord, FPropInstanceUniqueData* OutUniqueData) const;
+
+	/**
+	 * 1-arg compatibility wrapper: calls 2-arg with nullptr OutUniqueData.
+	 * Keeps existing call sites compiling.
+	 */
+	void WriteToISIDRecord(FISIDRuntimeIndex& InOutRecord) const
+	{
+		WriteToISIDRecord(InOutRecord, nullptr);
+	}
 
 	/** Activates collision, physics, tick, visibility, and replication for gameplay at the specified world transform */
 	UFUNCTION(BlueprintCallable, Category = "ASM Lifecycle")
@@ -266,6 +362,91 @@ public:
 	FOnActivePropBeforeReturnToRest OnBeforeReturnToRestPosition;
 
 	// ---------------------------------------------------------
+	// New Lifecycle Virtual Methods (Category 1 & 2 Architecture)
+	// ---------------------------------------------------------
+	/**
+	 * Called once during InitializeFromISIDRecord after the product definition and content definition
+	 * are cached. Override to consume Category 1 shared data (mesh, materials, profiles, etc.).
+	 * NOT a UFUNCTION — pure C++ virtual to allow full struct reference passing.
+	 */
+	virtual void OnApplySharedDefinitions(const FPropProductDefinition* ProductDef, const FPropContentDefinition* ContentDef);
+
+	/**
+	 * Called when continuous runtime data (temperature, lastUpdatedTime) is applied or refreshed.
+	 * Also receives the current Strength to allow mesh/material updates in a single call.
+	 * Override in subclasses to react to thermal changes, GPU slot updates, etc.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Unique Data|Continuous")
+	virtual void OnApplyContinuousData(const FPropContinuousUpdateData& InContinuousData, float NewStrength = 1.0f, bool bStrengthChanged = false);
+
+	/**
+	 * Called when discrete event data (contentLevel, capSealed, capType, strength, contentID, etc.) is applied.
+	 * DirtyMask is a bitmask of EPropEventDirtyMask flags indicating which fields changed.
+	 * Only rejects out-of-order external packets (never self-rejects when &InEventData == &LocalUniqueData.EventData).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Unique Data|Event")
+	virtual void OnApplyEventData(const FPropEventUpdateData& InEventData, uint8 DirtyMask = 0xFF);
+
+	/** C++ non-UFUNCTION inline overload accepting EPropEventDirtyMask enum for type-safe call sites */
+	void OnApplyEventData(const FPropEventUpdateData& InEventData, EPropEventDirtyMask DirtyMask)
+	{
+		OnApplyEventData(InEventData, static_cast<uint8>(DirtyMask));
+	}
+
+	/**
+	 * Submits a reliable event update for this instance to PropManager and broadcasts it to clients.
+	 * Marks LocalUniqueData.EventData as dirty for the specified fields (DirtyMask).
+	 * Increments EventSequence before sending.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Unique Data|Event")
+	virtual void EmitPropEventUpdate(uint8 DirtyMask = 0xFF, uint8 ExtendedDirtyMask = 0);
+
+	/** C++ non-UFUNCTION inline overload accepting EPropEventDirtyMask enum */
+	void EmitPropEventUpdate(EPropEventDirtyMask DirtyMask)
+	{
+		EmitPropEventUpdate(static_cast<uint8>(DirtyMask));
+	}
+
+	/**
+	 * Returns true when this ASM is eligible for demotion back to ISM.
+	 * Base implementation: returns true when State == AtRest and not interpolating.
+	 * Override to add subclass-specific demotion guards (e.g. active thermal sources, foam active, etc.).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ASM Lifecycle")
+	virtual bool CanDemoteToISM() const;
+
+	/**
+	 * Returns true when this ASM currently has active thermal sources (e.g. nearby heat/cold sources)
+	 * that should prevent demotion to ISM. Base returns false.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ASM Lifecycle")
+	virtual bool HasActiveThermalSources() const;
+
+	/**
+	 * Called by PropManager immediately after ISM->ASM promotion to apply an optional initial physics impulse
+	 * (e.g. from a hit that triggered the promotion). Server-only.
+	 * @param ImpulseLocation  World-space location of the applied impulse.
+	 * @param ImpulseDirection Normalized direction (or velocity vector) of the impulse.
+	 * @param InstigatorActor  The actor responsible for the interaction event (may be nullptr).
+	 * @param InteractionEventID Unique interaction event ID allocated by PropManager (0 = no dedup).
+	 */
+	virtual void ApplyInitialImpactFromPromotion(FVector ImpulseLocation, const FVector& ImpulseDirection, AActor* InstigatorActor, int32 InteractionEventID = 0);
+
+	/**
+	 * Called by the pool manager immediately before this ASM unit is deactivated and returned to the pool.
+	 * Override to flush/cancel any timers, clear audio, stop VFX, etc.
+	 * Always call Super::OnBeforePoolDeactivate() first.
+	 */
+	virtual void OnBeforePoolDeactivate();
+
+	/**
+	 * Called by the pool manager after this ASM unit is reactivated to clear any leftover transient state
+	 * from a previous ISID occupancy (e.g. morph targets, cached material overrides, foam, foam VFX).
+	 * Always call Super::ResetTransientPoolState() first.
+	 */
+	virtual void ResetTransientPoolState();
+
+	// ---------------------------------------------------------
 	// Data Asset Configuration
 	// ---------------------------------------------------------
 	/** Primary Data Asset defining this prop's mesh, materials, temperature, portions, expiry, taste profile, and stimuli */
@@ -284,7 +465,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Prop Data", meta = (DisplayName = "On Data Asset Applied"))
 	void BP_OnDataAssetApplied(const UInteractablePropDataAsset* AppliedDataAsset);
 
-	/** Applies shared settings from an FPropProductDefinition */
+	/** Applies shared settings from an FPropProductDefinition, caches it in CachedFallbackProductDef, and calls OnApplySharedDefinitions */
 	UFUNCTION(BlueprintCallable, Category = "Prop Data")
 	void ApplyProductDefinition(const FPropProductDefinition& InProductDef);
 
@@ -293,6 +474,7 @@ public:
 	 * Updates the mesh (swapping to SkeletalMesh or StaticMesh as defined by the new product),
 	 * updates materials, updates PropManager's registry, and releases the old ISM slot to the pool.
 	 * When placed down, it will demote to ISM as the new product.
+	 * Calls ChangeProductWithMode(NewProductID, bResetRuntimeData ? EPropProductResetMode::FullReset : EPropProductResetMode::PreserveUniqueState).
 	 *
 	 * @param NewProductID The target ProductID to change to.
 	 * @param bResetRuntimeData If true, resets portions and temperature to the new product's defaults.
@@ -302,12 +484,27 @@ public:
 	bool ChangeProduct(int32 NewProductID, bool bResetRuntimeData = true);
 
 	/**
+	 * Changes this active prop's product definition with explicit reset mode control.
+	 * This is the canonical product-change path; ChangeProduct() delegates here.
+	 * @param NewProductID   The target ProductID to change to.
+	 * @param ResetMode      Controls how unique/runtime data is preserved or reset.
+	 * @return True if product changed successfully.
+	 */
+	bool ChangeProductWithMode(int32 NewProductID, EPropProductResetMode ResetMode);
+
+	/**
 	 * Changes this active prop's product to match a given Data Asset.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "ASM Product", meta = (DisplayName = "Change Product From Data Asset"))
 	bool ChangeProductFromDataAsset(UInteractablePropDataAsset* NewDataAsset, bool bResetRuntimeData = true);
 
-	/** Updates Per-Instance / Custom Primitive Data on this actor's mesh components: 0 = Portions [0..1], 1 = Frost [0..1], 2 = Expiry Age [0..1] */
+	/**
+	 * Updates Per-Instance / Custom Primitive Data on this actor's mesh components:
+	 *   Slot 0: ContentLevel       — fraction [0..1+] (unclamped to allow overfill visuals)
+	 *   Slot 1: ExpiryAge          — normalized age [0..1] (0=fresh, 1=fully expired)
+	 *   Slot 2: Temperature        — raw Celsius (drives frost/condensation/heat material effects)
+	 *   Slot 3: StrengthRatio      — structural integrity [0..1] (drives crack/deformation intensity)
+	 */
 	UFUNCTION(BlueprintCallable, Category = "ASM Visual")
 	void UpdateMaterialCustomPrimitiveData();
 
@@ -330,7 +527,7 @@ public:
 	// Interaction & Grabbability
 	// ---------------------------------------------------------
 	/** Whether this prop is currently grabbable by player or NPC (Instance editable & exposed on spawn) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Is Grabable"), Category = "Interaction")
+	UPROPERTY(ReplicatedUsing = OnRep_IsGrabbable, EditAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = "true", DisplayName = "Is Grabable"), Category = "Interaction")
 	bool bIsGrabbable = true;
 
 	UFUNCTION()
@@ -387,147 +584,301 @@ public:
 	virtual bool InteractWithNPC_Implementation(ANPCCharacter* NPCCharacter, FName ActionName = NAME_None);
 
 	// ---------------------------------------------------------
-	// Consumable & Physical Properties
-	// ---------------------------------------------------------
+	// Serialized Blueprint compatibility views. Authoritative unique state lives in LocalUniqueData.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Identity")
 	FText ItemDisplayName = FText::FromString(TEXT("Cold Drink Can"));
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Identity")
 	EConsumablePropType ConsumableType = EConsumablePropType::Drink;
 
-	/** Monetary purchase price or value */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Economy")
 	float Price = 2.0f;
 
-	// ---------------------------------------------------------
-	// Temperature Configuration & State
-	// ---------------------------------------------------------
-	/** Option to enable temperature simulation update. If false, prop only has ConsumableTemperature and does not adjust to environment */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (DisplayName = "Enable Temperature Update"))
 	bool bEnableTemperatureUpdate = false;
 
-	/** Ideal serving temperature in Celsius (e.g. 4.0 for cold soda, 65.0 for hot coffee) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
 	float ConsumableTemperature = 4.0f;
 
-	/** Current physical temperature of this prop in Celsius */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
 	float CurrentTemperature = 4.0f;
 
-	/** Called by PropManager during distributed round-robin frame loop to update temperature */
-	UFUNCTION(BlueprintCallable, Category = "Consumable|Temperature")
-	void UpdateTemperature(float AmbientTemp, float DeltaSeconds);
-
-	/** Max dopamine bonus granted per portion when consumed at ideal temperature (decreases and goes negative as temperature diverges) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature")
 	float TemperatureDopamineBonus = 0.5f;
 
-	/** Rate at which prop temperature normalizes towards ambient room temp (21°C) per second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature")
 	float ThermalExchangeRate = 0.015f;
 
-	/** Ambient room temperature in Celsius */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Temperature", meta = (Units = "Celsius"))
 	float AmbientRoomTemperature = 21.0f;
 
-	/** Legacy coldness level [0.0 = Warm / Ambient, 1.0 = Ice Cold] */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Physical", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float Coldness = 0.85f;
 
-	// ---------------------------------------------------------
-	// Expiry & Freshness Configuration & State
-	// ---------------------------------------------------------
-	/** Whether this prop has an expiry date */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry")
 	bool bHasExpiry = true;
 
-	/** Total lifetime in minutes before item expires */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry", ClampMin = "0.5"))
 	float ExpiryLifetimeMinutes = 60.0f;
 
-	/** Age of the item in minutes since spawned */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable|Freshness & Expiry")
 	float AgeMinutes = 0.0f;
 
-	/** Sickness level added to consumer when expired */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry"))
 	float SicknessLevel = 35.0f;
 
-	/** Dopamine subtracted when consumed expired (negative values represent depression) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry"))
 	float ExpiredDopaminePenalty = 25.0f;
 
-	/** Stimuli modifiers applied per portion when consumed expired (enabled when bHasExpiry is true) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness & Expiry", meta = (EditCondition = "bHasExpiry", DisplayName = "Expiry Stimulus Profile"))
 	TArray<FNPCSimulationStatModifier> ExpiryStimulusProfile;
 
-	/** Expiry freshness [1.0 = Fresh, 0.0 = Expired / Rotten] */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ExpiryFreshness = 1.0f;
 
-	/** Rate at which freshness decays per minute (legacy) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Freshness")
 	float ExpiryRatePerMinute = 0.02f;
 
-	/** Quantity level fraction [0.0 = Empty, 1.0 = Full] */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable|Quantity", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float QuantityLevel = 1.0f;
 
-	UFUNCTION()
-	void OnRep_QuantityLevel();
-
-	/** Total number of portions (sips or bites) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
 
-	/** Current remaining portions */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Quantity", meta = (ClampMin = "0"))
 	int32 RemainingPortions = 4;
 
-	UFUNCTION()
-	void OnRep_RemainingPortions();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Taste")
+	FNPCTasteVector TasteProfile;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Stimuli")
+	TArray<FNPCSimulationStatModifier> StimuliPerPortion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable")
+	bool bDestroyWhenEmpty = true;
+
+
+	void InitializeDefaultDrinkStimuli();
+	UFUNCTION() void OnRep_QuantityLevel();
+	UFUNCTION() void OnRep_RemainingPortions();
+
+	// Shared definition queries
+	// ---------------------------------------------------------
+	/** Returns the display name from the product definition */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	FText GetDisplayName() const;
+
+	/** Returns the consumable type from the product definition */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	EConsumablePropType GetConsumableType() const;
+
+	/** Returns the purchase price from the product definition */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetPrice() const;
+
+	/** Returns true if temperature simulation is enabled for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	bool GetEnableTemperatureUpdate() const;
+
+	/** Returns the ideal serving temperature in Celsius */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetConsumableTemperature() const;
+
+	/** Returns the temperature dopamine bonus for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetTemperatureDopamineBonus() const;
+
+	/** Returns the thermal exchange rate (Newton's law of cooling coefficient) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetThermalExchangeRate() const;
+
+	/** Returns true if this product has an expiry profile */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	bool GetHasExpiry() const;
+
+	/** Returns the expiry lifetime in minutes */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetExpiryLifetimeMinutes() const;
+
+	/** Returns the sickness level applied when consuming expired product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetSicknessLevel() const;
+
+	/** Returns the dopamine penalty applied when consuming expired product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetExpiredDopaminePenalty() const;
+
+	/** Returns the expiry stimulus profile (stimuli applied when consuming expired product) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	const TArray<FNPCSimulationStatModifier>& GetExpiryStimulusProfile() const;
+
+	/** Returns the total max number of portions for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	int32 GetNumPortions() const;
+
+	/** Returns the taste profile for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	const FNPCTasteVector& GetTasteProfile() const;
+
+	/** Returns the stimulus modifiers applied per portion */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	const TArray<FNPCSimulationStatModifier>& GetStimuliPerPortion() const;
+
+	/** Returns true if this product is destroyed when completely consumed */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	bool GetDestroyWhenEmpty() const;
+
+	/** Returns the maximum structural strength for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetMaxStrength() const;
+
+	/** Returns the product ID to convert to when this bottle becomes empty (0 = no conversion) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	int32 GetEmptyBottleProductID() const;
+
+	/** Returns the max overfill level (e.g. 1.7 = 170% of normal capacity) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetMaxOverfillLevel() const;
+
+	/** Returns the thermal conductivity value for this product's bottle shell */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetThermalConductivity() const;
+	float GetThermalMass() const;
+
+	/** Returns the normal (100%) fill capacity for this bottle */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetNormalCapacity() const;
+
+	/** Returns the breakage/failure strength threshold (strength at or below this causes breakage) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	float GetBreakageFailureThreshold() const;
+
+	/** Returns the bottle material type (Glass, Plastic, etc.) */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	EBottleMaterialType GetBottleMaterialType() const;
+
+	/** Returns true if Category 2 unique data is enabled for this product */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	bool GetEnableInstanceUniqueData() const;
+
+	/** Returns true if continuous update data ticks (temperature, thermal strength drain) are enabled */
+	UFUNCTION(BlueprintPure, Category = "Prop Data|Category1")
+	bool GetEnableContinuousUpdateData() const;
+
+	// ---------------------------------------------------------
+	// Zero-Copy Category 2 Getters (read LocalUniqueData)
+	// ---------------------------------------------------------
+	/** Returns the current content level [0..1+] from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetContentLevel() const;
+
+	/** Returns remaining portions calculated from ContentLevel and NumPortions */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	int32 GetRemainingPortions() const;
+
+	/** Returns the current structural strength from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetStrength() const;
+
+	/** Returns the structural strength ratio [0..1] (Strength / MaxStrength) */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetStrengthRatio() const;
+
+	/** Returns the cap sealed fraction [0..1] from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetCapSealed() const;
+
+	/** Returns the cap type byte from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	uint8 GetCapType() const;
+
+	/** Returns the content ID from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	int32 GetContentID() const;
+
+	/** Returns the creation time (WorldElapsedSeconds) from LocalUniqueData.EventData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	double GetCreationTime() const;
+
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	double GetContentCreationTime() const;
+
+	/** Returns the current temperature in Celsius from LocalUniqueData.ContinuousData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetCurrentTemperature() const;
+
+	/** Returns the last continuous update timestamp (WorldElapsedSeconds) from LocalUniqueData.ContinuousData */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	double GetLastUpdatedTime() const;
+
+	/**
+	 * Returns the normalized age [0..1] derived from CreationTime, current WorldElapsedSeconds, and ExpiryLifetimeMinutes.
+	 * 0.0 = just created, 1.0 = fully expired.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetExpiryAge() const;
+
+	/**
+	 * Returns the expiry freshness [1.0 = Fresh, 0.0 = Expired].
+	 * Inverse of GetExpiryAge(): 1.0f - GetExpiryAge().
+	 */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetExpiryFreshness() const;
+
+	/**
+	 * Returns the age of this instance in minutes since creation.
+	 * Derived from CreationTime and current WorldElapsedSeconds.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	float GetAgeMinutes() const;
+
+	/** Returns true if this prop is currently grabbable (from LocalUniqueData.EventData.bIsGrabbable) */
+	UFUNCTION(BlueprintPure, Category = "Unique Data|Category2")
+	bool GetIsGrabbableFromUniqueData() const;
+
+	// ---------------------------------------------------------
+	// Legacy Runtime Queries (delegate to new getters)
+	// ---------------------------------------------------------
 	/** Reads packed runtime defaults from PropManager / ISMComponent authoritative record */
 	UFUNCTION(BlueprintPure, Category = "Consumable|Runtime Data")
 	bool GetRuntimeDefaults(FPropPackedRuntimeData& OutData) const;
 
-	/** Gets current temperature from authoritative runtime data */
+	/** Gets current temperature from authoritative runtime data. Delegates to GetCurrentTemperature(). */
 	UFUNCTION(BlueprintPure, Category = "Consumable|Runtime Data")
 	float GetAuthoritativeTemperature() const;
 
-	/** Gets remaining portions from authoritative runtime data */
+	/** Gets remaining portions from authoritative runtime data. Delegates to GetRemainingPortions(). */
 	UFUNCTION(BlueprintPure, Category = "Consumable|Runtime Data")
 	int32 GetAuthoritativeRemainingPortions() const;
 
-	/** Multi-dimensional taste profile */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Taste")
-	FNPCTasteVector TasteProfile;
+	// ---------------------------------------------------------
+	// Consumable State Queries (delegate to new getters)
+	// ---------------------------------------------------------
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsEmpty() const;
 
-	/** Stimuli modifiers applied per portion consumed (Index stats are chooseable) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable|Stimuli")
-	TArray<FNPCSimulationStatModifier> StimuliPerPortion;
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsExpired() const;
 
-	/** Whether this prop is automatically destroyed when completely consumed */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable")
-	bool bDestroyWhenEmpty = true;
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsSpoiled() const;
+
+	UFUNCTION(BlueprintPure, Category = "Consumable")
+	bool IsAtIdealTemperature(float Tolerance = 2.0f) const;
 
 	// ---------------------------------------------------------
-	// Consumption Logic & Networking
+	// Consumable Logic & Networking
 	// ---------------------------------------------------------
+	/** Called by PropManager during distributed round-robin frame loop to update temperature */
+	UFUNCTION(BlueprintCallable, Category = "Consumable|Temperature")
+	void UpdateTemperature(float AmbientTemp, float DeltaSeconds);
+
+	/** Returns the current time in world-minutes (used for legacy expiry/age checks) */
+	UFUNCTION(BlueprintPure, Category = "Consumable|Runtime Data")
+	float GetCurrentWorldMinutes() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Consumable")
 	bool ConsumePortion(AActor* ConsumerActor, float PortionRatio = 1.0f);
-
-	UFUNCTION(BlueprintPure, Category = "Consumable")
-	bool IsEmpty() const { return RemainingPortions <= 0 || QuantityLevel <= 0.0f; }
-
-	UFUNCTION(BlueprintPure, Category = "Consumable")
-	bool IsExpired() const { return bHasExpiry && (AgeMinutes >= ExpiryLifetimeMinutes); }
-
-	UFUNCTION(BlueprintPure, Category = "Consumable")
-	bool IsSpoiled() const { return IsExpired() || ExpiryFreshness <= 0.25f; }
-
-	UFUNCTION(BlueprintPure, Category = "Consumable")
-	bool IsAtIdealTemperature(float Tolerance = 2.0f) const { return FMath::Abs(CurrentTemperature - ConsumableTemperature) <= Tolerance; }
 
 	UFUNCTION(Server, Reliable, WithValidation, Category = "Consumable|Network")
 	void Server_ConsumePortion(AActor* ConsumerActor, float PortionRatio = 1.0f);
@@ -549,7 +900,5 @@ protected:
 	void HandlePhysicsSimStateChanged(EPhysicsSimulationState NewSimState, EPhysicsSimulationState PrevSimState);
 
 private:
-	void InitializeDefaultDrinkStimuli();
 	bool bHasNotifiedBeforeReturnToRest = false;
 };
-

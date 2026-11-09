@@ -40,7 +40,7 @@ public:
 
 	/** Maximum number of ASM actors allowed in the world/pool (default: 500) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ASM Component|Pool Scaling", meta = (ClampMin = "1", ClampMax = "5000"))
-	int32 MaxASMCount = 500;
+	int32 MaxASMCount = 500; // Soft ceiling; grows in ExpandBatchSize increments on exhaustion.
 
 	/** Pool utilization threshold (0.0 - 1.0) at which more ASM actors are automatically spawned (default: 0.90 = 90% full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ASM Component|Pool Scaling", meta = (ClampMin = "0.50", ClampMax = "1.0"))
@@ -268,6 +268,12 @@ public:
 		EPropState NewState,
 		bool bPoolActor,
 		bool bWriteBackTransform);
+
+	/** Swaps an active ASM actor's physical class to match a converted ProductID while preserving ISID & transform */
+	bool SwapActiveActorClass(
+		FISIDRuntimeIndex& Record,
+		const FPropProductDefinition* NewProductDef,
+		AActivePropActor* ReservedActor = nullptr);
 
 	/** Returns all active ASMs to the pool and resets active ISID bindings for level reload */
 	UFUNCTION(BlueprintCallable, Category = "ASM Component|Representation")

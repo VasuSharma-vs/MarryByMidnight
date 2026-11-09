@@ -27,11 +27,17 @@ void UStaticMeshPhysicsSimulationComponent::BeginPlay()
 	{
 		// Store initial default collision profile on BeginPlay
 		DefaultCollisionProfile = TargetMesh->GetCollisionProfileName();
+		if (DefaultCollisionProfile.IsNone() || DefaultCollisionProfile == FName(TEXT("NoCollision")))
+		{
+			DefaultCollisionProfile = FName(TEXT("BlockAllDynamic"));
+			TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
+		}
+		TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		TargetMesh->SetNotifyRigidBodyCollision(true);
 
 		// Bind hit events so colliding with objects knocks this prop into Unsettled state
 		if (bUnsettleOnHit)
 		{
-			TargetMesh->SetNotifyRigidBodyCollision(true);
 			TargetMesh->OnComponentHit.AddDynamic(this, &UStaticMeshPhysicsSimulationComponent::OnTargetMeshHit);
 		}
 	}
@@ -111,6 +117,14 @@ bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearToler
 {
 	if (AActor* OwnerActor = GetOwner())
 	{
+		if (const AActivePropActor* Prop = Cast<AActivePropActor>(OwnerActor))
+		{
+			if (!Prop->CanDemoteToISM())
+			{
+				return false;
+			}
+		}
+
 		if (URocketProjectileComponent* RocketComp = OwnerActor->FindComponentByClass<URocketProjectileComponent>())
 		{
 			if (RocketComp->IsActive() &&
@@ -268,6 +282,8 @@ void UStaticMeshPhysicsSimulationComponent::OnRep_IsInMotion()
 	{
 		TargetMesh->SetSimulatePhysics(true);
 		TargetMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		TargetMesh->SetNotifyRigidBodyCollision(true);
 	}
 }
 
@@ -625,6 +641,8 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			{
 				TargetMesh->SetCollisionProfileName(DefaultCollisionProfile);
 			}
+			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			TargetMesh->SetNotifyRigidBodyCollision(true);
 		}
 		SetGrabbableInternal(true);
 		if (bCanModifyReplication)
@@ -650,6 +668,8 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			{
 				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			}
+			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			TargetMesh->SetNotifyRigidBodyCollision(true);
 			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
 			if (!TargetMesh->IsSimulatingPhysics())
 			{
@@ -672,6 +692,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			TargetMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			TargetMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 			TargetMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		}
 		SetGrabbableInternal(false);
 		if (bCanModifyReplication)
@@ -698,6 +719,8 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			{
 				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			}
+			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			TargetMesh->SetNotifyRigidBodyCollision(true);
 			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
 			if (!TargetMesh->IsSimulatingPhysics())
 			{
@@ -738,6 +761,8 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			{
 				TargetMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			}
+			TargetMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			TargetMesh->SetNotifyRigidBodyCollision(true);
 			TargetMesh->BodyInstance.SetMaxDepenetrationVelocity(80.0f);
 			if (!TargetMesh->IsSimulatingPhysics())
 			{

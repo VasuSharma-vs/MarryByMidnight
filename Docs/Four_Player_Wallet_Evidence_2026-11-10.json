@@ -1,0 +1,174 @@
+{
+  "level": "/Game/ColaShopTests/WalletReplication",
+  "players": 4,
+  "mode": "listen server, one process",
+  "initialExpected": {
+    "balanceCents": 525,
+    "revision": 1
+  },
+  "afterExpected": {
+    "balanceCents": 650,
+    "revision": 2
+  },
+  "initial": [
+    {
+      "world": 0,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 525,
+          "revision": 1
+        }
+      }
+    },
+    {
+      "world": 1,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 0,
+          "revision": 0
+        }
+      }
+    },
+    {
+      "world": 2,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 0,
+          "revision": 0
+        }
+      }
+    },
+    {
+      "world": 3,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 0,
+          "revision": 0
+        }
+      }
+    }
+  ],
+  "after": [
+    {
+      "world": 0,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 650,
+          "revision": 2
+        }
+      }
+    },
+    {
+      "world": 1,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 650,
+          "revision": 2
+        }
+      }
+    },
+    {
+      "world": 2,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 650,
+          "revision": 2
+        }
+      }
+    },
+    {
+      "world": 3,
+      "value": {
+        "LocalWalletSnapshot": {
+          "balanceCents": 650,
+          "revision": 2
+        }
+      }
+    }
+  ],
+  "gameStateViews": [
+    {
+      "world": 0,
+      "value": {
+        "SharedTeamWallet": 6.5,
+        "PlayerArray": [
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_0_WalletReplication.WalletReplication:PersistentLevel.PlayerState_0"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_0_WalletReplication.WalletReplication:PersistentLevel.PlayerState_1"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_0_WalletReplication.WalletReplication:PersistentLevel.PlayerState_2"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_0_WalletReplication.WalletReplication:PersistentLevel.PlayerState_3"
+          }
+        ]
+      }
+    },
+    {
+      "world": 1,
+      "value": {
+        "SharedTeamWallet": 6.5,
+        "PlayerArray": [
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_1_WalletReplication.WalletReplication:PersistentLevel.PlayerState_0"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_1_WalletReplication.WalletReplication:PersistentLevel.PlayerState_1"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_1_WalletReplication.WalletReplication:PersistentLevel.PlayerState_2"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_1_WalletReplication.WalletReplication:PersistentLevel.PlayerState_3"
+          }
+        ]
+      }
+    },
+    {
+      "world": 2,
+      "value": {
+        "SharedTeamWallet": 6.5,
+        "PlayerArray": [
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_2_WalletReplication.WalletReplication:PersistentLevel.PlayerState_0"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_2_WalletReplication.WalletReplication:PersistentLevel.PlayerState_1"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_2_WalletReplication.WalletReplication:PersistentLevel.PlayerState_2"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_2_WalletReplication.WalletReplication:PersistentLevel.PlayerState_3"
+          }
+        ]
+      }
+    },
+    {
+      "world": 3,
+      "value": {
+        "SharedTeamWallet": 6.5,
+        "PlayerArray": [
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_3_WalletReplication.WalletReplication:PersistentLevel.PlayerState_0"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_3_WalletReplication.WalletReplication:PersistentLevel.PlayerState_1"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_3_WalletReplication.WalletReplication:PersistentLevel.PlayerState_2"
+          },
+          {
+            "refPath": "/Game/ColaShopTests/UEDPIE_3_WalletReplication.WalletReplication:PersistentLevel.PlayerState_3"
+          }
+        ]
+      }
+    }
+  ],
+  "initialPassed": false,
+  "afterPassed": true,
+  "viewsPassed": true
+}

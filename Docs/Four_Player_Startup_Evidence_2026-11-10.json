@@ -1,0 +1,111 @@
+{
+  "kind": "four-player listen-server startup smoke test",
+  "level": "/Game/FirstPerson/Lvl_FirstPerson",
+  "serverAndClients": [
+    {
+      "world": 0,
+      "manager": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"WorldElapsedSeconds\\\":22.533334508538246,\\\"SharedWallet\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.SharedTeamWallet\\\"},\\\"ShopCheckout\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.ShopCheckout\\\"},\\\"PropManagerReady\\\":true,\\\"bEnableAutosave\\\":true}\"}"
+            }
+          ]
+        }
+      },
+      "gameState": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"SharedTeamWallet\\\":0,\\\"PlayerArray\\\":[{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_0\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_1\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_2\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_0_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_3\\\"}]}\"}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "world": 1,
+      "manager": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"WorldElapsedSeconds\\\":22.60000117868185,\\\"SharedWallet\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.SharedTeamWallet\\\"},\\\"ShopCheckout\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.ShopCheckout\\\"},\\\"PropManagerReady\\\":true,\\\"bEnableAutosave\\\":true}\"}"
+            }
+          ]
+        }
+      },
+      "gameState": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"SharedTeamWallet\\\":0,\\\"PlayerArray\\\":[{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_0\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_1\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_2\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_1_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_3\\\"}]}\"}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "world": 2,
+      "manager": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"WorldElapsedSeconds\\\":22.633334513753653,\\\"SharedWallet\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.SharedTeamWallet\\\"},\\\"ShopCheckout\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.ShopCheckout\\\"},\\\"PropManagerReady\\\":true,\\\"bEnableAutosave\\\":true}\"}"
+            }
+          ]
+        }
+      },
+      "gameState": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"SharedTeamWallet\\\":0,\\\"PlayerArray\\\":[{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_0\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_1\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_2\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_2_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_3\\\"}]}\"}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "world": 3,
+      "manager": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"WorldElapsedSeconds\\\":22.666667848825455,\\\"SharedWallet\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.SharedTeamWallet\\\"},\\\"ShopCheckout\\\":{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.BP_PropManager_C_UAID_047C16E4DE30A20703_1559808736.ShopCheckout\\\"},\\\"PropManagerReady\\\":true,\\\"bEnableAutosave\\\":true}\"}"
+            }
+          ]
+        }
+      },
+      "gameState": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"returnValue\":\"{\\\"SharedTeamWallet\\\":0,\\\"PlayerArray\\\":[{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_0\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_1\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_2\\\"},{\\\"refPath\\\":\\\"/Game/FirstPerson/UEDPIE_3_Lvl_FirstPerson.Lvl_FirstPerson:PersistentLevel.PlayerState_3\\\"}]}\"}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Initial zero balance only; no nonzero wallet update verified in this run",
+    "No simultaneous checkout/fill/attachment stress testing"
+  ],
+  "autosave": "Disabled only on the transient server PIE instance before its first timer fired"
+}
