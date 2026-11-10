@@ -1,10 +1,18 @@
 # Midnight Fizz: Giant Thirst — Game Design Documentation (GDD)
 
+**Development is paused at the user's request, 10 November 2026, 23:49 IST.** Read the [latest bottle-grab checkpoint](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/PAUSE_CHECKPOINT_2026-11-10_BOTTLE_GRAB.md>) first. It records completed build 11124 integration, 29 passing tests, the unfixed G/GG bottle bug, graph snapshots and exact resume steps. Earlier resume directions and pause records are historical. Do not continue development until asked.
+
 Welcome to the central design repository for **Midnight Fizz: Giant Thirst** (Working Title / Project `MarryByMidnight`).
+
+Current review: [Development progress report — 10 November 2026](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Progress_Report_2026-11-10.md>), with a [native class and Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md>) and [audit evidence](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Audit_Evidence_2026-11-10.json>). This review distinguishes implemented code, production integration and tested behavior; earlier audit/progress documents remain historical records.
 
 This documentation suite serves as the authoritative blueprint for all gameplay systems, artistic specifications, mechanics design, item databases, and technical implementation tasks in Unreal Engine 5.
 
 ## Primary design requirements and precedence
+
+[Scanner/checkout design update](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Scanner_Checkout_Design_Update_2026-11-10.md>) records the latest approved live/saved scanning, locked invoices, post-sale expiry penalties, physical cash and rounding rules. It supersedes earlier expired-sale rejection, zero expired invoice value, and proportional overfill pricing/penalties.
+
+[Current development scope](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Current_Development_Scope.md>) records the user's exclusion of eleven legacy PSO assets. Their repair and food-container migration are deferred; older resume instructions do not override this scope.
 
 [Core Design Decisions — Update of 10 November 2026](Core_Design_Decisions_Update_2026-11-10.md) contains the latest decisions on the shared wallet, fixed pricing, refill expiry, reuse, autosaving and pool expansion. It takes precedence over conflicting earlier documents.
 

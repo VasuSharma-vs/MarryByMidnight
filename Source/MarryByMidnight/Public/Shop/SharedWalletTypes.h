@@ -65,6 +65,8 @@ public:
 	const FSharedWalletState& GetState() const { return State; }
 	FSharedWalletSaveData Export() const;
 	bool Import(const FSharedWalletSaveData& Saved);
+	/** Roll back only the most recent unpublished operation; used by atomic physical-cash conversion. */
+	bool RollbackLast(const FGuid& OperationID);
 
 private:
 	FSharedWalletState State;

@@ -1273,6 +1273,18 @@ void APropManager::InitializeLevelProps(const FString& SaveSlotName, int32 SaveU
 		SetLoadState(EPropManagerLoadState::LoadingDatabase);
 		bLoadedFromSave = LoadLevelPropDatabase(SaveSlotName, SaveUserIndex);
 	}
+	if (bLoadedFromSave)
+	{
+		// Authored source actors must not create a second inventory over the restored logical instances.
+		QueuedPlacedASMIDs.Empty();
+		for (AActivePropActor* PlacedActor : PlacedActors)
+			if (IsValid(PlacedActor) && PlacedActor->ISID <= 0 && PlacedActor->GetOwner() != this)
+			{
+				PlacedActor->DeactivateToPoolState(GetResetTransformForSlot(PlacedActor->ASMID));
+				PlacedActor->SetOwner(this);
+				if (ASMComponent) { ASMComponent->ASMActors.AddUnique(PlacedActor); ASMComponent->EmptyASMIDs.AddUnique(PlacedActor->ASMID); }
+			}
+	}
 
 	// 6. Restore or allocate fresh ISIDs for level instances
 	SetLoadState(EPropManagerLoadState::RestoringInstances);
@@ -3368,6 +3380,8 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	InActor->ISID = NewISID;
 
 	const FTransform ActorTransform = InActor->GetActorTransform();
+	const bool bAuthoredShopStock = InActor->GetOwner() != this && InActor->ActorHasTag(TEXT("ShopInitialStock"));
+	const int64 AcquisitionCost = InActor->InitialShopPurchaseCents;
 
 	FPropPackedRuntimeData Packed = InActor->PackedRuntimeData;
 	Packed.RemainingPortions = InActor->RemainingPortions;
@@ -3402,6 +3416,11 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	}
 
 	// Deactivate the placed actor and park it into the ASMComponent pool at ResetTransform
+	if (bAuthoredShopStock && ShopCheckout)
+	{
+		FShopStockEntry Existing;
+		if (!ShopCheckout->GetStockEntry(NewISID, Existing)) ShopCheckout->RegisterShopStock(NewISID, AcquisitionCost, ActorTransform);
+	}
 	InActor->DeactivateToPoolState(GetResetTransformForSlot(InActor->ASMID));
 	InActor->SetOwner(this);
 	if (ASMComponent)
@@ -7824,6 +7843,7 @@ bool APropManager::SavePropDatabase(const FString& SlotName, int32 UserIndex)
 	for (const TPair<int32, FISIDRuntimeIndex>& Pair : ISIDData)
 	{
 		FPropSerializedInstance Serialized;
+		if (ShopCheckout && !ShopCheckout->ShouldPersistInstance(Pair.Key)) continue;
 		if (SerializeInstance(Pair.Key, Serialized))
 		{
 			if (ShopCheckout && ShopCheckout->GetCanceledStockTransform(Pair.Key, Serialized.ActiveTransform)) Serialized.State = EPropState::AtRest;
@@ -7853,6 +7873,7 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 
 	if (LoadedObj->WorldSaveData.SchemaVersion != SchemaVersion || !USharedTeamWalletComponent::ValidateSaveData(LoadedObj->WorldSaveData.SharedWallet) || !UShopCheckoutComponent::ValidateSaveData(LoadedObj->WorldSaveData.ShopCheckout) || !FMath::IsFinite(LoadedObj->WorldSaveData.WorldElapsedSeconds) || LoadedObj->WorldSaveData.WorldElapsedSeconds < 0) return false;
 	if (!ValidateReleasedLiquids(LoadedObj->WorldSaveData.ReleasedLiquids, LoadedObj->WorldSaveData.WorldElapsedSeconds)) return false;
+	if (!UShopCheckoutComponent::ValidateCashWorldSaveData(LoadedObj->WorldSaveData)) return false;
 	if (ShopCheckout) ShopCheckout->CancelAllCheckouts();
 	CancelLiquidTransfers();
 	WorldSaveData = LoadedObj->WorldSaveData;
@@ -7925,12 +7946,13 @@ int32 APropManager::SaveDirtyInstances(const FString& SlotName, int32 UserIndex)
 	ProductDefinitions.GenerateValueArray(WorldSaveData.ProductDefinitions);
 	ContentDefinitions.GenerateValueArray(WorldSaveData.ContentDefinitions);
 	WorldSaveData.NextISID = NextISID;
-	WorldSaveData.SavedInstances.RemoveAll([this](const FPropSerializedInstance& Item) { return !ISIDData.Contains(Item.ISID); });
+	WorldSaveData.SavedInstances.RemoveAll([this](const FPropSerializedInstance& Item) { return !ISIDData.Contains(Item.ISID) || (ShopCheckout && !ShopCheckout->ShouldPersistInstance(Item.ISID)); });
 
 	int32 SavedCount = 0;
 	for (int32 DirtyID : DirtyISIDs)
 	{
 		FPropSerializedInstance Serialized;
+		if (ShopCheckout && !ShopCheckout->ShouldPersistInstance(DirtyID)) continue;
 		if (SerializeInstance(DirtyID, Serialized))
 		{
 			if (ShopCheckout && ShopCheckout->GetCanceledStockTransform(DirtyID, Serialized.ActiveTransform)) Serialized.State = EPropState::AtRest;
@@ -8607,6 +8629,7 @@ bool APropManager::GetPackedRuntimeData(int32 InISID, FPropPackedRuntimeData& Ou
 bool APropManager::ConsumeInstancePortion(int32 InISID, AActor* ConsumerActor, float PortionRatio)
 {
 	if (!HasAuthority() || !IsValid(ConsumerActor) || !FMath::IsFinite(PortionRatio) || PortionRatio <= 0 || PortionRatio > 1) return false;
+	if (ShopCheckout && ShopCheckout->IsReserved(InISID)) return false;
 	FISIDRuntimeIndex* R = FindISIDData(InISID);
 	FPropInstanceUniqueData* U = FindUniqueData(InISID);
 	const FPropProductDefinition* D = R ? FindProductDefinition(R->ProductID) : nullptr;

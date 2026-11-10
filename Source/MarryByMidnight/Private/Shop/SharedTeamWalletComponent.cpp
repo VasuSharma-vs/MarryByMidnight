@@ -1,6 +1,7 @@
 #include "Shop/SharedTeamWalletComponent.h"
 #include "GameFramework/Actor.h"
 #include "Net/UnrealNetwork.h"
+#include "Templates/UnrealTemplate.h"
 
 USharedTeamWalletComponent::USharedTeamWalletComponent()
 {
@@ -26,11 +27,23 @@ EWalletOperationResult USharedTeamWalletComponent::Debit(const FGuid& OperationI
 
 EWalletOperationResult USharedTeamWalletComponent::Commit(const FGuid& OperationID, int64 DeltaCents, FName Reason)
 {
+	return CommitWithResources(OperationID, DeltaCents, Reason, [] { return true; });
+}
+
+EWalletOperationResult USharedTeamWalletComponent::CommitWithResources(const FGuid& OperationID, int64 DeltaCents, FName Reason, TFunctionRef<bool()> CommitResources)
+{
 	check(IsInGameThread());
-	if (!GetOwner() || !GetOwner()->HasAuthority()) return EWalletOperationResult::NotAuthority;
+	if (!GetOwner() || !GetOwner()->HasAuthority() || GetOwner()->GetNetMode() == NM_Client) return EWalletOperationResult::NotAuthority;
+	if (bCommittingResources) return EWalletOperationResult::OperationConflict;
+	TGuardValue<bool> Guard(bCommittingResources, true);
 	const EWalletOperationResult Result = Ledger.Apply(OperationID, DeltaCents, Reason);
 	if (Result == EWalletOperationResult::Applied)
 	{
+		if (!CommitResources())
+		{
+			verify(Ledger.RollbackLast(OperationID));
+			return EWalletOperationResult::InvalidOperation;
+		}
 		ReplicatedState = Ledger.GetState();
 		OnWalletChanged.Broadcast(ReplicatedState);
 		GetOwner()->ForceNetUpdate();
@@ -54,7 +67,7 @@ bool USharedTeamWalletComponent::ValidateSaveData(const FSharedWalletSaveData& S
 bool USharedTeamWalletComponent::RestoreCommittedState(const FSharedWalletSaveData& Saved)
 {
 	check(IsInGameThread());
-	if (!GetOwner() || !GetOwner()->HasAuthority() || !Ledger.Import(Saved)) return false;
+	if (!GetOwner() || !GetOwner()->HasAuthority() || GetOwner()->GetNetMode() == NM_Client || bCommittingResources || !Ledger.Import(Saved)) return false;
 	ReplicatedState = Ledger.GetState();
 	OnWalletChanged.Broadcast(ReplicatedState);
 	GetOwner()->ForceNetUpdate();

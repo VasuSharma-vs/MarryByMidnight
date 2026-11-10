@@ -40,3 +40,11 @@ bool FSharedWalletLedger::Import(const FSharedWalletSaveData& Saved)
 	*this = MoveTemp(Candidate);
 	return true;
 }
+
+bool FSharedWalletLedger::RollbackLast(const FGuid& ID)
+{
+	if (Receipts.IsEmpty() || Receipts.Last().OperationID != ID) return false;
+	const FWalletReceipt Receipt = Receipts.Pop();
+	ReceiptIndex.Remove(ID); State.BalanceCents -= Receipt.DeltaCents; --State.Revision;
+	return true;
+}

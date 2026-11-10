@@ -1,0 +1,1397 @@
+{
+  "checkpoint": "PAUSED by explicit user instruction; do not resume without a new user request",
+  "recorded_utc": "2026-11-10T13:54:17.351491+00:00",
+  "workspace": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight",
+  "branch": "codex/shop-checkout-integration",
+  "head": "e99fdb3b9c09ed29994ac591e15429df2a124ed5",
+  "committed_or_pushed_this_checkpoint": false,
+  "latest_build": {
+    "module": "11119",
+    "result": "Succeeded",
+    "log": "Saved/Logs/ShopTerminalBuild.log",
+    "module_manifest": {
+      "BuildId": "55116800",
+      "Modules": {
+        "MarryByMidnight": "UnrealEditor-MarryByMidnight-11119.dll"
+      }
+    },
+    "tests_run_for_this_module": false
+  },
+  "tests": [
+    {
+      "label": "scanner_stage1",
+      "module": "11114",
+      "path": "Saved/Automation/ScannerCheckoutStage1Final/index.json",
+      "report_created": "2026.11.10-12.56.27",
+      "succeeded": 19,
+      "succeededWithWarnings": 1,
+      "failed": 0,
+      "notRun": 0,
+      "failures": []
+    },
+    {
+      "label": "cash_green_baseline",
+      "module": "11116",
+      "path": "Saved/Automation/PhysicalCashStage1Retry/index.json",
+      "report_created": "2026.11.10-13.38.42",
+      "succeeded": 22,
+      "succeededWithWarnings": 1,
+      "failed": 0,
+      "notRun": 0,
+      "failures": []
+    },
+    {
+      "label": "cash_extended_first",
+      "module": "11117",
+      "path": "Saved/Automation/PhysicalCashValidation/index.json",
+      "report_created": "2026.11.10-13.44.08",
+      "succeeded": 22,
+      "succeededWithWarnings": 2,
+      "failed": 1,
+      "notRun": 0,
+      "failures": [
+        {
+          "name": "MarryByMidnight.Shop.CoinPhysicalVolume",
+          "errors": [
+            "Expected 'Coin returns to preserved ISM' to be true."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "latest_executed_suite",
+      "module": "11118",
+      "path": "Saved/Automation/PhysicalCashValidationFinal/index.json",
+      "report_created": "2026.11.10-13.45.56",
+      "succeeded": 23,
+      "succeededWithWarnings": 1,
+      "failed": 1,
+      "notRun": 0,
+      "failures": [
+        {
+          "name": "MarryByMidnight.Shop.CoinPhysicalVolume",
+          "errors": [
+            "Expected 'Coin returns to preserved ISM' to be true."
+          ]
+        }
+      ]
+    }
+  ],
+  "process_stop_state": {
+    "verified_by_powershell_after_build": true,
+    "project_editor": "closed after successful authorized save-all",
+    "project_headless_tests": "none",
+    "project_build": "none",
+    "editor_restarted": false,
+    "tests_started_after_pause_request": false
+  },
+  "production_blueprints_wired": false,
+  "latest_native_terminal_ui_status": "compiles; untested; not attached to production Blueprints",
+  "backup_directory": "Saved/Checkpoints/ScannerCash_20261110_1920",
+  "source_baseline": "Saved/CheckoutBaseline_20261110_174616/Source",
+  "coin_product_assets": [
+    "Content/Props/Currency/DA_Coin_1.uasset",
+    "Content/Props/Currency/DA_Coin_2.uasset",
+    "Content/Props/Currency/DA_Coin_5.uasset",
+    "Content/Props/Currency/DA_Coin_10.uasset",
+    "Content/Props/Currency/DA_Coin_20.uasset",
+    "Content/Props/Currency/DA_Coin_50.uasset",
+    "Content/Props/Currency/DA_Coin_100.uasset"
+  ],
+  "coin_mesh_assets": [
+    "Content/Assest/meshs/Coins/SM_1DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_2DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_5DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_10DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_20DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_50DCoin.uasset",
+    "Content/Assest/meshs/Coins/SM_100DCoin.uasset"
+  ],
+  "files": [
+    {
+      "path": "Binaries/Win64/UnrealEditor.modules",
+      "bytes": 114,
+      "sha256": "b830d613225d368ce313b47bac95ba65c236c26fefe34fe19c203ae539689970"
+    },
+    {
+      "path": "Config/DefaultEditor.ini",
+      "bytes": 58483,
+      "sha256": "733f7f71b1c4264b5e61886f26a985710cf0690fd22d6d7cd611ce149bfe6c8f"
+    },
+    {
+      "path": "Config/DefaultEditorPerProjectUserSettings.ini",
+      "bytes": 129,
+      "sha256": "9f0f5787eaa0430a28d24edc004a1173130f21e4d2191e748d4e286e9cb2bf59"
+    },
+    {
+      "path": "Config/DefaultEngine.ini",
+      "bytes": 18405,
+      "sha256": "cd0ca0bc0ebe2a4d08b9e8ba197f7c28a5eb8036768eb26f5fdd0ca054c5bc4c"
+    },
+    {
+      "path": "Config/DefaultGame.ini",
+      "bytes": 353,
+      "sha256": "3b106da77205cf2813c229ce7d4f71615516ac4aae69e700c4c5e58a0d33df2d"
+    },
+    {
+      "path": "Config/DefaultInput.ini",
+      "bytes": 12321,
+      "sha256": "d8221ef954fe2d109bbf1f4996d4946bfdb52ba813dacd87aa54b254209041a2"
+    },
+    {
+      "path": "Content/__ExternalActors__/FirstPerson/Lvl_FirstPerson/7/N3/EZEBERBYOC4THBOXUXGD1X.uasset",
+      "bytes": 6237,
+      "sha256": "c1d1a7d340b9479fb0c5b846f7097ef3e2aa84f72eb4ac26778973666b18ccb1"
+    },
+    {
+      "path": "Content/AI/BasicNPC/BP_Basic_NPC.uasset",
+      "bytes": 204410,
+      "sha256": "a515f4798560334dde784656aa680feaecd302b0bd630f4a7798d4cefd8a2d10"
+    },
+    {
+      "path": "Content/AI/BasicNPC/BPC_BasicNPC.uasset",
+      "bytes": 1496546,
+      "sha256": "8a346bf82819f9cce2bd5a8e33012fbc204109e063b14baedf7060ee338cda33"
+    },
+    {
+      "path": "Content/AI/BasicNPC/TempColaShoes/BTTask_FindProduct.uasset",
+      "bytes": 58243,
+      "sha256": "eb5e7a7d23d8b89464cdbdcdbd13600b4d20469aaac49f5ccaf2897b3387a485"
+    },
+    {
+      "path": "Content/AI/BasicNPC/TempColaShoes/BTTask_GetBucket.uasset",
+      "bytes": 94785,
+      "sha256": "669da80c72c3dbfdf4bd37a328e47a737bc6e93dd4c071dcb9f77afd93d3b46c"
+    },
+    {
+      "path": "Content/AI/BasicNPC/TempColaShoes/BTTask_GetProduct.uasset",
+      "bytes": 377026,
+      "sha256": "f3bfdf1efa82c5369c15b6432bf574f07d9ea858aa76cacc3140479b50e72416"
+    },
+    {
+      "path": "Content/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine.uasset",
+      "bytes": 206407,
+      "sha256": "e0acc0b301d792e332778bc4211b4bbf113e641feb7c7907bec9bd7370984eca"
+    },
+    {
+      "path": "Content/AI/BasicNPC/TempColaShoes/BTTask_MoveToColaShop.uasset",
+      "bytes": 39368,
+      "sha256": "9c3af5855f3fd0ed4273baafc2de21380662e300d7a92e173ace71c6823c6362"
+    },
+    {
+      "path": "Content/AI/BP_NPC.uasset",
+      "bytes": 1019216,
+      "sha256": "23bad40d2c4a31915da1d645705550a4e0b0e59a3c7327b7cc746b3fdabfb7b5"
+    },
+    {
+      "path": "Content/AI/BPC_NPC.uasset",
+      "bytes": 736534,
+      "sha256": "e9ddb85fe7b45539648d94d5bc0a4af8fd92d5e618cf089925a598f52fa78f03"
+    },
+    {
+      "path": "Content/AI/NPCManager.uasset",
+      "bytes": 97306,
+      "sha256": "e866ebfc7db6120f8ae2237c478ff7509140d6224c3c45d40492a0937ccd98ad"
+    },
+    {
+      "path": "Content/AI/Tesks/BTTask_MoveToActor.uasset",
+      "bytes": 40784,
+      "sha256": "c029c536b51db502b625d3bb86d7d791ed0e8cefc68bf989bf71385c6cc041d3"
+    },
+    {
+      "path": "Content/AI/Tesks/BTTask_MoveToCheckinArea.uasset",
+      "bytes": 81516,
+      "sha256": "f0b348bb838493965b7be7c1db623697fb319bb5a0e428f7ed3c708824064d4f"
+    },
+    {
+      "path": "Content/AI/Tesks/BTTask_MoveToRandomLocation.uasset",
+      "bytes": 49271,
+      "sha256": "85fcedda19e33ed8c17e968a179fde3a342e1669d1ee80114a2c891c2f786989"
+    },
+    {
+      "path": "Content/AI/Tesks/BTTask_OnTaskSucessful.uasset",
+      "bytes": 60867,
+      "sha256": "9ec70ac909b51216bc2a7721ff6b99f9d6a98dc2cf2df82cd7ad65741520a9cc"
+    },
+    {
+      "path": "Content/AI/Tesks/BTTask_SetNPCTaskState.uasset",
+      "bytes": 34167,
+      "sha256": "e5969430b45ed10e3e8215279d322c3fd5b20c5b2dbe1c937981122b810c3eb4"
+    },
+    {
+      "path": "Content/Assest/Blueprints/BP_Cable.uasset",
+      "bytes": 994178,
+      "sha256": "723eb08bad4fc86a662d68e0d9912290216010e6a723962c332096c3e28e3bc4"
+    },
+    {
+      "path": "Content/Assest/Blueprints/BP_ChargoTruck.uasset",
+      "bytes": 148962,
+      "sha256": "e0a2f3cd4bcf8c5c924419869110a80395f8b2dcb23df093f7549e8ad455f61c"
+    },
+    {
+      "path": "Content/Assest/Blueprints/BP_Check_In_Counter.uasset",
+      "bytes": 47924,
+      "sha256": "ee6704c2ed31e8c6d84242bf2343fe1e01537e5f8874f6158ee060bbdfee99d6"
+    },
+    {
+      "path": "Content/Assest/Blueprints/BP_ColaTank.uasset",
+      "bytes": 894984,
+      "sha256": "5af67d964f467a54c35c55501155f4b21f99e0253ad3979f1f77c99585790039"
+    },
+    {
+      "path": "Content/Assest/Blueprints/PSO_BaseMesh.uasset",
+      "bytes": 417095,
+      "sha256": "ae4d8b07cc7aa9477c749d98fc529ad21e508ee3141d2a865934b0b2d1b67d3e"
+    },
+    {
+      "path": "Content/Assest/Blueprints/PSO_FoodContainer.uasset",
+      "bytes": 57509,
+      "sha256": "3a29e0d75ffdb7f7f90705862fa859d2ada2ba5c1e53d8767135796349bb3771"
+    },
+    {
+      "path": "Content/Assest/Blueprints/PSO_Stove.uasset",
+      "bytes": 113527,
+      "sha256": "ee07516065dbd2bc64c31b89bc982a8801766207fdca4d92c8c2333699ad4d65"
+    },
+    {
+      "path": "Content/Assest/Blueprints/PSO_StovePlate.uasset",
+      "bytes": 145025,
+      "sha256": "83d921d2a4801d32517083ef945af99a0f28b284fff1f1662be4acbd80f35f5a"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_100DCoin.uasset",
+      "bytes": 101510,
+      "sha256": "d43d64369554c8e0e452c8ba432781795c77ac8ec32c82a7fae1181e7cff7c38"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_10DCoin.uasset",
+      "bytes": 93988,
+      "sha256": "5ddb536aaf81cbefc743400fa412219281256c7660bdb5de70ddc8dadfdcb362"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_1DCoin.uasset",
+      "bytes": 84224,
+      "sha256": "1f7f3c753746375910d5c454562f1dc6373155f32266285f1dd1d525722f719a"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_20DCoin.uasset",
+      "bytes": 102248,
+      "sha256": "dbf3cb598e10b33a912f40e0c0886e509e4caf724e7f6958960fd73182afa8fd"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_2DCoin.uasset",
+      "bytes": 92708,
+      "sha256": "3aee8556ead2550665c5e3f1406ba7bfb19357cc3c422eda0eafdfa8d861cdc7"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_50DCoin.uasset",
+      "bytes": 101294,
+      "sha256": "d8a39571c4f38dcc6e5fea5db6bf576770f2b62f30dbc09f981b402e494366b4"
+    },
+    {
+      "path": "Content/Assest/meshs/Coins/SM_5DCoin.uasset",
+      "bytes": 91822,
+      "sha256": "cff70e5dc49d9fbb62fb84cf47ff3d54c3c543e1cc6dc0488b6801c947c47c4e"
+    },
+    {
+      "path": "Content/ColaShopTests/BP_WalletReplicationFixture.uasset",
+      "bytes": 117380,
+      "sha256": "e7fa9d0b79a0b6a8a85bb8a8c36b1d24c826a3052fba44bfd3e4fd9236a19af0"
+    },
+    {
+      "path": "Content/DirtyActors/BP_Bucket.uasset",
+      "bytes": 242037,
+      "sha256": "2a611131ee5b4679d20ac062eb88a271e7a0da9541b18304897264e5cbf3f5e4"
+    },
+    {
+      "path": "Content/DirtyActors/BP_CheckoutCounter.uasset",
+      "bytes": 115547,
+      "sha256": "9131ad409f343230eff20edcc56157f3d19013bd3ded23621806a2344c58d649"
+    },
+    {
+      "path": "Content/DirtyActors/BP_ProductSceaner.uasset",
+      "bytes": 479671,
+      "sha256": "6364e8e76ea23c500bd6e198fc6df29406035451ed4f1a80b25fca1aae162136"
+    },
+    {
+      "path": "Content/DirtyActors/WBP_AmountDisplay.uasset",
+      "bytes": 68506,
+      "sha256": "de61fe8608ff6b14c06451af494f369b6e4f233aaa5bb104d14f454e8ac966e1"
+    },
+    {
+      "path": "Content/FirstPerson/Blueprints/BP_FirstPersonCharacter.uasset",
+      "bytes": 1619534,
+      "sha256": "c3966c2e77ab9326c82630e8f6c8828e44c35687f41eb0d3967db366579452f3"
+    },
+    {
+      "path": "Content/FirstPerson/Blueprints/BP_FirstPersonPlayerController.uasset",
+      "bytes": 159207,
+      "sha256": "2e94633e85f5b1c7360ea014ef2bbf37fdae2b77c3355fcf2d996fb92d443210"
+    },
+    {
+      "path": "Content/FirstPerson/Blueprints/BP_ShopGameState.uasset",
+      "bytes": 64576,
+      "sha256": "124dbbdadaf56bbaa699d6d4cbd85513c35d428607f3b3774eb12ce652c8f205"
+    },
+    {
+      "path": "Content/LevelPrototyping/Interactable/Door/BP_DoorFrame.uasset",
+      "bytes": 447667,
+      "sha256": "ee930df7f980a6ecc69d577a348424519b7ca69bbc4192fdabdcba8a2d72250d"
+    },
+    {
+      "path": "Content/LevelPrototyping/Interactable/JumpPad/BP_JumpPad.uasset",
+      "bytes": 91805,
+      "sha256": "0bbdde05975a258d21a29f24d7d017c666afb85df1f9905bb4cc811e04c5e54a"
+    },
+    {
+      "path": "Content/Props/BP_ASM_Actor.uasset",
+      "bytes": 337876,
+      "sha256": "263817f3ea78607510168d3f373db02f07e74b5bf79a9a88e311efb95ec539a4"
+    },
+    {
+      "path": "Content/Props/BP_PropManager.uasset",
+      "bytes": 111816,
+      "sha256": "436134b1519e317232ef64ebf10ba78dbf8811093f1a86ad1704045dffa581e6"
+    },
+    {
+      "path": "Content/Props/Colas/BP_Cola.uasset",
+      "bytes": 227345,
+      "sha256": "1884aa052e85896d66aa6ddde2ae7cc78c6836e9e431967237b4fb732d28b7ee"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_1.uasset",
+      "bytes": 2209,
+      "sha256": "932559fff99185ea37f24a3f2eec8042ae94408d06137767a9864374cf1d58bd"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_10.uasset",
+      "bytes": 2216,
+      "sha256": "42f487bb83d46c0cb923a37c2b308811f234bd1d696e6bfdef1af3c38d647da6"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_100.uasset",
+      "bytes": 2223,
+      "sha256": "d84b33a392a78214a32c77a207111d875ab3aaa09c406ae58d8941bf7f9f7366"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_2.uasset",
+      "bytes": 2209,
+      "sha256": "9b5837e2f72e256eb35e41f52c0ab7c046d5308650b3d194f9e87d8acb2f2a5a"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_20.uasset",
+      "bytes": 2216,
+      "sha256": "9ba2716104ea49859dee75279b3f465b4aa13f4a807c7f96908eb75587473f52"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_5.uasset",
+      "bytes": 2209,
+      "sha256": "951ea0f8e8bdf444541e70e257b80ba4f6161f837b885881d053b39351ec03a4"
+    },
+    {
+      "path": "Content/Props/Currency/DA_Coin_50.uasset",
+      "bytes": 2216,
+      "sha256": "632ddc784bc977b04b33be328e8177efcc8eb9c2b5defaefc97c44dca892f8d9"
+    },
+    {
+      "path": "Content/Props/InstanceTestLocation.uasset",
+      "bytes": 200391,
+      "sha256": "c2de7a9cf1f933c74747ecf50b37d85928ca314da718e16d368f2ed76895830b"
+    },
+    {
+      "path": "Content/Props/NewBlueprint.uasset",
+      "bytes": 159265,
+      "sha256": "297c1a504ecc39f7c06ba11f5d54dcaae337f8b4aca794a4c494f73576484ad4"
+    },
+    {
+      "path": "Content/TextureDraw/Blueprints/BP_Canvas.uasset",
+      "bytes": 711621,
+      "sha256": "c0b54b55fa9568dfe9a4e98491f55474786eb290113b5a80dd2c4c2b81221922"
+    },
+    {
+      "path": "Content/TextureDraw/Blueprints/BP_PaintableCube.uasset",
+      "bytes": 205304,
+      "sha256": "4efd09f6911c8b364028c04bbd51c53077cc3f2586816f9c43bb5c0c5437e84b"
+    },
+    {
+      "path": "Content/widgets/Intract/WBP_Intract.uasset",
+      "bytes": 88600,
+      "sha256": "cfd852765e5b9cd0fc356b688ac56455dd2644f6a374f7e8909b419c543c320c"
+    },
+    {
+      "path": "Content/widgets/Status/WBP_StatusBar_Circular.uasset",
+      "bytes": 103096,
+      "sha256": "99ec04e22bc02a7e6973bc137744587e0cf9af451ddaad1c07d703fe9ae81a6b"
+    },
+    {
+      "path": "Content/widgets/Status/WBP_StatusBar_Circular1.uasset",
+      "bytes": 114183,
+      "sha256": "04daed1658c89b997350bce2d310db213de20067d3767a337ffea2ac450aa0e0"
+    },
+    {
+      "path": "Docs/ActivePropActor_ASM_Architecture.md",
+      "bytes": 33494,
+      "sha256": "1d7eb0054a8273ba4d6a123a799fe19634a67f53eb531143bcdf1eb437bd5841"
+    },
+    {
+      "path": "Docs/ATM_Cash_Accounting_Proposal.md",
+      "bytes": 2769,
+      "sha256": "853ed2da180ca6817cd97250557ec4779796a9918a198cbc70ccfe5fb80f3d7f"
+    },
+    {
+      "path": "Docs/Audit_Evidence_2026-11-09.json",
+      "bytes": 424894,
+      "sha256": "92603154b4d10e695a6282b60bccc73f4e4fed6b0bb2835ac0b49d7af183a93f"
+    },
+    {
+      "path": "Docs/Audit_Manifest_2026-11-09.json",
+      "bytes": 155794,
+      "sha256": "a2504edea4f0d2ae9858ab38b8739f42334a06af8d4892212308e85e0e812ae6"
+    },
+    {
+      "path": "Docs/Bottle desgin/Plastick bottel/Colossal Cola Auto Lock Cap Blueprint.png",
+      "bytes": 2334834,
+      "sha256": "f18e68e364f2c412e9abca27ba68e820594710e76f6bd6257db423b32b37de2f"
+    },
+    {
+      "path": "Docs/Bottle desgin/Plastick bottel/Colossal Cola Cap Design Sheet.png",
+      "bytes": 2388192,
+      "sha256": "45dfef4c3785d2dd675904bd83ec9b771845c645a47447ab72a95fdef551dc53"
+    },
+    {
+      "path": "Docs/Bottle desgin/Plastick bottel/Colossal Cola Steampunk Label.png",
+      "bytes": 2208435,
+      "sha256": "4585b534715f0d9852fbaf129d6794b0b9cce5d2d9d18cd38507dca229c579f9"
+    },
+    {
+      "path": "Docs/Bottle desgin/Plastick bottel/Screenshot 2026-11-10 141108.png",
+      "bytes": 39022,
+      "sha256": "b5b51cc97ba2361723cc88f71bbee4e8a4029ddcf402f1b94c6e655d218e1604"
+    },
+    {
+      "path": "Docs/Bottle desgin/Plastick bottel/Steampunk Pressure Release Cap Blueprint.png",
+      "bytes": 2272159,
+      "sha256": "2aae20552de9573bbe9d60300a89bfdea88db6f305ef691618fa8e39b240adae"
+    },
+    {
+      "path": "Docs/Bottle_Damage_Transformation_and_Fragments.md",
+      "bytes": 35641,
+      "sha256": "025d5f0c48a7a56b7ca0b6c47c14d81fe88c37973da9bfb2f0be557f2e1925ae"
+    },
+    {
+      "path": "Docs/BP_Cola_Technical_Documentation.md",
+      "bytes": 31225,
+      "sha256": "b72f3742dd16a1ab946c994e428519735e6964ee7230bf6858b02ff1c5a5f681"
+    },
+    {
+      "path": "Docs/Coin_Integration_2026-11-10.md",
+      "bytes": 4671,
+      "sha256": "f5b7a3fb975036a56234658abf0704ef1ce0b391874c0b9371d115c82b66a82c"
+    },
+    {
+      "path": "Docs/Cola_Types_and_Patrons.md",
+      "bytes": 16329,
+      "sha256": "084a9824af6bbedece9dac90e081899d41c4739ed092125f33eafd0516f7bac0"
+    },
+    {
+      "path": "Docs/Core_Design_Decisions_Update_2026-11-10.md",
+      "bytes": 3442,
+      "sha256": "15141cb4e61f39e4abecffc953e6d05ef254edd1fe7eeb128ec47226bcea8f4c"
+    },
+    {
+      "path": "Docs/Core_Design_Implementation_Alignment.md",
+      "bytes": 13521,
+      "sha256": "97647f9a0ed687b3e187c3ed6c9d72be4e989a9fa9cdd0a7aea02d28ad48e223"
+    },
+    {
+      "path": "Docs/Core_Gameplay_Design_Decisions.md",
+      "bytes": 31496,
+      "sha256": "094659a38317503ce5007189261dd20ee3dd4874029eb52dbbfb38aaa0ddfd38"
+    },
+    {
+      "path": "Docs/Current_Development_Scope.md",
+      "bytes": 1702,
+      "sha256": "bff17b11ff416b5d24b9c7bb44b8e61935c3be06ea6b08c1b8a6562283f618a3"
+    },
+    {
+      "path": "Docs/Development_Audit_Evidence_2026-11-10.json",
+      "bytes": 353209,
+      "sha256": "a2ee46ffe757de3829eb64b97694cf0502b8039ce80107e5ff1631e7b7278880"
+    },
+    {
+      "path": "Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md",
+      "bytes": 44113,
+      "sha256": "14f55ec6831ff2a54e6823940a33298d3eb6edd2be65b7fa1cc645ecfc3127f4"
+    },
+    {
+      "path": "Docs/Development_Progress_Report_2026-11-10.md",
+      "bytes": 48395,
+      "sha256": "26c496b3e5e0a455e030704e70fa0c314841454145b34078a2778e2759a8ba9c"
+    },
+    {
+      "path": "Docs/Documentation_Implementation_Audit.md",
+      "bytes": 47369,
+      "sha256": "c81f9075763919e922f866511148f72c7e38cbcce3fc48eff7dbbef6ae4d08ce"
+    },
+    {
+      "path": "Docs/Four_Player_Startup_Evidence_2026-11-10.json",
+      "bytes": 6331,
+      "sha256": "e1e11e7ce5df3686bad3e0795ebf0a9a953ea7e937ad3ac437013ebab049fcbe"
+    },
+    {
+      "path": "Docs/Four_Player_Wallet_Evidence_2026-11-10.json",
+      "bytes": 4423,
+      "sha256": "a9a50ad37f3d9f9e31d342e82280300526d5b633e41d7692a36cba35d89218fb"
+    },
+    {
+      "path": "Docs/Fragment_Actor_Integration_Proposal.md",
+      "bytes": 4508,
+      "sha256": "597d919e27e195bf11df50fe14b129b0cf9a95e5ba4dd87c72b39fbc09be728d"
+    },
+    {
+      "path": "Docs/Fragment_Validation_2026-11-10.json",
+      "bytes": 87014,
+      "sha256": "236c0a5408eb2b3d49c4762b13c365209f6bbd68286c3d0862a40d455f06c48a"
+    },
+    {
+      "path": "Docs/GDD_Master.md",
+      "bytes": 12312,
+      "sha256": "b2815c98cb3b299214db768c50a88537b61618c82d570f8ef2a76139ee782f3f"
+    },
+    {
+      "path": "Docs/Implementation_Approvals_2026-11-10.md",
+      "bytes": 3352,
+      "sha256": "91775cb95199b546142f5053026624d335bd10fa32f5ae4fea53abd787f7a630"
+    },
+    {
+      "path": "Docs/Implementation_Asset_Manifest_2026-11-10.json",
+      "bytes": 844,
+      "sha256": "c9fa07ccf17e0e29444556007838e76b71cc44936adce5b8306466004e30ef11"
+    },
+    {
+      "path": "Docs/Implementation_Change_Manifest_2026-11-10.json",
+      "bytes": 8894,
+      "sha256": "cd2acb9bc1100690275d2735935fc7b5aa86571e389c8ec8fefe9c0b2fb5c16a"
+    },
+    {
+      "path": "Docs/Implementation_Continuation_2026-11-10.md",
+      "bytes": 9035,
+      "sha256": "ddf1783d7231d983431f67b8e557c5168c0c3486348bb4540881e732c83646f8"
+    },
+    {
+      "path": "Docs/IMPLEMENTATION_HANDOFF.md",
+      "bytes": 10556,
+      "sha256": "eb560535d55b65ab86b5f081b0c30354936071073ad93762fa7550926e12ca09"
+    },
+    {
+      "path": "Docs/Implementation_Progress_2026-11-10.md",
+      "bytes": 13269,
+      "sha256": "b8e15d74a82be7985c0d1f9c11a4b190d3c4c4a1825ee5090896b963da1aa19c"
+    },
+    {
+      "path": "Docs/Implementation_Validation_2026-11-10.json",
+      "bytes": 6745,
+      "sha256": "6647cf710004b340322aeacdcb6e6a0bbf2227fe01ea0b13481dba5abe5081a6"
+    },
+    {
+      "path": "Docs/ISM_Data_Architecture.md",
+      "bytes": 44779,
+      "sha256": "a1e82a83e0c0bad25f4c61c88e02477c01b4fb5526fc967bae0dbcceb7eb5615"
+    },
+    {
+      "path": "Docs/Items_Catalog_and_Hazards.md",
+      "bytes": 11603,
+      "sha256": "07639ec72415490915aa69a49e444ff37ed25d819e8edf5e7ba18ebb09650fde"
+    },
+    {
+      "path": "Docs/Legacy_Food_Container_Repair_Proposal.md",
+      "bytes": 2042,
+      "sha256": "d2d100b670c554133198228b0ac70dc06b7ffb8aa8730a6f26f554c717d9e081"
+    },
+    {
+      "path": "Docs/Mechanics_and_Tools.md",
+      "bytes": 16528,
+      "sha256": "ab6d163b42cd23f9f5ee00d3849878210d2b79a4238d36076fdd7621d235e90b"
+    },
+    {
+      "path": "Docs/Pause_Change_Manifest_2026-11-10.json",
+      "bytes": 16841,
+      "sha256": "594b89e2425f53bc24a2cff13b075976b522a464c8f4225ddd90a4c2643a49ed"
+    },
+    {
+      "path": "Docs/PAUSE_CHECKPOINT_2026-11-10.md",
+      "bytes": 10330,
+      "sha256": "9882610c3bec069eb52725ca0043307f308cf180282c6a7c28f4a9aa3ffa018f"
+    },
+    {
+      "path": "Docs/PAUSE_CHECKPOINT_2026-11-10_SCANNER_CASH.md",
+      "bytes": 23164,
+      "sha256": "50ad1cfa00416605576b4c15d1f9dbd7a6b08755c93b64941e1291001ea10141"
+    },
+    {
+      "path": "Docs/PropManager_ISM_ASM_Architecture.md",
+      "bytes": 34887,
+      "sha256": "57414630323305f47b27839c52c04a2b0a9fc2d377de8db76621c03e22fb27cb"
+    },
+    {
+      "path": "Docs/README.md",
+      "bytes": 10510,
+      "sha256": "f762f099031da0ab570861045e4c77e5a0e8b88fed0d29e957172b92dfdff9c7"
+    },
+    {
+      "path": "Docs/Scanner_Checkout_Design_Update_2026-11-10.md",
+      "bytes": 3101,
+      "sha256": "f281d883293448bc1c359092b02395b1b01a4f0d5f94385426c219899e72f7d7"
+    },
+    {
+      "path": "Docs/Technical_Implementation_Plan.md",
+      "bytes": 19289,
+      "sha256": "7ac43688383f2ff587c7147e48cfd0974efd3c205ae91e70f6d729afe8ef7da5"
+    },
+    {
+      "path": "MarryByMidnight.uproject",
+      "bytes": 825,
+      "sha256": "f7708e58643e3f9ac770b7a9aa604c7588aa384ce7c9ac0d47a45a3a089e4d87"
+    },
+    {
+      "path": "Saved/Automation/PhysicalCashStage1Retry/index.json",
+      "bytes": 10031,
+      "sha256": "604f643fd06ce847449bf8d67bd3c9a6035020a4ed27aef762a135b1b3007a59"
+    },
+    {
+      "path": "Saved/Automation/PhysicalCashValidation/index.json",
+      "bytes": 11596,
+      "sha256": "3fe11301164b4a3c9529fe26483c79cc0e85c96ae8ebffd418a5e1d9fb72c5e9"
+    },
+    {
+      "path": "Saved/Automation/PhysicalCashValidationFinal/index.json",
+      "bytes": 11243,
+      "sha256": "9a0e29de3db5423051dc31c58c049b23f7ee8a0e4e051c313f557492458b49c4"
+    },
+    {
+      "path": "Saved/Automation/ScannerCheckoutStage1Final/index.json",
+      "bytes": 8890,
+      "sha256": "1dc284dfce691571e861a96b60e1ec96afbc7fdfa7a528e8f3b4d19246bdc3ec"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashBuild.log",
+      "bytes": 7925,
+      "sha256": "758705110d5b15b2f2e80b00b0c5b66bbfad2ac0308c017a0b2c4933fa158bee"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashBuildRetry.log",
+      "bytes": 9801,
+      "sha256": "8c3ccd16078b6b522bb86cc1be1ae6844b31274ae294480b1ffef9bbf41159f9"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashFixtureBuild.log",
+      "bytes": 9559,
+      "sha256": "4e64be0325f1d2a461249df739cfa60797dee046c4a0afbc8dbed64439da3348"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashTests.log",
+      "bytes": 306007,
+      "sha256": "492b32687c1705afa3cf0315f41993574679c7b0e75b386cc5e385d29cde6871"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashTestsRetry.log",
+      "bytes": 310974,
+      "sha256": "b43a624e0e0a951aa1ed146e91f81cfdb570867733839246b210a8b9e6df8b87"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashValidationBuild.log",
+      "bytes": 10558,
+      "sha256": "328fbeb3550aa7e39e1c987ffd329da3175037579d5c4d9e3c62628716743d37"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashValidationFinalBuild.log",
+      "bytes": 9906,
+      "sha256": "e59d6fccffd480bdbf670318ab81a8ad9a12cee5ca98e64fbafb388e2310ef18"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashValidationFinalTests.log",
+      "bytes": 313380,
+      "sha256": "3359e1eab6e4a4d3f75e89f90f1c779c735c0990b5b24115297811c6b91b5327"
+    },
+    {
+      "path": "Saved/Logs/PhysicalCashValidationTests.log",
+      "bytes": 313560,
+      "sha256": "4a666fe2b27725347f1511bec2af8cd664322e63a31361643b01eea3a34c046e"
+    },
+    {
+      "path": "Saved/Logs/ShopTerminalBuild.log",
+      "bytes": 10545,
+      "sha256": "6629d678665849a6f9f7e94bae7dd7e8f8bbbcb6bab4766ea7c324233d4dfae0"
+    },
+    {
+      "path": "Scripts/AuditProjectReadOnly.py",
+      "bytes": 5968,
+      "sha256": "5d38f944552c685a0c8d91f3bf406bdbc45742bb93d66b41964507a7ab5d1051"
+    },
+    {
+      "path": "Scripts/ConfigureBottleFragmentAssets.py",
+      "bytes": 6642,
+      "sha256": "2acf8c56414c6e20af6572222f77df2147cbf688c7dd6cf37b313ed9f9abb8a7"
+    },
+    {
+      "path": "Scripts/CreateFragmentReplicationMap.py",
+      "bytes": 1506,
+      "sha256": "4e3fc8ac1eb683803523c42e0215022422c7099917c9281d112edffd6531b520"
+    },
+    {
+      "path": "Scripts/MigrateLegacyFoodContainer.py",
+      "bytes": 6187,
+      "sha256": "690554cac74c808c64b719ee4a2eeadfd5c47a2818bebd75ed18d0028dd2c7da"
+    },
+    {
+      "path": "Scripts/ValidateFragmentMultiplayer.ps1",
+      "bytes": 7112,
+      "sha256": "0d3cb6a4b11a30517f6e3a1ec111f58759b8b68146a079b22e13ed7f58efb127"
+    },
+    {
+      "path": "Scripts/ValidateGameplayBlueprints.py",
+      "bytes": 2038,
+      "sha256": "b5810d47207721fc5ffe57147a2477edb265badcb6d52432c63f2275be4ca8ea"
+    },
+    {
+      "path": "Source/MarryByMidnight/MarryByMidnight.Build.cs",
+      "bytes": 926,
+      "sha256": "015dc8b615936be8470b45778d977f340637aacbc97ff8795c17315ed777c9d1"
+    },
+    {
+      "path": "Source/MarryByMidnight/MarryByMidnight.cpp",
+      "bytes": 244,
+      "sha256": "876adbec2be8e0c2a6fa13952a181735346d9e260bb1a585dca9140b4b25281c"
+    },
+    {
+      "path": "Source/MarryByMidnight/MarryByMidnight.h",
+      "bytes": 126,
+      "sha256": "f0bca18ab7f0c16bb22f4d9c9116b988bca3ecc94bd0d1a77224886677634dfe"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/AI/NPCAIController.cpp",
+      "bytes": 47516,
+      "sha256": "eab3e1f3ff86d139347b336c3b910d34397178d319fd3beea75f1ec784e97b7d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/BlankActor.cpp",
+      "bytes": 542,
+      "sha256": "af7b4b2e4f97ed88f99257d84b988749d06ff87c5a004c0234f9f909fdc9a52b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Characters/NPCCharacter.cpp",
+      "bytes": 28321,
+      "sha256": "29350554c082f61137b2e0e9dec847d734b6e69e851f2f0160548bd23974a298"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/ASMComponent.cpp",
+      "bytes": 43415,
+      "sha256": "fd26f0b995e42419ca9ed2884605dfa4b2f9485dc57c6342765a2279ed482c0b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
+      "bytes": 50597,
+      "sha256": "6e4eaf230c40a4dc3ff3ba8df91657830d0a317b54d8015dbd00000597712759"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/InteractablePropSenseSightComponent.cpp",
+      "bytes": 120278,
+      "sha256": "1607a695c59b2c47d513e198f97abe34bf5e689fe4c11824c2d9cc6d9f2c8aab"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/MeshFormationComponent.cpp",
+      "bytes": 61400,
+      "sha256": "6cb431e679575dc876e6940ee53a5bd2adcbbb18b098166f47c316c127eafbf3"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCAffordanceComponent.cpp",
+      "bytes": 1281,
+      "sha256": "d0f49f247a861c542ab58ca5a8502f9fb89b20da3bbfedf9ca83e08237ad29f8"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCDecisionComponent.cpp",
+      "bytes": 20529,
+      "sha256": "98fab047a4b3b95ab25ea74abc8786e2bb80a986048cf95dd10c56fe0b93f79d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCMentalStateComponent.cpp",
+      "bytes": 6537,
+      "sha256": "7607ee1c422ed28edea12410a3572fac1cb33e569a67c59d8c76a4781e709e16"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCNeedsComponent.cpp",
+      "bytes": 6661,
+      "sha256": "6d3960861309d2069cfe8e2ede770cd1e24b08d5a0fd44749fa17e541306a820"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCPersonalityComponent.cpp",
+      "bytes": 13597,
+      "sha256": "c379b781ae7eee56c2a7223c28343dcfff2161cf42bcf3f613242d8b7a91c9c9"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCPlannerComponent.cpp",
+      "bytes": 7913,
+      "sha256": "e494c28939b71ff72451a7bef41fcd3afedb18f9bdcda8a0400adfb94b0e0ec8"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCRagdollComponent.cpp",
+      "bytes": 11411,
+      "sha256": "3405afb487462d9703c5561ac419d6ea4404fd5091edc3eb6ce5a932f27f505b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCStateComponent.cpp",
+      "bytes": 9172,
+      "sha256": "9466931237320ee4eaf0fbed1f87ce29f08c4e276619d9b0af1d76f357e2e7de"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCStrategyComponent.cpp",
+      "bytes": 4719,
+      "sha256": "cf4acb281ba6788b7e30d7ac7c3e5bcdd784ec2b3d69a5e1972b05b36fb45501"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/NPCWorldModelComponent.cpp",
+      "bytes": 7521,
+      "sha256": "03a27131092eae63da44cb4e817155ef958097c281e2f508fd1ece7b2d30e8e9"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp",
+      "bytes": 23491,
+      "sha256": "4f8b8164a861e1f88318ac235c28994833a7d84c9bf5d850204fa3cd4301856e"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/RocketProjectileComponent.cpp",
+      "bytes": 189572,
+      "sha256": "41b783f7835eb0bef3e97b5e90f74921794de672c3c21f91017f8cd93f14ae47"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
+      "bytes": 24451,
+      "sha256": "6279150535a85819431bf0da01eb52af4917254e2eefebd01535a9d5880d86af"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Environment/NPCOperableObject.cpp",
+      "bytes": 14287,
+      "sha256": "1d6fc43dd65aed1921639f6b76504b102965ac2ca6376536637b707e92629218"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Environment/NPCSimulationTestZone.cpp",
+      "bytes": 11876,
+      "sha256": "9078be151fe5fcb00973293a280abd458bc352553e52ab8a64ed1f8478df5ba6"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ActivePropState.cpp",
+      "bytes": 13042,
+      "sha256": "f2cc348c322db21fed736e1606ad9b67975b87f64dd61dd5b90fc26fb66bce9a"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ColaContainment.cpp",
+      "bytes": 8975,
+      "sha256": "4d076864438bb8df71dd4e50356b6c2b514ca0995c330a2e191deade979009cc"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ColaPricingLibrary.cpp",
+      "bytes": 2365,
+      "sha256": "b18c71502469c1c155b84eb545d619bab051fe2f0a175eda6d9920c565f18751"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ColaPropActor.cpp",
+      "bytes": 20917,
+      "sha256": "9a867a60faf2222dbd8f35da49fce85b431471728f1550741d82e257b09a747d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/FragmentAssemblyDataAsset.cpp",
+      "bytes": 1842,
+      "sha256": "14e2f80cf453e6c944deb0e111577c6c2aa3300416c96d4a6f9bb4dcbe1894a5"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/FragmentDestructionActor.cpp",
+      "bytes": 6851,
+      "sha256": "bb836989922c278f6b905f2659bc1c6331895f8e4638d0e29500c9d64816ea4b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractableProp.cpp",
+      "bytes": 72012,
+      "sha256": "0d5c67632888b75b0503beeee58ad4a7fa9a0778570f83bd3577642af619dc39"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDataAsset.cpp",
+      "bytes": 2875,
+      "sha256": "7a854e8e62a16e63c68eb9450b1bfe86f5847fddd2d63819714aad2a4310365d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp",
+      "bytes": 24126,
+      "sha256": "103c69e1c230e8b56f8ec43308b54c1660529ae804c15c0d70fca459f2f32c2c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "bytes": 270440,
+      "sha256": "1b44d2394c04a090d9cbf538448bb658ed3efc0b3ee87c8f04e7180459eef97c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropFragmentLifecycle.cpp",
+      "bytes": 11082,
+      "sha256": "e816ba0b071aac6b6f2fbd651a1e5fcca3d2e5e9bf2c9493bea9c3e531ae3b9a"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropLiquidRelease.cpp",
+      "bytes": 2650,
+      "sha256": "8d08d239eccce86e5d43069778e78d5e26df8d74e1815b6865d8af94f5e7bbcd"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropLiquidTransfer.cpp",
+      "bytes": 7349,
+      "sha256": "936c99113e0da67e7bf823d47b3adaaad1dbb6ec77cd7e111b8cd77f5fe1c8d8"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropManagerState.cpp",
+      "bytes": 11513,
+      "sha256": "2b74d3c680d4f003b9a9c94fc4cd74c643f6c39d7bd7d6086b8a4b3842dae762"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/BottleFillingComponent.cpp",
+      "bytes": 2834,
+      "sha256": "776a2d86b4027a4adecdc29b09b6cea20634b346850d97a1f53d44d8cf80c23b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/SharedTeamWalletComponent.cpp",
+      "bytes": 2824,
+      "sha256": "c6d538bf40f339edfe28e9e9d447a20c009381560b905ba7818c8b9f042cf613"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/SharedWalletTypes.cpp",
+      "bytes": 2081,
+      "sha256": "bca064579dfa2d84666b8df3042de00620c7cbee98a78ad83872510248216336"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopATMComponent.cpp",
+      "bytes": 2790,
+      "sha256": "29d8f01559a0c189f76dc82bb6b0fc4c411a00d8b5ed59ae551397f369e2b8db"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopAutosave.cpp",
+      "bytes": 307,
+      "sha256": "3adf985cf8ee6b6af3f442b161ebb4b639d23f82fe03874d1a355c02c1e827fe"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopCashRegisterComponent.cpp",
+      "bytes": 4563,
+      "sha256": "7cd3155b2d6bbcd2475c90f71db17ee498e752d72f4659379790fd346b107d5d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp",
+      "bytes": 19614,
+      "sha256": "ba23a566b82aed5ec5a2a0b8eb44a0a43c2dbcccd716fb4e19c3ef8e957eda06"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopCustomerCashComponent.cpp",
+      "bytes": 3479,
+      "sha256": "7e35c8c6ddcdf7667d223ba5ce54b7b9ff5a2db75450f4fa6f4f060ad916bb5d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopInteractionLibrary.cpp",
+      "bytes": 1265,
+      "sha256": "f7adf3086636215415d47d5b30e7a407b32e990ad796e9be180e7b69e0450be8"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopPhysicalCash.cpp",
+      "bytes": 17677,
+      "sha256": "62de4eab24cd4568a76189120472eceace04d0a90be8e080aeec6d9106d09ca0"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopPlayerInteractionComponent.cpp",
+      "bytes": 7379,
+      "sha256": "a2ab9fa82129696cb9015b5e7e30c3a35f75927a4afcdffbc2b02ec5a27f73d5"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopPostSaleAdjustments.cpp",
+      "bytes": 8225,
+      "sha256": "2eb96c5b422b479081a7b04afd852153d9da5ef977eb0c18109e0fd94c0df83e"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopProductQuery.cpp",
+      "bytes": 2726,
+      "sha256": "a880d7b4b00e6f2e25da2038896bb6150ae68dbbdda046cd6a2e61e51ad82b59"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerComponent.cpp",
+      "bytes": 11505,
+      "sha256": "f7726919201d9e4a80c54090ac96a59710f1af91947b656e9a8bc008a998a635"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerVolume.cpp",
+      "bytes": 6943,
+      "sha256": "07907c5a74a843c4013a27873c8b8a146e51d80970db81a8238b4269ff8a9981"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Subsystems/NPCKnowledgeSubsystem.cpp",
+      "bytes": 7501,
+      "sha256": "c215b59d038783e34159288af44c4227d0a7b922f7e563385b217598d29e9203"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ColaPricingTests.cpp",
+      "bytes": 3352,
+      "sha256": "52fb95587b188170be8415f5fe85d10d7d8de9d9d5923290d3a5c40b1b866c3f"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ConfiguredBottleAssetTests.cpp",
+      "bytes": 3662,
+      "sha256": "ce10fff0e95857a142657667805acb2b1fb4b21d25aae7c3c97db6d4614d65d9"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/FragmentLifecycleTests.cpp",
+      "bytes": 13006,
+      "sha256": "9bc7cd69bd14fd6bcc34c59aeb8aa48e5cda37131ce278e16ef9b7d704fd3539"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/FragmentNetworkTestActor.cpp",
+      "bytes": 5614,
+      "sha256": "ee307531a57fe62be21a4d01b94156dc0faa2aef4fad083a0d6ece38154f283f"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/LiquidTransferTests.cpp",
+      "bytes": 4428,
+      "sha256": "d313acac3ebd689a69a52c280e7e979a34ffece31e37dd1b5507a72641140e80"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/PropPersistenceTests.cpp",
+      "bytes": 5189,
+      "sha256": "d8959178e0acb752c89c325f73adad39096fb936a66995cd2c3d909326d0a037"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/PropPoolTests.cpp",
+      "bytes": 2346,
+      "sha256": "7bc6ca3573f2b8035027b4e9ea884799d8ec7ed4fcf81bd6b91a721372469ccc"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/PropStateTests.cpp",
+      "bytes": 3980,
+      "sha256": "8295e4c38e01c7cec9ff9efbb12b2429f6a4c0483f6daaaa7f5f8f4182c96d32"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/SharedWalletTests.cpp",
+      "bytes": 2506,
+      "sha256": "86a05477a6bea285dfe9df91f25171381b45d48b12970e4ba39807fb49344be3"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopCashTestHelpers.h",
+      "bytes": 1450,
+      "sha256": "298620fd17202a4735e5b228595d4e168aab55f5866b14f6ccf800e6bb0f4f6c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopCheckoutTests.cpp",
+      "bytes": 6963,
+      "sha256": "4dd25cd6bbba4c741f51ee88032bcef31d47e0c3c59b5e79e8e8e2774d46bfd0"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopExpiryAdjustmentTests.cpp",
+      "bytes": 14550,
+      "sha256": "99090705ad7eb6056db732da8b96a06989cb50cda2f543cc38aaa803814c7897"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopPhysicalCashTests.cpp",
+      "bytes": 15109,
+      "sha256": "c65c16bf68e2610562b586a7d4a0d58077c58e925c31f735071cf49a98e37b65"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopPlayerInteractionTests.cpp",
+      "bytes": 4466,
+      "sha256": "9cc59d8430f52d9fc24b277ab1d362a174dc3d266184c188546975f6dc4509d6"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopProductQueryTests.cpp",
+      "bytes": 5145,
+      "sha256": "ae13f744d7900f61d6d99fe6fb7a4487729385dd397cee6374ce7b7ed0a5d2db"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopScannerTests.cpp",
+      "bytes": 6014,
+      "sha256": "84820fc9223d03f986df1f1ae4666c073f72cea4d7e2823dd1258d3f3d6c1b5b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/TexturePaintComponent.cpp",
+      "bytes": 75819,
+      "sha256": "40a477b07da2a427b3284eadb9cefc7351cf09e2daa874c4520c14f57d3c86ee"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/UI/NPCDebugWidget.cpp",
+      "bytes": 1527,
+      "sha256": "ecaafee913ae4e05a9ec18443caea4c45c4e4a7f0feebef5d486b560d676b0f4"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/UI/ShopTerminalWidget.cpp",
+      "bytes": 9954,
+      "sha256": "42140a6e1b6ebaa91ee9dc4b3341a8023f72cb7ffde46a792592e96cc8ec92e8"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/AI/NPCAIController.h",
+      "bytes": 8428,
+      "sha256": "34aa87dcb3e1afc94061b91b9fcd18efa33b225deceb4a050e3b94c65f8653a4"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/BlankActor.h",
+      "bytes": 554,
+      "sha256": "c1f3f0362cdfcc7195a332cd33eba174e11264b2a33ff9ad41fa8c699021e3a7"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Characters/NPCCharacter.h",
+      "bytes": 11431,
+      "sha256": "a66f9c74a9ff4e533e44fdd62d64fc12b13acb0ffb0e1aa256f2a84631dbbe4d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/ASMComponent.h",
+      "bytes": 16051,
+      "sha256": "815fb640b465175681dcc9cdc11f65b029ec34fa8bb0fed465afaf37d9451fca"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h",
+      "bytes": 20701,
+      "sha256": "219cec4fe78db4ed2f016d24841294dc071adf96c2b938e290f7d19a90aba931"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/InteractablePropSenseSightComponent.h",
+      "bytes": 42518,
+      "sha256": "d4b49027226867d99f0b7e0714e2bf464b79814e81e23833877e7021dd63f320"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/MeshFormationComponent.h",
+      "bytes": 41457,
+      "sha256": "3ebc857323a4b3df75cd084edbec8610290f806c9d78f54baadfe9a75344cd16"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCAffordanceComponent.h",
+      "bytes": 1891,
+      "sha256": "824e290f787737b6051d3996f078962ed88de05d3e8ee14260b3e37515ee4dcb"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCDecisionComponent.h",
+      "bytes": 4487,
+      "sha256": "0f8240d07ad73985b2c9476588e53ad006c00b066a039dbcaa1d45c584b63344"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCMentalStateComponent.h",
+      "bytes": 4095,
+      "sha256": "80bbd3950242c97a171013dd3beb2821a32e91fc6ab2e60cbf4a800977d5e991"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCNeedsComponent.h",
+      "bytes": 4331,
+      "sha256": "3a0f71cc9e9d856a2a77d06200f66749157f363cbc65faa6aa890fd4b9e78b73"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCPersonalityComponent.h",
+      "bytes": 2841,
+      "sha256": "fa3a447f3e7e63b55a83aab4542b498776ac38c0db8e3cf325aa0dd0efb81ded"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCPlannerComponent.h",
+      "bytes": 2074,
+      "sha256": "2b53dce637781aca915e0131688bb0ad0d26b10c8a5226291d8094727d88e019"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCRagdollComponent.h",
+      "bytes": 5626,
+      "sha256": "b7aa4a68f0dfc20ab4e9d51d697e34e39b504ec7579b0c9442512f9f3dc9f15b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCStateComponent.h",
+      "bytes": 4564,
+      "sha256": "9e93b6afc29522691a21d0b66a51a833e77ac95c234844be492ae5c0bf824f55"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCStrategyComponent.h",
+      "bytes": 2177,
+      "sha256": "a7ec3cc6f4ffe3827be7c592c4e817d851e9ab0393effea0f46cb62d24160b7b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/NPCWorldModelComponent.h",
+      "bytes": 3996,
+      "sha256": "f503e5df0aff5e5d334ded2d1b4b25261234c2e303b2e0de3bc551ae6030d783"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/PropBatchUpdateComponent.h",
+      "bytes": 7366,
+      "sha256": "21a7ae6a3b61ac98af8919ca806012bacca67e56c1adf047ff1feef44666c455"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h",
+      "bytes": 63694,
+      "sha256": "b38c05da5b0473f7a690adffb6326e8e2fad86e6482e6e5f2211facd4387a7e9"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Components/StaticMeshPhysicsSimulationComponent.h",
+      "bytes": 9511,
+      "sha256": "354b3763e40ffff6112792f1aef146aef3cb492f3177c8545d0516791ad3c75f"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Environment/NPCOperableObject.h",
+      "bytes": 7691,
+      "sha256": "bb34bba3fcd5bb6da1f44645168e7f7b6b3e50f03c170153d059e3fa5182d8fa"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Environment/NPCSimulationTestZone.h",
+      "bytes": 5812,
+      "sha256": "3cfc2f6b07d1fe145db5c1e60ecc355273ae79b49100b6cba24eaaa24ab1326c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Interfaces/WorldAffordanceInterface.h",
+      "bytes": 1236,
+      "sha256": "df11c2adfd811c31412844f25fa85f5c530028ae2ecf1adc8e672efe2c6c5608"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/NPCEnumsAndTypes.h",
+      "bytes": 31247,
+      "sha256": "f96ded2a6bf62487e9f141acd86f7a1da05cd165dd08b26114df5c5a295c923a"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/ColaPricingLibrary.h",
+      "bytes": 1774,
+      "sha256": "031afdf37fff4fc5d4c0caa51faae9847434f6e8cb7cc170a4f61135937e28bd"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/ColaPropActor.h",
+      "bytes": 8343,
+      "sha256": "0e06f88613e9a79eae433f47d8001463ff3b544289a12dac3b4356fe8b8c477f"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentAssemblyDataAsset.h",
+      "bytes": 1363,
+      "sha256": "cd40a35faad3379ad52b1ff870bce978e9a7a9228d58d51015f0f9c2b7009882"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "bytes": 1827,
+      "sha256": "e6b0cbe26c0eb075b7742f20a4fcbba7b914772ae03a11d0a066e336b3c3d3bd"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentTypes.h",
+      "bytes": 390,
+      "sha256": "f9309450480d76ea773b696b8b38e04d5563849daaa08bc822b974b8c9551569"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "bytes": 45021,
+      "sha256": "8a80c77bca08d8fbd5dec7a667dee99e2a959be7610a8b5bc76ffe8be3b51709"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "bytes": 16278,
+      "sha256": "92112cf0d29469f4cc0749728e9a14116edce33123edcf8e896dfa843750ddc7"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "bytes": 84810,
+      "sha256": "183fbfa9b3b08b6790e6a16d5906913205d4ac2da92530f9ac48310ca15c1286"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "bytes": 86357,
+      "sha256": "83afb82abb1f2d5c6a199ea37e94d8f190c06932d986ba2e1a9d701c329d1db4"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/LiquidReleaseTypes.h",
+      "bytes": 840,
+      "sha256": "464b727a9ae49ed5044fb5f33a50c1fdb9c1abba4df2a11a612a5505128b6639"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/BottleFillingComponent.h",
+      "bytes": 1593,
+      "sha256": "24425eb25e2d312950e4fa97e574a42614e12265dd1479145a8feab197a79687"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/SharedTeamWalletComponent.h",
+      "bytes": 2036,
+      "sha256": "1e89a3ca12959a04b297eb57f12828333c7791ba20d1725520dabd26449606e4"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/SharedWalletTypes.h",
+      "bytes": 1849,
+      "sha256": "39941e82b4345747a1616f1b3b6a7eb905fdad0e690cf5713ff9520ba92dac2d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopATMComponent.h",
+      "bytes": 986,
+      "sha256": "cb41a9ec5297c10ab6e2cb1d37eef8876fc7ef56d24bd45ff00277ca2e0cb9bb"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCashRegisterComponent.h",
+      "bytes": 1320,
+      "sha256": "02e4e7bb2d6d0f420190f3e70a06cac336b69e129fa0e5f8dbdfeedb81ef878e"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCashTypes.h",
+      "bytes": 2489,
+      "sha256": "fa898142052f00f0c31e42ad482cb8e533215eb7778200ce8fb8a1209353bd18"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "bytes": 7480,
+      "sha256": "250091e525716418e1e57f6af4e2d00d3de729e028896a9250a7cd449876931c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutTypes.h",
+      "bytes": 11051,
+      "sha256": "7eb6ca63134ddb62067a1a0fb6e9f82160bf8ce1cad4e8a74559a9d5a9d1d950"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCustomerCashComponent.h",
+      "bytes": 1213,
+      "sha256": "39cac2eaa857a82677648513e012b1abb5ceff94df4483baa8109f82ff7eb4a2"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopInteractionLibrary.h",
+      "bytes": 514,
+      "sha256": "fc1a4d25db96d89eb0ae7bc9c0d6e52e65f1e60f75ca21ae6151df55468d93cb"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopPlayerInteractionComponent.h",
+      "bytes": 2544,
+      "sha256": "fe57f3d4d33aeb43ec00e83658a16b02782e000829109588aa906256516ad752"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopScannerComponent.h",
+      "bytes": 3896,
+      "sha256": "cb334457fbd49a431667c917369f45a896d250a3d7836e47bab667f49c90229b"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSaveGame.h",
+      "bytes": 1009,
+      "sha256": "e5a73ee25f246395a4fb307447614de0bda70e99c7fd0fac88d3fa52c96cf93c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSubsystem.h",
+      "bytes": 3923,
+      "sha256": "2b15211c0b44e0fa3e066964841ad7b2d86f23b107c06e3d29d73b44448d416d"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Tests/FragmentNetworkTestActor.h",
+      "bytes": 2413,
+      "sha256": "3f4fa5326fdfd86f2f138770750d5be90e26ba82c886fa6cd78b0eb4d82537c7"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "bytes": 23586,
+      "sha256": "2cbb43addd3994b54d8a5e0e719b900176724adf2b08fdd94743b964c178519c"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/UI/NPCDebugWidget.h",
+      "bytes": 1641,
+      "sha256": "034df3f3682bc1be0001ea851c22d6e2a682df017b25006472fc463813f4c0a4"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/UI/ShopTerminalWidget.h",
+      "bytes": 1777,
+      "sha256": "5aaf52a6f046991e046bf828c3a18f18b0ee27b6e03db4356c8ce5b50d53cd0b"
+    },
+    {
+      "path": "Source/MarryByMidnight.Target.cs",
+      "bytes": 420,
+      "sha256": "658bb542dad42ef61681dddccbc8846ae4fe2d3e74a0ece6542faf0336a306e5"
+    },
+    {
+      "path": "Source/MarryByMidnightEditor.Target.cs",
+      "bytes": 434,
+      "sha256": "5d4b13dfa6bda78085b0c16198efb816b6f1a53022327d39f460a4e4ff330a56"
+    }
+  ]
+}

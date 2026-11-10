@@ -4,6 +4,7 @@
 #include "Props/InteractablePropManager.h"
 #include "Shop/ShopCheckoutComponent.h"
 #include "Shop/SharedTeamWalletComponent.h"
+#include "ShopCashTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopCheckoutCommitTest, "MarryByMidnight.Shop.CheckoutCommit", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -15,6 +16,7 @@ bool FShopCheckoutCommitTest::RunTest(const FString& Parameters)
 	ON_SCOPE_EXIT { World->DestroyWorld(false); };
 	APropManager* Manager = World->SpawnActor<APropManager>();
 	if (!Manager || !Manager->ShopCheckout || !Manager->SharedWallet) return false;
+	Manager->InitializePropManager();
 	FPropProductDefinition Product; Product.ProductID = 21; Product.bEnableInstanceUniqueData = true; Product.ConsumableProfile.NumOfPortions = 25;
 	Product.DefaultUniqueData.EventData.ContentID = 7;
 	Manager->ProductDefinitions.Add(21, Product);
@@ -29,15 +31,17 @@ bool FShopCheckoutCommitTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Checkout uses fixed configured quote"), Checkout->BeginCheckout(Transaction, Customer, {10001}), EShopCheckoutResult::Success);
 	TestEqual(TEXT("Server total uses actual quantity"), Checkout->ActiveCheckouts[0].TotalCents, int64(7000));
 	TestEqual(TEXT("Simultaneous checkout cannot reserve same product"), Checkout->BeginCheckout(FGuid::NewGuid(), FGuid::NewGuid(), {10001}), EShopCheckoutResult::Unavailable);
-	TestEqual(TEXT("Tender accepted outside wallet"), Checkout->ReceiveTender(Transaction, Tender, 10000), EShopCheckoutResult::Success);
-	TestEqual(TEXT("Tender retry is idempotent"), Checkout->ReceiveTender(Transaction, Tender, 10000), EShopCheckoutResult::Success);
+	TestEqual(TEXT("Amount-only tender cannot fabricate cash"), Checkout->ReceiveTender(Transaction, Tender, 10000), EShopCheckoutResult::InvalidRequest);
+	ShopCashTests::FPayment Payment(Manager, Transaction, 10000);
+	TestEqual(TEXT("Same physical tender recount is idempotent"), Payment.Recount(), EShopCheckoutResult::Success);
 	TestEqual(TEXT("Pending tender does not credit shared wallet"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(0));
 	TestEqual(TEXT("Incomplete change prevents commit"), Checkout->CompleteCheckout(Transaction), EShopCheckoutResult::IncorrectChange);
-	Checkout->ReturnChange(Transaction, FGuid::NewGuid(), 2999);
-	TestEqual(TEXT("One-cent mistake prevents completion"), Checkout->CompleteCheckout(Transaction), EShopCheckoutResult::IncorrectChange);
-	Checkout->ReturnChange(Transaction, FGuid::NewGuid(), 1);
+	Payment.AddChange(2900);
+	TestEqual(TEXT("Wrong coin change prevents completion"), Checkout->CompleteCheckout(Transaction), EShopCheckoutResult::IncorrectChange);
+	Payment.AddChange(100);
 	TestEqual(TEXT("Correct payment and change commits"), Checkout->CompleteCheckout(Transaction), EShopCheckoutResult::Success);
-	TestEqual(TEXT("Only net sale enters wallet"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(7000));
+	TestEqual(TEXT("Sale cash does not enter bank"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(0));
+	TestEqual(TEXT("Customer tender stays as physical team cash"), Checkout->GetTeamCashCents(), int64(10000));
 	TestEqual(TEXT("Commit retry cannot duplicate payment"), Checkout->CompleteCheckout(Transaction), EShopCheckoutResult::AlreadyCompleted);
 	FShopStockEntry Sold; Checkout->GetStockEntry(10001, Sold);
 	TestEqual(TEXT("Product transfers to customer once"), Sold.CustomerOwner, Customer);
@@ -58,6 +62,7 @@ bool FShopCheckoutCancelTest::RunTest(const FString& Parameters)
 	ON_SCOPE_EXIT { World->DestroyWorld(false); };
 	APropManager* Manager = World->SpawnActor<APropManager>();
 	if (!Manager) return false;
+	Manager->InitializePropManager();
 	FPropProductDefinition Product; Product.ProductID = 21; Product.bEnableInstanceUniqueData = true; Product.ConsumableProfile.NumOfPortions = 25; Product.DefaultUniqueData.EventData.ContentID = 7;
 	Manager->ProductDefinitions.Add(21, Product);
 	FPropContentDefinition Content; Content.ContentID = 7; Content.ExpiryProfile.bHasExpiry = false;
@@ -69,7 +74,7 @@ bool FShopCheckoutCancelTest::RunTest(const FString& Parameters)
 	Checkout->RegisterShopStock(10001, 200, StockTransform);
 	const FGuid Transaction = FGuid::NewGuid();
 	Checkout->BeginCheckout(Transaction, FGuid::NewGuid(), {10001});
-	Checkout->ReceiveTender(Transaction, FGuid::NewGuid(), 10000);
+	ShopCashTests::FPayment Payment(Manager, Transaction, 10000);
 	FTransform CanceledTransform;
 	TestTrue(TEXT("Pending stock has a save-time return location"), Checkout->GetCanceledStockTransform(10001, CanceledTransform));
 	TestTrue(TEXT("Return location matches original stock"), CanceledTransform.Equals(StockTransform));

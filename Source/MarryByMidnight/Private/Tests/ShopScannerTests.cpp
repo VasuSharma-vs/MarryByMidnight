@@ -5,6 +5,7 @@
 #include "Shop/ShopCheckoutComponent.h"
 #include "Shop/ShopScannerComponent.h"
 #include "Shop/SharedTeamWalletComponent.h"
+#include "ShopCashTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopScannerTest, "MarryByMidnight.Shop.ScannerLifecycle", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -16,6 +17,7 @@ bool FShopScannerTest::RunTest(const FString& Parameters)
 	ON_SCOPE_EXIT { World->DestroyWorld(false); };
 	APropManager* Manager = World->SpawnActor<APropManager>();
 	if (!Manager) return false;
+	Manager->InitializePropManager();
 	FPropProductDefinition Product; Product.ProductID = 21; Product.bEnableInstanceUniqueData = true; Product.ConsumableProfile.NumOfPortions = 25; Product.DefaultUniqueData.EventData.ContentID = 7;
 	Manager->ProductDefinitions.Add(21, Product);
 	FPropContentDefinition Content; Content.ContentID = 7; Content.BasePortionPrice = 4; Content.IdealServingTemperature = 4; Content.ExpiryProfile.bHasExpiry = false;
@@ -57,19 +59,18 @@ bool FShopScannerTest::RunTest(const FString& Parameters)
 	Scanner->BeginCheckout();
 	TestEqual(TEXT("Begin retry keeps transaction identity"), Scanner->GetScannerState().Checkout.CheckoutID, FirstID);
 	TestEqual(TEXT("Other scanner cannot reserve same stock"), Other->BeginCheckout(), EShopCheckoutResult::Unavailable);
-	Scanner->ReceiveTender(FGuid::NewGuid(), 10000);
+	ShopCashTests::FPayment FirstPayment(Manager, FirstID, 10000);
 	TestEqual(TEXT("Cancel succeeds after receiving pending tender"), Scanner->ClearCart(), EShopCheckoutResult::Success);
 	TestEqual(TEXT("Canceled tender never reaches wallet"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(0));
 	TestEqual(TEXT("Other scanner can reserve returned stock"), Other->BeginCheckout(), EShopCheckoutResult::Success);
-	const FGuid TenderID = FGuid::NewGuid();
-	Other->ReceiveTender(TenderID, 9000); Other->ReceiveTender(TenderID, 9000);
+	ShopCashTests::FPayment Payment(Manager, Other->GetScannerState().Checkout.CheckoutID, 9000); Payment.Recount();
 	TestEqual(TEXT("Cash retry is not duplicated in scanner view"), Other->GetScannerState().Checkout.TenderCents, int64(9000));
-	Other->ReturnChange(FGuid::NewGuid(), 1999);
-	TestEqual(TEXT("Scanner cannot finish with one cent incorrect change"), Other->CompleteCheckout(), EShopCheckoutResult::IncorrectChange);
-	Other->ReturnChange(FGuid::NewGuid(), 1);
+	Payment.AddChange(1900);
+	TestEqual(TEXT("Scanner cannot finish with incorrect coin change"), Other->CompleteCheckout(), EShopCheckoutResult::IncorrectChange);
+	Payment.AddChange(100);
 	TestEqual(TEXT("Scanner commits exact payment"), Other->CompleteCheckout(), EShopCheckoutResult::Success);
 	TestEqual(TEXT("Completion changes scanner phase"), Other->GetScannerState().Phase, EShopScannerPhase::Completed);
-	TestEqual(TEXT("Shared wallet receives sale once"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(7000));
+	TestEqual(TEXT("Sale does not automatically bank register cash"), Manager->SharedWallet->GetWalletState().BalanceCents, int64(0));
 	TestEqual(TEXT("Completion retry is harmless"), Other->CompleteCheckout(), EShopCheckoutResult::AlreadyCompleted);
 	Other->ClearCart();
 	TestFalse(TEXT("Next customer does not inherit completed customer's identity"), Other->GetScannerState().Checkout.CustomerID.IsValid());

@@ -1,0 +1,58 @@
+{
+  "recordedAtUtc": "2026-11-10T18:02:27.3212911Z",
+  "build": 11124,
+  "editorLoadedModule": "UnrealEditor-MarryByMidnight-11124.dll",
+  "mesh": "/Game/Assest/meshs/SM_ATM.SM_ATM",
+  "blueprint": "/Game/DirtyActors/BP_ATM.BP_ATM",
+  "map": "/Game/FirstPerson/Lvl_FirstPerson",
+  "placement": {
+    "x": 9500,
+    "y": 11330,
+    "z": 2223.125
+  },
+  "fullNativeSuite": {
+    "passed": 29,
+    "failed": 0,
+    "clean": 28,
+    "report": "Saved/Automation/ShopFull_11124/index.json",
+    "notRun": 0,
+    "warningBearing": 1
+  },
+  "authoredATMValidated": [
+    "Saved production Blueprint load and supplied mesh",
+    "Server-side tagged deposit/output discovery",
+    "Zero starting bank rejects withdrawal",
+    "Seven denominations create independently simulating physics actors",
+    "Withdrawals debit bank only after resource creation",
+    "Deposit transfers exact value and retires physical identities",
+    "Repeated volume collection cannot double-credit"
+  ],
+  "fourPlayerPIE": {
+    "actorPresentInWorlds": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "build": 11123,
+    "fullRemoteCashFlowTested": false
+  },
+  "productionShopper": {
+    "observedProductID": 2,
+    "authoredBottlesTagged": 359,
+    "observedQuantity": 1,
+    "completedSaleTested": false
+  },
+  "renderedPlayerInputTested": false,
+  "fullCheckoutLoopComplete": false,
+  "initialBankCents": 0,
+  "productionSaveSha256": "43F183F16F85592E067D5F9C5727F21B617B659CBE58823276F6DF2F1376F3DF",
+  "existingWarning": "ABP_Unarmed Get Punching State thread safety",
+  "pending": [
+    "Player-driven ATM/scanner interaction and remote RPC acceptance",
+    "Shopper pickup, queue arrival and bucket handoff end to end",
+    "Post-payment departure and compensation-aware transaction cleanup",
+    "Late joins/disconnect/save-load acceptance and profiling"
+  ],
+  "log": "Docs/Scanner_Checkout_Integration_Continuation_2026-11-10.md"
+}

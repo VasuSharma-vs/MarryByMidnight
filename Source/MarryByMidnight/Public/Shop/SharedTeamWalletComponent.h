@@ -33,12 +33,15 @@ public:
 	FSharedWalletSaveData ExportCommittedState() const;
 	bool RestoreCommittedState(const FSharedWalletSaveData& Saved);
 	static bool ValidateSaveData(const FSharedWalletSaveData& Saved);
+	/** Internal game-thread conversion boundary. Failed resources leave no bank receipt or published balance. */
+	EWalletOperationResult CommitWithResources(const FGuid& OperationID, int64 DeltaCents, FName Reason, TFunctionRef<bool()> CommitResources);
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_WalletState)
 	FSharedWalletState ReplicatedState;
 
 	FSharedWalletLedger Ledger;
+	bool bCommittingResources = false;
 	EWalletOperationResult Commit(const FGuid& OperationID, int64 DeltaCents, FName Reason);
 
 	UFUNCTION()

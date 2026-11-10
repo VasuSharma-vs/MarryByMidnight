@@ -53,9 +53,9 @@ bool FShopProductQueryTest::RunTest(const FString& Parameters)
 	Unique->EventData.ContentCreationTime = 880;
 	TestTrue(TEXT("Expired product still yields inspectable details"), Manager->GetProductScanData(10001, Scan));
 	TestTrue(TEXT("Exact expiry boundary is expired"), Scan.Price.bExpired);
-	TestEqual(TEXT("Expired product revenue is zero"), Scan.Price.SaleCents, int64(0));
+	TestEqual(TEXT("Expiry inspection retains the original invoice value"), Scan.Price.SaleCents, int64(6300));
 	TestEqual(TEXT("Expired-product compensation uses full nominal amount"), Scan.Price.CompensationCents, int64(10000));
-	TestEqual(TEXT("Checkout refuses an expired quote"), Manager->ShopCheckout->BeginCheckout(FGuid::NewGuid(), FGuid::NewGuid(), {10001}), EShopCheckoutResult::ExpiredProduct);
+	TestEqual(TEXT("Checkout permits the player's expired sale risk"), Manager->ShopCheckout->BeginCheckout(FGuid::NewGuid(), FGuid::NewGuid(), {10001}), EShopCheckoutResult::Success);
 	TestFalse(TEXT("Unknown identity fails inspection"), Manager->GetProductScanData(99999, Scan));
 	TestEqual(TEXT("Failed read clears previous identity"), Scan.ISID, 0);
 	TestFalse(TEXT("Failed read cannot retain a previously valid quote"), Scan.Price.bValid);

@@ -1,9 +1,14 @@
 #include "Shop/ShopScannerComponent.h"
 #include "Shop/ShopCheckoutComponent.h"
+#include "Shop/ShopCashRegisterComponent.h"
+#include "Shop/ShopCustomerCashComponent.h"
+#include "UObject/UObjectIterator.h"
 #include "Props/InteractablePropManager.h"
 #include "Components/PrimitiveComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Templates/UnrealTemplate.h"
+#include "Components/BoxComponent.h"
+#include "TimerManager.h"
 
 UShopScannerComponent::UShopScannerComponent()
 {
@@ -44,11 +49,22 @@ UShopCheckoutComponent* UShopScannerComponent::ResolveCheckout()
 void UShopScannerComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (IsServer()) ResolveCheckout();
+	if (IsServer())
+	{
+		ScannerState.SessionID = FGuid::NewGuid();
+		ResolveCheckout();
+		if (!ScanVolume)
+		{
+			TArray<UBoxComponent*> Boxes; GetOwner()->GetComponents(Boxes);
+			for (UBoxComponent* Box : Boxes) if (Box->GetFName() == FName(TEXT("Box")) || Box->ComponentHasTag(TEXT("ShopScannerVolume"))) { ScanVolume = Box; break; }
+		}
+		if (ScanVolume) GetWorld()->GetTimerManager().SetTimer(LiveUpdateTimer, this, &UShopScannerComponent::RefreshLiveProducts, .2f, true);
+	}
 }
 
 void UShopScannerComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
+	GetWorld()->GetTimerManager().ClearTimer(LiveUpdateTimer);
 	if (BoundCheckout.IsValid())
 	{
 		BoundCheckout->OnCheckoutsChanged.RemoveDynamic(this, &UShopScannerComponent::SynchronizeCheckout);
@@ -63,6 +79,7 @@ void UShopScannerComponent::PublishState()
 {
 	if (bNotifying) return;
 	TGuardValue<bool> Guard(bNotifying, true);
+	RebuildGroups();
 	OnScannerStateChanged.Broadcast(ScannerState);
 	if (IsServer()) GetOwner()->ForceNetUpdate();
 }
@@ -77,6 +94,7 @@ EShopCheckoutResult UShopScannerComponent::SetResult(EShopCheckoutResult Result)
 EShopCheckoutResult UShopScannerComponent::ScanProduct(int32 ISID)
 {
 	if (!IsServer()) return EShopCheckoutResult::NotAuthority;
+	if (!ScannerState.SessionID.IsValid()) ScannerState.SessionID = FGuid::NewGuid();
 	if (bNotifying || ScannerState.Phase != EShopScannerPhase::Scanning) return EShopCheckoutResult::Unavailable;
 	APropManager* CurrentManager = ResolveManager();
 	FShopProductScanData Scan;
@@ -89,20 +107,18 @@ EShopCheckoutResult UShopScannerComponent::ScanProduct(int32 ISID)
 	const FVector ScannerLocation = GetOwner()->GetActorLocation();
 	const FVector ProductLocation = CurrentManager->GetTransform(ISID).GetLocation();
 	if (ScannerLocation.ContainsNaN() || ProductLocation.ContainsNaN() || !FMath::IsFinite(MaxScanDistance) || MaxScanDistance <= 0 || FVector::DistSquared(ScannerLocation, ProductLocation) > FMath::Square(MaxScanDistance)) return SetResult(EShopCheckoutResult::Unavailable);
-	if (Scan.Price.bExpired) return SetResult(EShopCheckoutResult::ExpiredProduct);
 	UShopCheckoutComponent* Checkout = ResolveCheckout();
 	if (!Checkout || !Checkout->IsAvailableShopStock(ISID)) return SetResult(EShopCheckoutResult::Unavailable);
 	FShopCheckoutView& Cart = ScannerState.Checkout;
 	FCheckoutItemQuote* Existing = Cart.Items.FindByPredicate([ISID](const auto& Q) { return Q.ISID == ISID; });
 	if (!Existing && Cart.Items.Num() >= FMath::Clamp(MaxCartItems, 1, 64)) return SetResult(EShopCheckoutResult::Unavailable);
-	const int64 PreviousPrice = Existing ? Existing->SaleCents : 0;
-	if (Cart.TotalCents - PreviousPrice > MAX_int64 - Scan.Price.SaleCents) return SetResult(EShopCheckoutResult::InvalidRequest);
-	Cart.TotalCents = Cart.TotalCents - PreviousPrice + Scan.Price.SaleCents;
-	FCheckoutItemQuote Quote;
-	Quote.ISID = ISID; Quote.ProductID = Scan.ProductID; Quote.ContentID = Scan.ContentID;
-	Quote.EventSequence = Scan.EventSequence; Quote.SaleCents = Scan.Price.SaleCents;
+	FCheckoutItemQuote Quote = FCheckoutItemQuote::FromScan(Scan);
+	Quote.bSaved = Existing && Existing->bSaved;
+	Quote.bInScannerVolume = true;
 	if (Existing) *Existing = Quote;
 	else Cart.Items.Add(Quote);
+	LiveISIDs.Add(ISID); SuppressedISIDs.Remove(ISID);
+	UpdateCartTotal();
 	return SetResult(EShopCheckoutResult::Success);
 }
 
@@ -121,8 +137,9 @@ EShopCheckoutResult UShopScannerComponent::RemoveProduct(int32 ISID)
 	FShopCheckoutView& Cart = ScannerState.Checkout;
 	const int32 Index = Cart.Items.IndexOfByPredicate([ISID](const auto& Q) { return Q.ISID == ISID; });
 	if (Index == INDEX_NONE) return SetResult(EShopCheckoutResult::NotFound);
-	Cart.TotalCents -= Cart.Items[Index].SaleCents;
 	Cart.Items.RemoveAt(Index);
+	if (LiveISIDs.Contains(ISID)) SuppressedISIDs.Add(ISID);
+	UpdateCartTotal();
 	return SetResult(EShopCheckoutResult::Success);
 }
 
@@ -131,6 +148,7 @@ EShopCheckoutResult UShopScannerComponent::AssignCustomer(FGuid CustomerID)
 	if (!IsServer()) return EShopCheckoutResult::NotAuthority;
 	if (bNotifying || ScannerState.Phase != EShopScannerPhase::Scanning) return EShopCheckoutResult::Unavailable;
 	if (!CustomerID.IsValid()) return SetResult(EShopCheckoutResult::InvalidRequest);
+	if (!ScannerState.SessionID.IsValid()) ScannerState.SessionID = FGuid::NewGuid();
 	ScannerState.Checkout.CustomerID = CustomerID;
 	return SetResult(EShopCheckoutResult::Success);
 }
@@ -142,6 +160,7 @@ EShopCheckoutResult UShopScannerComponent::BeginCheckout()
 	if (ScannerState.Phase == EShopScannerPhase::Completed) return SetResult(EShopCheckoutResult::AlreadyCompleted);
 	if (ScannerState.Phase == EShopScannerPhase::Checkout) return SetResult(EShopCheckoutResult::Success);
 	if (!ScannerState.Checkout.CustomerID.IsValid() || ScannerState.Checkout.Items.IsEmpty()) return SetResult(EShopCheckoutResult::InvalidRequest);
+	for (const auto& Item : ScannerState.Checkout.Items) if (!Item.bAvailable) return SetResult(EShopCheckoutResult::Unavailable);
 	UShopCheckoutComponent* Checkout = ResolveCheckout();
 	if (!Checkout) return SetResult(EShopCheckoutResult::Unavailable);
 	TArray<int32> IDs;
@@ -152,6 +171,8 @@ EShopCheckoutResult UShopScannerComponent::BeginCheckout()
 	{
 		ScannerState.Phase = EShopScannerPhase::Checkout;
 		Checkout->GetCheckoutView(ID, ScannerState.Checkout);
+		for (TObjectIterator<UShopCustomerCashComponent> It; It; ++It)
+			if (It->GetWorld() == GetWorld() && It->CustomerID == ScannerState.Checkout.CustomerID) { It->PlacePayment(); break; }
 	}
 	return SetResult(Result);
 }
@@ -177,6 +198,11 @@ EShopCheckoutResult UShopScannerComponent::CompleteCheckout()
 	if (bNotifying) return EShopCheckoutResult::Unavailable;
 	if (ScannerState.Phase == EShopScannerPhase::Completed) return SetResult(EShopCheckoutResult::AlreadyCompleted);
 	if (ScannerState.Phase != EShopScannerPhase::Checkout) return SetResult(EShopCheckoutResult::InvalidRequest);
+	if (auto* Register = GetOwner()->FindComponentByClass<UShopCashRegisterComponent>())
+	{
+		const auto CashResult = Register->RefreshPayment();
+		if (CashResult != EShopCheckoutResult::Success) return SetResult(CashResult);
+	}
 	UShopCheckoutComponent* Checkout = ResolveCheckout();
 	if (!Checkout) return SetResult(EShopCheckoutResult::Unavailable);
 	const EShopCheckoutResult Result = Checkout->CompleteCheckout(ScannerState.Checkout.CheckoutID);
@@ -189,12 +215,20 @@ EShopCheckoutResult UShopScannerComponent::ClearCart()
 	if (!IsServer()) return EShopCheckoutResult::NotAuthority;
 	if (bNotifying) return EShopCheckoutResult::Unavailable;
 	const FGuid Customer = ScannerState.Phase == EShopScannerPhase::Completed ? FGuid() : ScannerState.Checkout.CustomerID;
+	if (ScannerState.Phase == EShopScannerPhase::Completed)
+	{
+		if (const UShopCheckoutComponent* Checkout = ResolveCheckout())
+			for (const auto& Case : Checkout->PendingExpiryCases)
+				if (Case.CheckoutID == ScannerState.Checkout.CheckoutID && Case.Choice == EShopCompensationChoice::Unselected) return SetResult(EShopCheckoutResult::CompensationPending);
+	}
 	if (ScannerState.Phase == EShopScannerPhase::Checkout)
 	{
 		UShopCheckoutComponent* Checkout = ResolveCheckout();
 		if (!Checkout || !Checkout->CancelCheckout(ScannerState.Checkout.CheckoutID)) return SetResult(EShopCheckoutResult::Unavailable);
 	}
 	ScannerState = FShopScannerState();
+	ScannerState.SessionID = FGuid::NewGuid();
+	SuppressedISIDs.Append(LiveISIDs);
 	ScannerState.Checkout.CustomerID = Customer;
 	return SetResult(EShopCheckoutResult::Success);
 }
@@ -207,11 +241,20 @@ void UShopScannerComponent::SynchronizeCheckout()
 	else
 	{
 		FCompletedCheckoutReceipt Receipt;
-		if (BoundCheckout->GetCompletedReceipt(ScannerState.Checkout.CheckoutID, Receipt)) ScannerState.Phase = EShopScannerPhase::Completed;
+		if (BoundCheckout->GetCompletedReceipt(ScannerState.Checkout.CheckoutID, Receipt))
+		{
+			ScannerState.Phase = EShopScannerPhase::Completed;
+			// Expiry may change while an invoice awaits payment. Display the committed per-bottle sale status.
+			ScannerState.Checkout.Items = Receipt.Items;
+			ScannerState.Checkout.TotalCents = Receipt.TotalCents;
+			ScannerState.Checkout.DetailedTotalCents = Receipt.DetailedTotalCents;
+			ScannerState.Checkout.RoundingAdjustmentCents = Receipt.RoundingAdjustmentCents;
+		}
 		else
 		{
 			const FGuid Customer = ScannerState.Checkout.CustomerID;
 			ScannerState = FShopScannerState();
+			ScannerState.SessionID = FGuid::NewGuid();
 			ScannerState.Checkout.CustomerID = Customer;
 		}
 	}

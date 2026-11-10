@@ -7,7 +7,7 @@ bool APropManager::GetProductScanData(int32 InISID, FShopProductScanData& OutDat
 	const FPropInstanceUniqueData* Unique = FindUniqueData(InISID);
 	const FPropProductDefinition* Product = Record ? FindProductDefinition(Record->ProductID) : nullptr;
 	const FPropContentDefinition* Content = Unique ? FindContentDefinition(Unique->EventData.ContentID) : nullptr;
-	if (!Record || !Unique || !Product || !Content || Unique->EventData.ContentLevel <= 0
+	if (!Record || !Unique || !Product || !Content || Unique->EventData.ContentLevel < 0
 		|| !FMath::IsFinite(WorldElapsedSeconds) || WorldElapsedSeconds < 0
 		|| !FMath::IsFinite(Unique->EventData.CreationTime) || Unique->EventData.CreationTime < 0
 		|| !FMath::IsFinite(Unique->EventData.ContentCreationTime) || Unique->EventData.ContentCreationTime < 0 || Unique->EventData.ContentCreationTime > WorldElapsedSeconds

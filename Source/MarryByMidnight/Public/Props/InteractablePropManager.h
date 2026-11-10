@@ -287,7 +287,7 @@ public:
 
 	/** Save schema version (Section 30) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Manager|SaveLoad")
-	int32 SchemaVersion = 4;
+	int32 SchemaVersion = 5;
 
 	/** Current level initialization and synchronization state (Section 59) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Prop Manager|Loading")

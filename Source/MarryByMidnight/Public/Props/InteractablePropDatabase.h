@@ -2039,7 +2039,7 @@ struct MARRYBYMIDNIGHT_API FPropWorldSaveData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
-	int32 SchemaVersion = 4;
+	int32 SchemaVersion = 5;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	double WorldElapsedSeconds = 0.0;

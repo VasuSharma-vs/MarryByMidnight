@@ -1,4 +1,24 @@
-# Implementation handoff — paused by user
+# Implementation handoff
+
+## Latest user direction — PAUSED, 10 November 2026, 23:49 IST
+
+The user requested a comprehensive checkpoint and a safe pause. **Do not resume development until asked.** Start with [the bottle-grab pause checkpoint](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/PAUSE_CHECKPOINT_2026-11-10_BOTTLE_GRAB.md>). Build 11124 passed all 29 tests; supplied ATM integration and stock/checkout wiring are saved. The new G/GG bottle release/trace-placement bug has been investigated but **not fixed**. Original Blueprints and graph snapshots are in `Saved/BottleGrabBug_20261110`; full recovery files are in `Saved/Checkpoints/BottleGrab_20261110_2349`. Changes remain uncommitted. All older direction/status below is historical where it conflicts with this checkpoint.
+
+## Historical user direction — implementation resumed after Gemini verification
+
+The user explicitly resumed Codex work. Read [the active continuation](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Scanner_Checkout_Integration_Continuation_2026-11-10.md>) before the historical pause below. Gemini's 11119 test reports were checked: all 25 tests pass, with one existing animation warning. The user confirmed a $0 starting bank and will provide dedicated ATM art; do not seed money or create substitute ATM housing. New component/Coin Blueprint integration is saved, and native stock/budget/UI changes are under build 11120. The eleven excluded PSO systems remain deferred.
+
+## Latest checkpoint — PAUSED, scanner and physical cash, 10 November 2026 evening
+
+The user explicitly requested a full checkpoint and a safe pause near their usage limit. **Do not resume development until asked.** Read [the scanner/cash pause checkpoint](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/PAUSE_CHECKPOINT_2026-11-10_SCANNER_CASH.md>) first. It supersedes the historical resume directions and stale editor/test status below.
+
+Seven supplied coin meshes and seven currency product assets are saved. Native scanner, expiry, finite cash and ATM services have been implemented, but production Blueprint/AI/stock registration and ATM placement remain unfinished. Module 11116 passed 23 tests; module 11118 passed 24 of 25 with a coin-demotion fixture failure. The latest terminal UI/adapters and final fixture correction **compiled successfully as module 11119**, but are not tested. See the checkpoint for files, approvals and resume order. Current changes are uncommitted on `codex/shop-checkout-integration`, HEAD `e99fdb3`. UE was saved and gracefully closed; it was not restarted. No project build/test/editor process remains running.
+
+## Latest user steering — 10 November 2026
+
+The user resumed work, requested the development audit, and then explicitly excluded eleven legacy PSO assets from the current game. Read [Current development scope](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Current_Development_Scope.md>) first. **Do not resume the PSO_FoodContainer migration or repairs to the excluded PSO assets.** The current priority is native scanner/checkout/wallet production integration and the active cola-shop loop. Older pause/migration instructions below are historical and superseded by this section.
+
+The completed audit also ran the native suite on module 11111: fifteen tests passed, zero failed. The known animation warning occurs outside individual test scopes. See [Development progress report](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Progress_Report_2026-11-10.md>) for the current saved-asset inventory and validation distinctions; older module/test statements below describe their original checkpoints.
 
 ## Status
 
@@ -28,7 +48,7 @@ The resumed four-player fragment harness restores the original map and captured 
 
 ## Exact next work on resume
 
-1. Only after the user resumes: finish the approved PSO_FoodContainer migration to BP_IPA_FoodContainer behavior. The user already approved modern migration; do not ask that choice again. Its twelve placed references and original Blueprint are untouched. The migration preview failed before saving. Use PAUSE_CHECKPOINT_2026-11-10.md for exact errors, files, backups and next steps. The fragment stage and strengthened four-player checks passed on 11110; latest migration additions remain unvalidated.
+1. **Deferred by the latest user scope:** PSO_FoodContainer migration and all eleven excluded PSO assets. Preserve the failed-preview/checkpoint evidence for possible future work; do not perform this migration now.
 2. Finish routing real scanning, cash/change, inventory registration and customer identities through UShopScannerComponent/UShopCheckoutComponent. Their APIs are implemented/tested, but gameplay UI/AI is not wired. The scanner's legacy GameState money writes are still present and will be overwritten by the authoritative wallet display bridge. Preserve the user's scanner graph and avoid duplicate money authorities.
 The canonical Blueprint-callable GetProductScanData query is now implemented and used by checkout and the native scanner adapter. Do not duplicate its pricing formulas or hardcode the configurable temperature range.
 3. Connect UBottleFillingComponent to the existing nozzle/tank interaction path. Server liquid-transfer APIs are implemented and tested; the actual nozzle Blueprint is not yet connected.

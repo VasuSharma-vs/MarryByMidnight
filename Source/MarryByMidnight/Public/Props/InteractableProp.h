@@ -82,6 +82,10 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_State, EditAnywhere, BlueprintReadWrite, Category = "ASM State")
 	EPropState State = EPropState::AtRest;
 
+	/** Acquisition cost for an explicitly tagged, level-authored ShopInitialStock prop. Never inferred from retail price. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "0"))
+	int64 InitialShopPurchaseCents = 0;
+
 	UFUNCTION()
 	void OnRep_State(EPropState PreviousState);
 

@@ -8,6 +8,7 @@
 class APropManager;
 class UShopCheckoutComponent;
 class UPrimitiveComponent;
+class UBoxComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShopScannerStateChanged, FShopScannerState, State);
 
@@ -25,6 +26,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scanner", meta = (ClampMin = "1", ClampMax = "64")) int32 MaxCartItems = 32;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scanner", meta = (ClampMin = "1")) float MaxScanDistance = 300;
 	UPROPERTY(BlueprintAssignable, Category = "Scanner") FOnShopScannerStateChanged OnScannerStateChanged;
+	/** Existing scanner Box component can be assigned without replacing the station's meshes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scanner") TObjectPtr<UBoxComponent> ScanVolume;
 
 	UFUNCTION(BlueprintPure, Category = "Scanner") FShopScannerState GetScannerState() const { return ScannerState; }
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult ScanProduct(int32 ISID);
@@ -36,17 +39,27 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult ReturnChange(FGuid CashOperationID, int64 AmountCents);
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult CompleteCheckout();
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult ClearCart();
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult SaveProducts();
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult SetProductInVolume(int32 ISID, bool bInside);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") void RefreshLiveProducts();
+	bool IsProductPhysicallyInside(int32 ISID) const;
+	TSet<int32> QueryVolumeISIDs() const;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_ScannerState) FShopScannerState ScannerState;
 	UPROPERTY(Transient) TWeakObjectPtr<APropManager> Manager;
 	UPROPERTY(Transient) TWeakObjectPtr<UShopCheckoutComponent> BoundCheckout;
 	bool bNotifying = false;
+	TSet<int32> LiveISIDs;
+	TSet<int32> SuppressedISIDs;
+	FTimerHandle LiveUpdateTimer;
 	bool IsServer() const;
 	APropManager* ResolveManager();
 	UShopCheckoutComponent* ResolveCheckout();
 	EShopCheckoutResult SetResult(EShopCheckoutResult Result);
 	void PublishState();
+	void RebuildGroups();
+	void UpdateCartTotal();
 	EShopCheckoutResult ApplyCash(FGuid OperationID, int64 Amount, bool bChange);
 	UFUNCTION() void SynchronizeCheckout();
 	UFUNCTION() void OnRep_ScannerState();
