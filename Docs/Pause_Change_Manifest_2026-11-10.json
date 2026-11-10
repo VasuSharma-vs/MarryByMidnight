@@ -1,0 +1,430 @@
+{
+  "status": "Paused explicitly by user",
+  "branch": "codex/shop-checkout-integration",
+  "lastFullyValidatedModule": "11110",
+  "latestCompiledModule": "11111",
+  "latestModuleFullyTested": false,
+  "foodMigrationApplied": false,
+  "files": [
+    {
+      "path": "Build/Windows/Application.ico",
+      "bytes": 246491,
+      "sha256": "C6355C7FAAE8FDD2D3C31BB6F99289A008BE99DCD3277F1DF6B6C0C62F990CF3"
+    },
+    {
+      "path": "Config/DefaultEngine.ini",
+      "bytes": 18405,
+      "sha256": "CD0CA0BC0EBE2A4D08B9E8BA197F7C28A5EB8036768EB26F5FDD0CA054C5BC4C"
+    },
+    {
+      "path": "Content/__ExternalActors__/FirstPerson/Lvl_FirstPerson/1/6Y/QQ9OVFI1MDZYB6W7CCP48C.uasset",
+      "bytes": 9859,
+      "sha256": "CCF00D25A2CA5757085E63F3FA51E05680AB5BF0D9AFD5A3325A51CE41551D1E"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_001.uasset",
+      "bytes": 2215,
+      "sha256": "B9E164DBF2CAD354395B158B75F39DD0B1B77869B6AFD69AC6B9263B43CF59B6"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_002.uasset",
+      "bytes": 2215,
+      "sha256": "3977457FCE06230F0BB54F2A0CDB7CD0EAD4DB3D0EE29389C60A8DFCA4EE4B07"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_003.uasset",
+      "bytes": 2215,
+      "sha256": "952B20FAB553CBFC0CCE8227E096BB9DA6A906082657C489DE4595A2CF66A6C6"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_004.uasset",
+      "bytes": 2215,
+      "sha256": "F2B9F9C66DC02150A56F38C0222150C4E72496D2616039F69806B96507B03A67"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_005.uasset",
+      "bytes": 2215,
+      "sha256": "EBC7050F36676238F126E16AA885D477CDF4E65A2DAF2A442B11004C95578ABF"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_006.uasset",
+      "bytes": 2215,
+      "sha256": "C559735C57F61D3835235C58A3AE1D79FF036015A13BEB8331E0D6FCB4D12BFA"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_007.uasset",
+      "bytes": 2215,
+      "sha256": "B07437B249CDD7C360CDCFD123B2DCD3CD646CDD78606170F01F15B27F180276"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_008.uasset",
+      "bytes": 2215,
+      "sha256": "45727A507D1243EBE764B8C82058BBBD281E6BD6937A84F48EEEFFA44FBF7736"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_010.uasset",
+      "bytes": 2215,
+      "sha256": "E01E2B77EA15CDFB962A4FA5B6EF1945ECBF7165F93DF69D3A70C1C7A50C352B"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_011.uasset",
+      "bytes": 2215,
+      "sha256": "082EE815DBC9ACFAC05FC17ABB50C28165C0604AD9EF48F3045E07DDDBE58515"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_09.uasset",
+      "bytes": 2207,
+      "sha256": "2F9265262E6F7FF125329E2DAAAFC1D8F4854C52DC29FE7C3328A77A43F33667"
+    },
+    {
+      "path": "Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragmentAssembly.uasset",
+      "bytes": 9229,
+      "sha256": "98805C41784DEF1DABADDDAB4DD1CD9D5E9AE479A83FBCF13A2484353965C706"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_BasicCola.uasset",
+      "bytes": 4884,
+      "sha256": "2710E8F29B1D39CAD63F421EAA65A0E1111B9A5AAD1ABB832D5FA61ACADFF123"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_Cola.uasset",
+      "bytes": 5022,
+      "sha256": "F137D0FB327B5E71688098F4CAC009375B2858C84220EE37E95C220A1B80B48E"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_EmptyBottel.uasset",
+      "bytes": 4286,
+      "sha256": "121FDEDE9756B5A5487AF85163B72C018DEB6EA8B1F18663A249C848392A24E2"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_GoodCola.uasset",
+      "bytes": 5052,
+      "sha256": "3D3BD241154E04588D24B24AE45AB2392014947E792F6EC27753C7D262DBF6EC"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_NormalCola.uasset",
+      "bytes": 4895,
+      "sha256": "BCC10DCE2ACF0E3F75970EA8394DB795C64209911E5879AFEB8C5E78148ED66B"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_SpicyCola.uasset",
+      "bytes": 5171,
+      "sha256": "F37EA83DE536F60B37988A6685D2BD676CCBB812F14F9099B429D7E2378D7FC3"
+    },
+    {
+      "path": "Content/Assest/DataAssets/DA_SweetCola.uasset",
+      "bytes": 5065,
+      "sha256": "68FBCF454846DE2525847E7D4858229E1BD0B5904A8851E140CB2CD7D0AE94B5"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/BP_bottel_Fragments_Visioul_Socase.uasset",
+      "bytes": 42700,
+      "sha256": "6840709384C5D26DC90E8C9C8860E3D0EF41DFD709458D10BE8C90C5D1DAE9BA"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_001.uasset",
+      "bytes": 90964,
+      "sha256": "8F2D60727C930597CF5ADA4030969402D54AAE96020F47071E6FBF0869D7199D"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_002.uasset",
+      "bytes": 86772,
+      "sha256": "9641A5BC4C0420FC713ADF6AA3C7C43194950AF9EB599959744B600F108410ED"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_003.uasset",
+      "bytes": 87988,
+      "sha256": "05E6C6EA8AA29A970DFC52F8BD3705B3A47608CA98615F8C3E922D214DC2553A"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_004.uasset",
+      "bytes": 90477,
+      "sha256": "A05B487C16834AEF39456F76A1053EB3B64037416B28F3953FA1FCF1D7190A97"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_005.uasset",
+      "bytes": 95591,
+      "sha256": "426C42461203C2F43EC82D35EF12C761DBCF7039BC992B6F5B87BF3F09734415"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_006.uasset",
+      "bytes": 86944,
+      "sha256": "878AD56B798A61C8D6F680D464AFEB151358C08F8498C40EBB9FBE0BFDC89C3B"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.uasset",
+      "bytes": 92923,
+      "sha256": "4173195EA7661990844DC95E280B8DD5A5F890FB390450BE9E3AF1F6C3462F95"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.uasset",
+      "bytes": 90419,
+      "sha256": "0C7F9856AFE1514D8C8D210C85461A1954B7DF9A1794A6A843C67B86BFD54E26"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.uasset",
+      "bytes": 89554,
+      "sha256": "4B891231350EA778AEA126C21A1AD79E77EC3C8E5CAE4B9927042621BE79DA6D"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.uasset",
+      "bytes": 86107,
+      "sha256": "93A041FCA8B9EE9D8CCD4882241FB34FFB7210145744049BE2B25AE0F76D1FE9"
+    },
+    {
+      "path": "Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_09.uasset",
+      "bytes": 89904,
+      "sha256": "063267002CBC1FFE607ED7A5EC73EC5EBCB4E7CA11FDF7E30D2A23437A27FBDF"
+    },
+    {
+      "path": "Content/ColaShopTests/FragmentReplication.umap",
+      "bytes": 15758,
+      "sha256": "A0F28DE99D1EE51742B75FA684D62E8F7ACFBEAABCE048982687E800714CC8E5"
+    },
+    {
+      "path": "Content/DirtyActors/BP_ProductSceaner.uasset",
+      "bytes": 480471,
+      "sha256": "6F883206717F374BC2A59D80260DFC7658A52000516EC6693A719E53AEAA8452"
+    },
+    {
+      "path": "Content/Splash/EdSplash.png",
+      "bytes": 2921643,
+      "sha256": "A4B0CF13FF9678359434DA34B29B9F505DC7AC5CD241F995A4C8E05949299F03"
+    },
+    {
+      "path": "Content/Splash/EdSplash.uasset",
+      "bytes": 3386342,
+      "sha256": "E23AE830B21703B0E6AD02FC9400C7775B8E6E5364FAD64E561A74EB4BFB469F"
+    },
+    {
+      "path": "Content/Splash/Splash.png",
+      "bytes": 575322,
+      "sha256": "837F549952B632735DA3E2F336FFF6E3557403523A55420A479DCA6235BF9A0A"
+    },
+    {
+      "path": "Content/Splash/Splash.uasset",
+      "bytes": 727944,
+      "sha256": "15391E0C2A1FD469924ED9C8C4CDAE38F23042C65FCDBD4095B51E5D766700A7"
+    },
+    {
+      "path": "Docs/Fragment_Actor_Integration_Proposal.md",
+      "bytes": 4508,
+      "sha256": "597D919E27E195BF11DF50FE14B129B0CF9A95E5BA4DD87C72B39FBC09BE728D"
+    },
+    {
+      "path": "Docs/Fragment_Validation_2026-11-10.json",
+      "bytes": 87014,
+      "sha256": "236C0A5408EB2B3D49C4762B13C365209F6BBD68286C3D0862A40D455F06C48A"
+    },
+    {
+      "path": "Docs/Implementation_Approvals_2026-11-10.md",
+      "bytes": 3352,
+      "sha256": "91775CB95199B546142F5053026624D335BD10FA32F5AE4FEA53ABD787F7A630"
+    },
+    {
+      "path": "Docs/Implementation_Continuation_2026-11-10.md",
+      "bytes": 9035,
+      "sha256": "DDF1783D7231D983431F67B8E557C5168C0C3486348BB4540881E732C83646F8"
+    },
+    {
+      "path": "Docs/IMPLEMENTATION_HANDOFF.md",
+      "bytes": 8656,
+      "sha256": "E6C66E8336EBE3343408F7C8FACD9390E713960A406738E99EEB910BCDA514F7"
+    },
+    {
+      "path": "Docs/Legacy_Food_Container_Repair_Proposal.md",
+      "bytes": 2042,
+      "sha256": "D2D100B670C554133198228B0AC70DC06B7FFB8AA8730A6F26F554C717D9E081"
+    },
+    {
+      "path": "Docs/PAUSE_CHECKPOINT_2026-11-10.md",
+      "bytes": 10330,
+      "sha256": "9882610C3BEC069EB52725CA0043307F308CF180282C6A7C28F4A9AA3FFA018F"
+    },
+    {
+      "path": "Docs/README.md",
+      "bytes": 8867,
+      "sha256": "961007F33AA69A16BAC7603F6F22EF972DFEFAE7D9B652B4BEDC4132B1C08142"
+    },
+    {
+      "path": "Scripts/ConfigureBottleFragmentAssets.py",
+      "bytes": 6642,
+      "sha256": "2ACF8C56414C6E20AF6572222F77DF2147CBF688C7DD6CF37B313ED9F9ABB8A7"
+    },
+    {
+      "path": "Scripts/CreateFragmentReplicationMap.py",
+      "bytes": 1506,
+      "sha256": "4E3FC8AC1EB683803523C42E0215022422C7099917C9281D112EDFFD6531B520"
+    },
+    {
+      "path": "Scripts/MigrateLegacyFoodContainer.py",
+      "bytes": 6187,
+      "sha256": "690554CAC74C808C64B719EE4A2EEADFD5C47A2818BEBD75ED18D0028DD2C7DA"
+    },
+    {
+      "path": "Scripts/ValidateFragmentMultiplayer.ps1",
+      "bytes": 7112,
+      "sha256": "0D3CB6A4B11A30517F6E3A1EC111F58759B8B68146A079B22E13ED7F58EFB127"
+    },
+    {
+      "path": "Scripts/ValidateGameplayBlueprints.py",
+      "bytes": 2038,
+      "sha256": "B5810D47207721FC5FFE57147A2477EDB265BADCB6D52432C63F2275BE4CA8EA"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
+      "bytes": 50597,
+      "sha256": "6E4EAF230C40A4DC3FF3BA8DF91657830D0A317B54D8015DBD00000597712759"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp",
+      "bytes": 23491,
+      "sha256": "4F8B8164A861E1F88318AC235C28994833A7D84C9BF5D850204FA3CD4301856E"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
+      "bytes": 24451,
+      "sha256": "6279150535A85819431BF0DA01EB52AF4917254E2EEFEBD01535A9D5880D86AF"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ActivePropState.cpp",
+      "bytes": 13042,
+      "sha256": "F2CC348C322DB21FED736E1606AD9B67975B87F64DD61DD5B90FC26FB66BCE9A"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/ColaContainment.cpp",
+      "bytes": 8975,
+      "sha256": "4D076864438BB8DF71DD4E50356B6C2B514CA0995C330A2E191DEADE979009CC"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/FragmentAssemblyDataAsset.cpp",
+      "bytes": 1842,
+      "sha256": "14E2F80CF453E6C944DEB0E111577C6C2AA3300416C96D4A6F9BB4DCBE1894A5"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/FragmentDestructionActor.cpp",
+      "bytes": 6851,
+      "sha256": "BB836989922C278F6B905F2659BC1C6331895F8E4638D0E29500C9D64816EA4B"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp",
+      "bytes": 24126,
+      "sha256": "103C69E1C230E8B56F8EC43308B54C1660529AE804C15C0D70FCA459F2F32C2C"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "bytes": 270046,
+      "sha256": "CF43C48BB6C86E6647DCECD0B236D40D0F277E6692880D3B0D53AA8D0E0A726E"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropFragmentLifecycle.cpp",
+      "bytes": 11082,
+      "sha256": "E816BA0B071AAC6B6F2FBD651A1E5FCCA3D2E5E9BF2C9493BEA9C3E531AE3B9A"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Props/PropLiquidRelease.cpp",
+      "bytes": 2650,
+      "sha256": "8D08D239ECCCE86E5D43069778E78D5E26DF8D74E1815B6865D8AF94F5E7BBCD"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp",
+      "bytes": 11193,
+      "sha256": "79FB83A155FDD7B3430CFB9A5BFAD64E5B871FDD85107B3ED26AFC6FB9D7A9BC"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopProductQuery.cpp",
+      "bytes": 2727,
+      "sha256": "56AD20593F2469510FB7917DCE5260DBA59945A883B6F8ADFBF2FBFE853CF0D5"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerComponent.cpp",
+      "bytes": 9906,
+      "sha256": "2EB3FCADB983D5CDE72E1FD54F5F2F1D687625B8388F22EE51EDF428646DA38F"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ConfiguredBottleAssetTests.cpp",
+      "bytes": 3662,
+      "sha256": "CE10FFF0E95857A142657667805ACB2B1FB4B21D25AAE7C3C97DB6D4614D65D9"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/FragmentLifecycleTests.cpp",
+      "bytes": 13006,
+      "sha256": "9BC7CD69BD14FD6BCC34C59AEB8AA48E5CDA37131CE278E16EF9B7D704FD3539"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/FragmentNetworkTestActor.cpp",
+      "bytes": 5614,
+      "sha256": "EE307531A57FE62BE21A4D01B94156DC0FAA2AEF4FAD083A0D6ECE38154F283F"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopProductQueryTests.cpp",
+      "bytes": 5114,
+      "sha256": "EA81D4578E33B0049789A0FE00C90224E90A13109B8A9E2E25E47BBA22E07AA3"
+    },
+    {
+      "path": "Source/MarryByMidnight/Private/Tests/ShopScannerTests.cpp",
+      "bytes": 5968,
+      "sha256": "B6CA479CB247457E2D509D8AA238A8EE78CF2BB0751BB4BE756008CDD64A09B1"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentAssemblyDataAsset.h",
+      "bytes": 1363,
+      "sha256": "CD40A35FAAD3379AD52B1FF870BCE978E9A7A9228D58D51015F0F9C2B7009882"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "bytes": 1827,
+      "sha256": "E6B0CBE26C0EB075B7742F20A4FCBBA7B914772AE03A11D0A066E336B3C3D3BD"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/FragmentTypes.h",
+      "bytes": 390,
+      "sha256": "F9309450480D76EA773B696B8B38E04D5563849DAAA08BC822B974B8C9551569"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "bytes": 45021,
+      "sha256": "8A80C77BCA08D8FBD5DEC7A667DEE99E2A959BE7610A8B5BC76FFE8BE3B51709"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "bytes": 16278,
+      "sha256": "92112CF0D29469F4CC0749728E9A14116EDCE33123EDCF8E896DFA843750DDC7"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "bytes": 84810,
+      "sha256": "208EEAFF60B693215B7A309BDFC6896E2B4D24E2D996B737FFA87E9418CCC087"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "bytes": 86357,
+      "sha256": "F705F9CA0288D301E2A7BE20DC0CB956806E97D5B3423EB526AC472F5EEA8816"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Props/LiquidReleaseTypes.h",
+      "bytes": 840,
+      "sha256": "464B727A9AE49ED5044FB5F33A50C1FDB9C1ABBA4DF2A11A612A5505128B6639"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "bytes": 3382,
+      "sha256": "A21C1110F023FD091A6A2593FB050F06510C0B06B1268484E9B82C254151B91E"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutTypes.h",
+      "bytes": 4541,
+      "sha256": "5E27FFBD8B42046396A267048431EF2522EB799781845B8303BB987C69531F32"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Shop/ShopScannerComponent.h",
+      "bytes": 3094,
+      "sha256": "C4A58AB6D3911C9C0C830B02CADB8ABC3126D58F1F54BF6A012D2A979ED6E50F"
+    },
+    {
+      "path": "Source/MarryByMidnight/Public/Tests/FragmentNetworkTestActor.h",
+      "bytes": 2413,
+      "sha256": "3F4FA5326FDFD86F2F138770750D5BE90E26BA82C886FA6CD78B0EB4D82537C7"
+    }
+  ]
+}

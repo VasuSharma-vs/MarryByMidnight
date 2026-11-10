@@ -28,6 +28,7 @@
 #include "TimerManager.h"
 #include "Shop/SharedTeamWalletComponent.h"
 #include "Shop/ShopCheckoutComponent.h"
+#include "Props/FragmentDestructionActor.h"
 
 APropManager::APropManager()
 {
@@ -95,6 +96,7 @@ void APropManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APropManager, WorldElapsedSeconds);
+	DOREPLIFETIME(APropManager, ReleasedLiquids);
 
 	DOREPLIFETIME(APropManager, LoadState);
 	DOREPLIFETIME(APropManager, PropManagerReady);
@@ -190,6 +192,7 @@ void APropManager::Tick(float DeltaSeconds)
 		ProcessQueuedPlacedConversions();
 		ProcessQueuedISMPromotions();
 		ProcessActivePhysicsReplication(DeltaSeconds);
+		ProcessFragmentPhysics(DeltaSeconds);
 		if (BatchUpdateComponent)
 		{
 			BatchUpdateComponent->ProcessBatchUpdate(DeltaSeconds);
@@ -368,7 +371,7 @@ void APropManager::InitializePropManager()
 void APropManager::InitializeIISMDB()
 {
 	int32 AutoPID = 1;
-	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] === InitializeIISMDB: Registering %d Default Product Data Assets ==="), DefaultProductDataAssets.Num());
+	UE_LOG(LogTemp, Verbose, TEXT("[PropSenseSight] === InitializeIISMDB: Registering %d Default Product Data Assets ==="), DefaultProductDataAssets.Num());
 	for (UInteractablePropDataAsset* Asset : DefaultProductDataAssets)
 	{
 		if (Asset)
@@ -386,7 +389,7 @@ void APropManager::InitializeIISMDB()
 				if (Mat) MatsList += Mat->GetName() + TEXT(", ");
 			}
 
-			UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] InitializeIISMDB: Registered Product PID %d: '%s' (DataAsset: '%s', Mesh: '%s', Materials: [%s])"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropSenseSight] InitializeIISMDB: Registered Product PID %d: '%s' (DataAsset: '%s', Mesh: '%s', Materials: [%s])"),
 				Def.ProductID,
 				*Def.DisplayName.ToString(),
 				*Asset->GetName(),
@@ -396,7 +399,7 @@ void APropManager::InitializeIISMDB()
 			++AutoPID;
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] === InitializeIISMDB Complete. Total Products Registered: %d ==="), ProductDefinitions.Num());
+	UE_LOG(LogTemp, Verbose, TEXT("[PropSenseSight] === InitializeIISMDB Complete. Total Products Registered: %d ==="), ProductDefinitions.Num());
 }
 
 bool APropManager::RegisterProductDefinition(const FPropProductDefinition& InDefinition)
@@ -411,7 +414,7 @@ bool APropManager::RegisterProductDefinition(const FPropProductDefinition& InDef
 	if (HasAuthority()) { Validated.FilledContentIDs.Empty(); Validated.FilledProductIDs.Empty(); for (const auto& Mapping : Validated.FilledProductIDByContentID) { Validated.FilledContentIDs.Add(Mapping.Key); Validated.FilledProductIDs.Add(Mapping.Value); } }
 	else { Validated.FilledProductIDByContentID.Empty(); for (int32 I=0; I<FMath::Min(Validated.FilledContentIDs.Num(), Validated.FilledProductIDs.Num()); ++I) Validated.FilledProductIDByContentID.Add(Validated.FilledContentIDs[I],Validated.FilledProductIDs[I]); }
 	Validated.bEnableInstanceUniqueData |= Validated.bEnableContinuousUpdateData;
-	if (HasAuthority() && Validated.ConsumableProfile.NumOfPortions > 0 && Validated.DefaultUniqueData.EventData.ContentID == 0) { FPropContentDefinition Content; Content.ContentID = Validated.ProductID; Content.DisplayName = Validated.DisplayName; Content.BasePortionPrice = Validated.ConsumableProfile.Price; Content.IdealServingTemperature = Validated.TemperatureProfile.ConsumableTemperature; Content.StimulusProfile = Validated.StimulusProfile; Content.TasteProfile = Validated.TasteProfile; Content.ExpiredTasteProfile = Validated.ExpiredTasteProfile; Content.ExpiryProfile = Validated.ExpiryProfile; if (!ContentDefinitions.Contains(Content.ContentID)) RegisterContentDefinition(Content); Validated.DefaultUniqueData.EventData.ContentID = Content.ContentID; }
+	if (HasAuthority() && Validated.ConsumableProfile.NumOfPortions > 0 && Validated.DefaultUniqueData.EventData.ContentLevel > 0 && Validated.DefaultUniqueData.EventData.ContentID == 0) { FPropContentDefinition Content; Content.ContentID = Validated.ProductID; Content.DisplayName = Validated.DisplayName; Content.BasePortionPrice = Validated.ConsumableProfile.Price; Content.IdealServingTemperature = Validated.TemperatureProfile.ConsumableTemperature; Content.StimulusProfile = Validated.StimulusProfile; Content.TasteProfile = Validated.TasteProfile; Content.ExpiredTasteProfile = Validated.ExpiredTasteProfile; Content.ExpiryProfile = Validated.ExpiryProfile; if (!ContentDefinitions.Contains(Content.ContentID)) RegisterContentDefinition(Content); Validated.DefaultUniqueData.EventData.ContentID = Content.ContentID; }
 	ProductDefinitions.Add(InDefinition.ProductID, Validated);
 	if (HasAuthority()) Multicast_RegisterProductDefinition(Validated);
 
@@ -1024,7 +1027,7 @@ int32 APropManager::RegisterIISMComponent(UInteractableISMComponent* InComponent
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropSenseSight] RegisterIISMComponent: ICID %d (Component: '%s', Owner: '%s') -> Assigned ProductID: %d (%s), StaticMesh: '%s', Instances: %d"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropSenseSight] RegisterIISMComponent: ICID %d (Component: '%s', Owner: '%s') -> Assigned ProductID: %d (%s), StaticMesh: '%s', Instances: %d"),
 		InComponent->IISMComponentID,
 		*InComponent->GetName(),
 		InComponent->GetOwner() ? *InComponent->GetOwner()->GetName() : TEXT("None"),
@@ -1324,6 +1327,8 @@ void APropManager::InitializeIISMComponents()
 
 void APropManager::ClearLevelRuntimeState()
 {
+	ResetFragmentRuntime(true);
+	ReleasedLiquids.Empty();
 	// Return any active ASMs to pool via ASMComponent
 	if (ASMComponent)
 	{
@@ -1466,6 +1471,7 @@ bool APropManager::RegisterISID(const FISIDRuntimeIndex& InRecord)
 
 bool APropManager::UnregisterISID(int32 InISID)
 {
+	ReleaseOriginalFragment(InISID);
 	if (ASMComponent)
 	{
 		ASMComponent->UnregisterActiveActor(InISID);
@@ -2119,6 +2125,11 @@ bool APropManager::InitializeInstanceTransform(int32 InISID, const FTransform& I
 	if (!Record) return false;
 
 	Record->ActiveTransform = InTransform;
+	if (UStaticMeshComponent* Fragment = GetOriginalFragmentComponent(InISID))
+	{
+		Fragment->SetWorldTransform(InTransform, false, nullptr, ETeleportType::TeleportPhysics);
+		return true;
+	}
 	if (Record->Representation == EPropRepresentation::ISM)
 	{
 		if (UInteractableISMComponent* Comp = FindIISMComponent(Record->IISMComponentID))
@@ -2469,6 +2480,7 @@ bool APropManager::ChangePropProduct(int32 InISID, int32 NewProductID, bool bRes
 	}
 
 	const int32 OldProductID = Record->ProductID;
+	if (Record->Representation == EPropRepresentation::CompositeFragment) return false;
 	if (OldProductID == NewProductID)
 	{
 		return true;
@@ -2707,6 +2719,7 @@ bool APropManager::ConvertISMToASM(
 		}
 		return true;
 	}
+	if (Record->Representation == EPropRepresentation::CompositeFragment) return false;
 
 	if (PendingConversionISIDs.Contains(SignedISID))
 	{
@@ -2898,21 +2911,22 @@ bool APropManager::ConvertASMToISM(
 	FISIDRuntimeIndex* Record = FindISIDData(SignedISID);
 	if (!Record)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM FAILED: Record not found for ISID %d"), SignedISID);
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ConvertASMToISM FAILED: Record not found for ISID %d"), SignedISID);
 		return false;
 	}
 
 	// Never demote to AtRest if currently locked in Held or InMotion!
+	if (Record->Representation == EPropRepresentation::CompositeFragment) return SettleOriginalFragment(SignedISID);
 	if (NewState == EPropState::AtRest)
 	{
 		if (Record->State == EPropState::Held)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d is currently Held!"), SignedISID);
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d is currently Held!"), SignedISID);
 			return false;
 		}
 		if (Record->ActiveActor && (Record->ActiveActor->bIsHeld || Record->ActiveActor->bIsInMotion))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is Held or InMotion!"), SignedISID);
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is Held or InMotion!"), SignedISID);
 			return false;
 		}
 		if (Record->ActiveActor)
@@ -2923,7 +2937,7 @@ bool APropManager::ConvertASMToISM(
 					RocketComp->GetSimulationState() != ERocketSimulationState::AtRest &&
 					RocketComp->GetSimulationState() != ERocketSimulationState::Idle)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is active in Rocket flight (State=%d)!"), SignedISID, (int32)RocketComp->GetSimulationState());
+					UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ConvertASMToISM BLOCKED: ISID %d ActiveActor is active in Rocket flight (State=%d)!"), SignedISID, (int32)RocketComp->GetSimulationState());
 					return false;
 				}
 			}
@@ -2962,52 +2976,52 @@ bool APropManager::ConvertASMToISM(
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] >>> ConvertASMToISM STARTED | ISID: %d | Role: %s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] >>> ConvertASMToISM STARTED | ISID: %d | Role: %s"),
 		SignedISID, HasAuthority() ? TEXT("Server/Standalone") : TEXT("Client"));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target State: %s | PoolActor: %s | WriteBackTransform: %s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Target State: %s | PoolActor: %s | WriteBackTransform: %s"),
 		*UEnum::GetValueAsString(NewState), bPoolActor ? TEXT("true") : TEXT("false"), bWriteBackTransform ? TEXT("true") : TEXT("false"));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Record: ISID=%d | PID=%d | ICID=%d | ISMI=%d | Rep=%s | State=%s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Record: ISID=%d | PID=%d | ICID=%d | ISMI=%d | Rep=%s | State=%s"),
 		Record->ISID, Record->ProductID, Record->IISMComponentID, Record->ISMI,
 		*UEnum::GetValueAsString(Record->Representation), *UEnum::GetValueAsString(Record->State));
 
 	if (ActiveActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   ActiveActor: '%s' (Class: '%s') | Actor PID=%d | Actor ASMID=%d | State=%s | bIsHeld=%s | bIsInMotion=%s"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   ActiveActor: '%s' (Class: '%s') | Actor PID=%d | Actor ASMID=%d | State=%s | bIsHeld=%s | bIsInMotion=%s"),
 			*ActiveActor->GetName(), *ActiveActor->GetClass()->GetName(), ActiveActor->ProductID, ActiveActor->ASMID,
 			*UEnum::GetValueAsString(ActiveActor->State), ActiveActor->bIsHeld ? TEXT("true") : TEXT("false"), ActiveActor->bIsInMotion ? TEXT("true") : TEXT("false"));
 
 		if (ActiveActor->PropDataAsset)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
 				*ActiveActor->PropDataAsset->GetName(), *ActiveActor->PropDataAsset->ItemDisplayName.ToString());
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
 				ActiveActor->PropDataAsset->StaticMesh ? *ActiveActor->PropDataAsset->StaticMesh->GetName() : TEXT("None"),
 				ActiveActor->PropDataAsset->SkeletalMesh ? *ActiveActor->PropDataAsset->SkeletalMesh->GetName() : TEXT("None"));
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
 				*FormatObjectPtrMaterialsList(ActiveActor->PropDataAsset->MaterialOverrides));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
 		}
 
 		if (ActiveActor->PropMesh)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
 				ActiveActor->PropMesh->GetStaticMesh() ? *ActiveActor->PropMesh->GetStaticMesh()->GetName() : TEXT("None"),
 				*FormatMeshComponentMaterialsList(ActiveActor->PropMesh));
 		}
 		if (ActiveActor->SkeletalMeshComponent && ActiveActor->SkeletalMeshComponent->IsVisible())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> SkeletalMeshComponent: Asset='%s' | Materials %s"),
+			UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> SkeletalMeshComponent: Asset='%s' | Materials %s"),
 				ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset() ? *ActiveActor->SkeletalMeshComponent->GetSkeletalMeshAsset()->GetName() : TEXT("None"),
 				*FormatMeshComponentMaterialsList(ActiveActor->SkeletalMeshComponent));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   ActiveActor: None (GetActiveActorFromISID returned null)"));
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   ActiveActor: None (GetActiveActorFromISID returned null)"));
 	}
 
 	const int32 SavedASMID = (Record->ASMID > 0) ? Record->ASMID : (ActiveActor ? ActiveActor->ASMID : 0);
@@ -3140,13 +3154,13 @@ bool APropManager::ConvertASMToISM(
 
 		const FString CompMatsAfter = FormatCompMaterialsList(ISMComp);
 
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
 			ISMComp->IISMComponentID, ISMComp->ProductID,
 			ISMComp->GetStaticMesh() ? *ISMComp->GetStaticMesh()->GetName() : TEXT("None"));
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Instance assigned: ISMI=%d | Total Instances=%d"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Instance assigned: ISMI=%d | Total Instances=%d"),
 			TargetISMI, ISMComp->GetInstanceCount());
 	}
 	else
@@ -3154,9 +3168,9 @@ bool APropManager::ConvertASMToISM(
 		UE_LOG(LogTemp, Error, TEXT("[PropConversionDebug]   ERROR: Target ISM Component is NULL for PID %d!"), Record->ProductID);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] <<< ConvertASMToISM COMPLETED | ISID: %d -> ICID %d, ISMI %d"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] <<< ConvertASMToISM COMPLETED | ISID: %d -> ICID %d, ISMI %d"),
 		SignedISID, ISMComp ? ISMComp->IISMComponentID : INDEX_NONE, TargetISMI);
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ======================================================================="));
 
 
 
@@ -3222,30 +3236,30 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 		return 0;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] >>> ConvertPlacedActorToISM STARTED | Actor: '%s' (%s) | Role: %s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] >>> ConvertPlacedActorToISM STARTED | Actor: '%s' (%s) | Role: %s"),
 		*InActor->GetName(), *InActor->GetClass()->GetName(), HasAuthority() ? TEXT("Server/Standalone") : TEXT("Client"));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Actor ASMID: %d | Initial PID: %d | ISID: %d | State: %s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Actor ASMID: %d | Initial PID: %d | ISID: %d | State: %s"),
 		InActor->ASMID, InActor->ProductID, InActor->ISID, *UEnum::GetValueAsString(InActor->State));
 
 	if (InActor->PropDataAsset)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropDataAsset: '%s' | DisplayName: '%s'"),
 			*InActor->PropDataAsset->GetName(), *InActor->PropDataAsset->ItemDisplayName.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]      DataAsset StaticMesh: '%s' | SkeletalMesh: '%s'"),
 			InActor->PropDataAsset->StaticMesh ? *InActor->PropDataAsset->StaticMesh->GetName() : TEXT("None"),
 			InActor->PropDataAsset->SkeletalMesh ? *InActor->PropDataAsset->SkeletalMesh->GetName() : TEXT("None"));
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]      DataAsset MaterialOverrides %s"),
 			*FormatObjectPtrMaterialsList(InActor->PropDataAsset->MaterialOverrides));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropDataAsset: None"));
 	}
 
 	if (InActor->PropMesh)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
+		UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   -> PropMesh: Asset='%s' | Materials %s"),
 			InActor->PropMesh->GetStaticMesh() ? *InActor->PropMesh->GetStaticMesh()->GetName() : TEXT("None"),
 			*FormatMeshComponentMaterialsList(InActor->PropMesh));
 	}
@@ -3330,13 +3344,13 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 
 	const FString CompMatsAfter = FormatCompMaterialsList(ISMComp);
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Resolved ProductID: %d"), InActor->ProductID);
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Resolved ProductID: %d"), InActor->ProductID);
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Target ISM Component: ICID=%d | Comp PID=%d | StaticMesh='%s'"),
 		ISMComp->IISMComponentID, ISMComp->ProductID,
 		ISMComp->GetStaticMesh() ? *ISMComp->GetStaticMesh()->GetName() : TEXT("None"));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     Comp Materials BEFORE update: %s"), *CompMatsBefore);
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     AuthoritativeMaterials to apply: %s"), *FormatMaterialsList(AuthoritativeMaterials));
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]     Comp Materials AFTER update:  %s"), *CompMatsAfter);
 
 	// Only server/standalone authoritatively creates ISM instances and persists mappings
 	if (!HasAuthority())
@@ -3345,6 +3359,12 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	}
 
 	const int32 NewISID = (InActor->ISID > 0) ? InActor->ISID : AllocateISID();
+	const float InitialContentLevel = ProductDefPtr ? InActor->GetInitialContentLevel(ProductDefPtr->DefaultUniqueData.EventData.ContentLevel) : 0;
+	if (!FMath::IsFinite(InitialContentLevel) || InitialContentLevel < 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid initial content level on placed prop '%s'; preserving the actor without conversion."), *InActor->GetName());
+		return 0;
+	}
 	InActor->ISID = NewISID;
 
 	const FTransform ActorTransform = InActor->GetActorTransform();
@@ -3375,6 +3395,11 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 		Record->ActiveActor = nullptr;
 		Record->ASMID = 0;
 	}
+	if (FPropInstanceUniqueData* Unique = FindUniqueData(NewISID))
+	{
+		Unique->EventData.ContentLevel = InitialContentLevel;
+		RefreshUniqueRepresentation(NewISID);
+	}
 
 	// Deactivate the placed actor and park it into the ASMComponent pool at ResetTransform
 	InActor->DeactivateToPoolState(GetResetTransformForSlot(InActor->ASMID));
@@ -3391,9 +3416,9 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	OnPropRepresentationChanged.Broadcast(NewISID, EPropRepresentation::ISM, nullptr);
 	MarkInstanceDirty(NewISID, EPropDirtyFlags::All);
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] <<< ConvertPlacedActorToISM COMPLETED | Actor '%s' -> ISID %d, ICID %d, ISMI %d"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] <<< ConvertPlacedActorToISM COMPLETED | Actor '%s' -> ISID %d, ICID %d, ISMI %d"),
 		*InActor->GetName(), NewISID, ISMComp->IISMComponentID, NewISMI);
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] ======================================================================="));
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] ======================================================================="));
 
 
 
@@ -3411,7 +3436,7 @@ AActivePropActor* APropManager::MakeISMToASM(
 		return nullptr;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] MakeISMToASM called: ISID=%d, TargetState=%s, Reason=%s, bSimulatePhysics=%s | Role=%s"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] MakeISMToASM called: ISID=%d, TargetState=%s, Reason=%s, bSimulatePhysics=%s | Role=%s"),
 		InISID,
 		*UEnum::GetValueAsString(TargetState),
 		*UEnum::GetValueAsString(Reason),
@@ -3696,7 +3721,7 @@ void APropManager::QueueASMConversion(int32 InISID, AActivePropActor* InActor)
 	NewEntry.ASMID = InActor->ASMID;
 	PendingASMConversions.Add(NewEntry);
 
-	UE_LOG(LogTemp, Warning, TEXT("[PropManager] QueueASMConversion: Queued ISID %d, ASMID %d, Actor '%s'"),
+	UE_LOG(LogTemp, Verbose, TEXT("[PropManager] QueueASMConversion: Queued ISID %d, ASMID %d, Actor '%s'"),
 		InISID, InActor->ASMID, *InActor->GetName());
 }
 
@@ -4781,6 +4806,7 @@ bool APropManager::ValidateGrab(int32 InISID, AActor* InstigatorActor) const
 	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 	if (!Record->PackedRuntimeData.bIsGrabbable) return false;
+	if (Record->Representation == EPropRepresentation::CompositeFragment) return false;
 
 	// Section 26: A second player attempting to grab the same exclusively held prop should be rejected by the server.
 	if (Record->State == EPropState::Held || Record->RuntimeData.InteractionState == EPropInteractionLockState::Held)
@@ -5293,6 +5319,11 @@ void APropManager::RequestRotate(int32 InISID, const FRotator& TargetRotation, A
 // =========================================================================
 bool APropManager::EnablePhysics(int32 InISID)
 {
+	if (UStaticMeshComponent* Fragment = GetOriginalFragmentComponent(InISID))
+	{
+		if (!HasAuthority()) return false;
+		Fragment->SetSimulatePhysics(true); Fragment->WakeAllRigidBodies(); return true;
+	}
 	AActivePropActor* ASM = nullptr;
 	if (!PromoteInstanceToASM(InISID, EPropActivationReason::PhysicsImpulse, true, ASM) || !ASM)
 	{
@@ -5332,11 +5363,13 @@ bool APropManager::SetPhysicsMode(int32 InISID, EPropPhysicsMode NewMode)
 
 bool APropManager::ApplyImpulse(int32 InISID, FVector Impulse, bool bVelChange)
 {
+	if (Impulse.ContainsNaN()) return false;
 	if (!HasAuthority())
 	{
 		ApplyImpulse_Server(InISID, Impulse, bVelChange);
 		return true;
 	}
+	if (UStaticMeshComponent* Fragment = GetOriginalFragmentComponent(InISID)) { Fragment->AddImpulse(Impulse, NAME_None, bVelChange); return true; }
 
 	AActivePropActor* ASM = nullptr;
 	if (!PromoteInstanceToASM(InISID, EPropActivationReason::PhysicsImpulse, true, ASM) || !ASM)
@@ -5367,11 +5400,13 @@ bool APropManager::ApplyImpulse_Server_Validate(int32 InISID, FVector Impulse, b
 
 bool APropManager::ApplyForce(int32 InISID, FVector Force)
 {
+	if (Force.ContainsNaN()) return false;
 	if (!HasAuthority())
 	{
 		ApplyForce_Server(InISID, Force);
 		return true;
 	}
+	if (UStaticMeshComponent* Fragment = GetOriginalFragmentComponent(InISID)) { Fragment->AddForce(Force); return true; }
 
 	AActivePropActor* ASM = nullptr;
 	if (!PromoteInstanceToASM(InISID, EPropActivationReason::PhysicsImpulse, true, ASM) || !ASM)
@@ -5398,6 +5433,8 @@ bool APropManager::ApplyForce_Server_Validate(int32 InISID, FVector Force)
 
 bool APropManager::ApplyTorque(int32 InISID, FVector TorqueInRadians)
 {
+	if (!HasAuthority() || TorqueInRadians.ContainsNaN()) return false;
+	if (UStaticMeshComponent* Fragment = GetOriginalFragmentComponent(InISID)) { Fragment->AddTorqueInRadians(TorqueInRadians); return true; }
 	AActivePropActor* ASM = nullptr;
 	if (!PromoteInstanceToASM(InISID, EPropActivationReason::PhysicsImpulse, true, ASM) || !ASM)
 	{
@@ -5459,6 +5496,7 @@ bool APropManager::SetAngularVelocity(int32 InISID, FVector NewAngularVelocityDe
 
 FVector APropManager::GetLinearVelocity(int32 InISID) const
 {
+	if (const UStaticMeshComponent* Mesh = GetOriginalFragmentComponent(InISID)) return Mesh->GetComponentVelocity();
 	if (const AActivePropActor* ASM = GetActiveActorFromISID(InISID))
 	{
 		return ASM->PropMesh ? ASM->PropMesh->GetComponentVelocity() : ASM->LinearVelocity;
@@ -5468,6 +5506,7 @@ FVector APropManager::GetLinearVelocity(int32 InISID) const
 
 FVector APropManager::GetAngularVelocity(int32 InISID) const
 {
+	if (const UStaticMeshComponent* Mesh = GetOriginalFragmentComponent(InISID)) return Mesh->GetPhysicsAngularVelocityInDegrees();
 	if (const AActivePropActor* ASM = GetActiveActorFromISID(InISID))
 	{
 		return ASM->PropMesh ? ASM->PropMesh->GetPhysicsAngularVelocityInDegrees() : ASM->AngularVelocity;
@@ -5486,6 +5525,11 @@ bool APropManager::EvaluateRestTolerance(int32 InISID) const
 	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return true;
 	if (Record->Representation == EPropRepresentation::ISM) return true;
+	if (const UStaticMeshComponent* Mesh = GetOriginalFragmentComponent(InISID))
+	{
+		const auto* Actor = Cast<AFragmentDestructionActor>(Mesh->GetOwner());
+		return Actor && Actor->IsPieceSettled(InISID);
+	}
 
 	const AActivePropActor* ASM = GetActiveActorFromISID(InISID);
 	if (!ASM) return true;
@@ -5937,6 +5981,11 @@ bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 	if (!Record) return false;
 
 	const EPropState PrevState = Record->State;
+	if (Record->Representation == EPropRepresentation::CompositeFragment)
+	{
+		if (NewState == EPropState::AtRest) return SettleOriginalFragment(InISID);
+		if (NewState == EPropState::Held || NewState == EPropState::InMotion) return false;
+	}
 	if (PrevState == NewState) return true;
 
 	// Guard against illegal transitions:
@@ -6004,6 +6053,7 @@ bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 
 FTransform APropManager::GetTransform(int32 InISID) const
 {
+	if (const UStaticMeshComponent* Mesh = GetOriginalFragmentComponent(InISID)) return Mesh->GetComponentTransform();
 	if (const FISIDRuntimeIndex* Record = FindISIDData(InISID))
 	{
 		if (Record->Representation == EPropRepresentation::ASM && Record->ActiveActor)
@@ -6044,6 +6094,7 @@ int32 APropManager::GetInteractionFlags(int32 InISID) const
 int32 APropManager::GetISID(UPrimitiveComponent* TargetComponent, int32 InstanceIndex) const
 {
 	if (!TargetComponent) return 0;
+	if (const auto* Fragments = Cast<AFragmentDestructionActor>(TargetComponent->GetOwner())) return Fragments->FindISID(TargetComponent);
 
 	if (const UInteractableISMComponent* ISMComp = Cast<UInteractableISMComponent>(TargetComponent))
 	{
@@ -6803,6 +6854,7 @@ void APropManager::ActivateClientRepresentation(int32 InISID, EPropRepresentatio
 
 void APropManager::DeactivateClientRepresentation(int32 InISID)
 {
+	ReleaseOriginalFragment(InISID);
 	if (UInteractableISMComponent* Comp = GetComponentFromISID(InISID))
 	{
 		Comp->MoveInstanceToResetTransform(InISID);
@@ -6845,7 +6897,7 @@ void APropManager::UpdateClientISM(int32 InISID)
 			ApplyProductDefinitionToComponent(Comp, *Def);
 		}
 
-		const FTransform TargetTransform = (Record->Representation == EPropRepresentation::ASM)
+		const FTransform TargetTransform = (Record->Representation != EPropRepresentation::ISM)
 			? Comp->GetEffectiveResetTransform()
 			: Record->ActiveTransform;
 
@@ -6905,7 +6957,7 @@ void APropManager::UpdateClientASM(int32 InISID)
 
 	if (ASM)
 	{
-		if (Record->Representation == EPropRepresentation::ISM)
+		if (Record->Representation != EPropRepresentation::ASM)
 		{
 			UnregisterActiveActor(InISID);
 			ASM->bIsInterpolatingToRest = false;
@@ -7054,6 +7106,9 @@ FPropInstanceDelta APropManager::BuildDeltaForRecord(const FISIDRuntimeIndex& Re
 	Delta.Version = Record.Version;
 	Delta.DirtyFlags = Record.DirtyFlags;
 	Delta.Representation = Record.Representation;
+	Delta.FragmentGroupID = Record.FragmentGroupID;
+	Delta.FragmentPieceIndex = Record.FragmentPieceIndex;
+	Delta.FragmentPoseTime = Record.FragmentPoseTime;
 	Delta.State = Record.State;
 	Delta.PackedRuntimeBits = static_cast<int64>(Record.PackedRuntimeData.PackToUint64());
 	Delta.Transform = GetTransform(Record.ISID);
@@ -7201,7 +7256,7 @@ int32 APropManager::GenerateClientProductInstance(const FPropInstanceDelta& Delt
 		ApplyProductDefinitionToComponent(Comp, *Def);
 	}
 
-	const FTransform TargetTransform = (Delta.Representation == EPropRepresentation::ASM)
+	const FTransform TargetTransform = (Delta.Representation != EPropRepresentation::ISM)
 		? Comp->GetEffectiveResetTransform()
 		: Delta.Transform;
 
@@ -7225,6 +7280,7 @@ int32 APropManager::GenerateClientProductInstance(const FPropInstanceDelta& Delt
 void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 {
 	if (Delta.ISID <= 0) return;
+	if (Delta.Representation == EPropRepresentation::CompositeFragment && (!Delta.FragmentGroupID.IsValid() || Delta.FragmentPieceIndex < 0 || Delta.FragmentPieceIndex >= 64 || Delta.Transform.ContainsNaN() || !FMath::IsFinite(Delta.FragmentPoseTime))) return;
 
 	FISIDRuntimeIndex* Existing = FindISIDData(Delta.ISID);
 
@@ -7239,6 +7295,8 @@ void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 
 	if (!Existing) return;
 	if (Delta.Version < Existing->Version) return;
+	const bool bKeepNewerFragmentPose = Existing->Representation == EPropRepresentation::CompositeFragment && Delta.Representation == EPropRepresentation::CompositeFragment && Existing->FragmentGroupID == Delta.FragmentGroupID && Existing->FragmentPoseTime > Delta.FragmentPoseTime;
+	if (Delta.Representation != EPropRepresentation::CompositeFragment || Existing->FragmentGroupID != Delta.FragmentGroupID) ReleaseOriginalFragment(Delta.ISID);
 	if (Delta.bHasUniqueData) { const auto* Local = UniqueDataByISID.Find(Delta.ISID); if (!Local || static_cast<int32>(Delta.UniqueData.EventData.EventSequence - Local->EventData.EventSequence) >= 0) UniqueDataByISID.Add(Delta.ISID, Delta.UniqueData); }
 
 	const int32 UnpackedASMID = (Delta.CustomFlags >> 16) & 0xFFFF;
@@ -7288,8 +7346,11 @@ void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 	Existing->Version = Delta.Version;
 	Existing->State = Delta.State;
 	Existing->Representation = Delta.Representation;
+	Existing->FragmentGroupID = Delta.FragmentGroupID;
+	Existing->FragmentPieceIndex = Delta.FragmentPieceIndex;
+	if (!bKeepNewerFragmentPose) Existing->FragmentPoseTime = Delta.FragmentPoseTime;
 	Existing->PackedRuntimeData = UnpackedData;
-	if (Delta.Transform.GetLocation().Z > -50000.0f && Delta.Transform.GetScale3D().GetMin() >= 0.005f)
+	if (!bKeepNewerFragmentPose && Delta.Transform.GetLocation().Z > -50000.0f && Delta.Transform.GetScale3D().GetMin() >= 0.005f)
 	{
 		Existing->ActiveTransform = Delta.Transform;
 	}
@@ -7303,6 +7364,7 @@ void APropManager::ApplyInstanceDelta(const FPropInstanceDelta& Delta)
 
 	UpdateClientASM(Delta.ISID);
 	UpdateClientISM(Delta.ISID);
+	if (Delta.Representation == EPropRepresentation::CompositeFragment) RestoreOriginalFragmentRepresentation(Delta.ISID);
 
 	RefreshUniqueRepresentation(Delta.ISID);
 }
@@ -7751,6 +7813,7 @@ bool APropManager::SavePropDatabase(const FString& SlotName, int32 UserIndex)
 	WorldSaveData.SchemaVersion = SchemaVersion;
 	WorldSaveData.WorldElapsedSeconds = WorldElapsedSeconds;
 	WorldSaveData.SharedWallet = SharedWallet ? SharedWallet->ExportCommittedState() : FSharedWalletSaveData();
+	WorldSaveData.ReleasedLiquids = ReleasedLiquids;
 	WorldSaveData.ShopCheckout = ShopCheckout ? ShopCheckout->ExportCommittedState() : FShopCheckoutSaveData();
 	ProductDefinitions.GenerateValueArray(WorldSaveData.ProductDefinitions);
 	ContentDefinitions.GenerateValueArray(WorldSaveData.ContentDefinitions);
@@ -7789,10 +7852,13 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 	if (!LoadedObj) return false;
 
 	if (LoadedObj->WorldSaveData.SchemaVersion != SchemaVersion || !USharedTeamWalletComponent::ValidateSaveData(LoadedObj->WorldSaveData.SharedWallet) || !UShopCheckoutComponent::ValidateSaveData(LoadedObj->WorldSaveData.ShopCheckout) || !FMath::IsFinite(LoadedObj->WorldSaveData.WorldElapsedSeconds) || LoadedObj->WorldSaveData.WorldElapsedSeconds < 0) return false;
+	if (!ValidateReleasedLiquids(LoadedObj->WorldSaveData.ReleasedLiquids, LoadedObj->WorldSaveData.WorldElapsedSeconds)) return false;
 	if (ShopCheckout) ShopCheckout->CancelAllCheckouts();
 	CancelLiquidTransfers();
 	WorldSaveData = LoadedObj->WorldSaveData;
+	ResetFragmentRuntime();
 	WorldElapsedSeconds = WorldSaveData.WorldElapsedSeconds;
+	ReleasedLiquids = WorldSaveData.ReleasedLiquids; OnRep_ReleasedLiquids();
 	UniqueDataByISID.Empty();
 
 	// Return all current active ASMs to pool
@@ -7854,6 +7920,7 @@ int32 APropManager::SaveDirtyInstances(const FString& SlotName, int32 UserIndex)
 	WorldSaveData.SchemaVersion = SchemaVersion;
 	WorldSaveData.WorldElapsedSeconds = WorldElapsedSeconds;
 	WorldSaveData.SharedWallet = SharedWallet ? SharedWallet->ExportCommittedState() : FSharedWalletSaveData();
+	WorldSaveData.ReleasedLiquids = ReleasedLiquids;
 	WorldSaveData.ShopCheckout = ShopCheckout ? ShopCheckout->ExportCommittedState() : FShopCheckoutSaveData();
 	ProductDefinitions.GenerateValueArray(WorldSaveData.ProductDefinitions);
 	ContentDefinitions.GenerateValueArray(WorldSaveData.ContentDefinitions);
@@ -7972,8 +8039,10 @@ bool APropManager::SerializeInstance(int32 InISID, FPropSerializedInstance& OutS
 	OutSerialized.ISMI = Record->ISMI;
 	OutSerialized.Version = Record->Version;
 	OutSerialized.State = Record->State;
-	OutSerialized.Representation = Record->Representation;
+	OutSerialized.Representation = Record->Representation == EPropRepresentation::CompositeFragment ? EPropRepresentation::ASM : Record->Representation;
 	OutSerialized.ActiveTransform = GetTransform(InISID);
+	OutSerialized.LinearVelocity = GetLinearVelocity(InISID);
+	OutSerialized.AngularVelocity = GetAngularVelocity(InISID);
 	OutSerialized.PackedRuntimeData = Record->PackedRuntimeData;
 	OutSerialized.PackedRuntimeBits = static_cast<int64>(Record->PackedRuntimeData.PackToUint64());
 	OutSerialized.OpenAmount = Record->RuntimeData.OpenAmount;
@@ -8050,6 +8119,11 @@ void APropManager::RebuildISMMappings()
 
 void APropManager::FlushActiveActorState()
 {
+	for (const auto& Piece : OriginalFragmentComponents) if (const auto* Mesh = Piece.Value.Get())
+	{
+		if (auto* Record = FindISIDData(Piece.Key)) Record->ActiveTransform = Mesh->GetComponentTransform();
+		MarkInstanceDirty(Piece.Key, EPropDirtyFlags::Transform);
+	}
 	if (ASMComponent)
 	{
 		ASMComponent->FlushActiveActorState();
@@ -8071,6 +8145,14 @@ void APropManager::RestoreActiveActors()
 		{
 			AActivePropActor* OutASM = nullptr;
 			PromoteInstanceToASM(Pair.Key, EPropActivationReason::LoadRestore, true, OutASM);
+			if (OutASM && OutASM->PropMesh)
+			{
+				if (const auto* Saved = WorldSaveData.SavedInstances.FindByPredicate([ID = Pair.Key](const auto& Item) { return Item.ISID == ID; }))
+				{
+					OutASM->PropMesh->SetPhysicsLinearVelocity(Saved->LinearVelocity);
+					OutASM->PropMesh->SetPhysicsAngularVelocityInDegrees(Saved->AngularVelocity);
+				}
+			}
 		}
 	}
 }

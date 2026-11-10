@@ -14,6 +14,11 @@ const FPropContentDefinition* AActivePropActor::ResolveContentDefinition() const
 	return PropManagerReference ? PropManagerReference->FindContentDefinition(GetContentID()) : nullptr;
 }
 
+float AActivePropActor::GetInitialContentLevel_Implementation(float DefinitionDefault) const
+{
+	return DefinitionDefault;
+}
+
 void AActivePropActor::OnRep_LocalUniqueData()
 {
 	if (!bHasValidUniqueData) return;

@@ -12,6 +12,8 @@ This documentation suite serves as the authoritative blueprint for all gameplay 
 
 [Implementation alignment notes](Core_Design_Implementation_Alignment.md) record the superseded requirements, structural consequences, and remaining design details. The earlier [implementation audit](Documentation_Implementation_Audit.md) remains a historical assessment against the earlier specifications; its counts are not a completion assessment against the new requirements.
 
+The user subsequently approved the temporary initial-component fragment representation in [Fragment actor integration](Fragment_Actor_Integration_Proposal.md). The supplied glass bottle now has eleven configured fragments; older eight-piece diagrams remain examples. [Continuation notes](Implementation_Continuation_2026-11-10.md) track the resumed implementation and validation.
+
 ---
 
 ## 📚 Document Index

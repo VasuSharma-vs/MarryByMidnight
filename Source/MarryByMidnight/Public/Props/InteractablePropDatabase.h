@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Shop/SharedWalletTypes.h"
 #include "Shop/ShopCheckoutTypes.h"
+#include "Props/LiquidReleaseTypes.h"
 #include "Engine/DataAsset.h"
 #include "Engine/NetSerialization.h"
 #include "NPCEnumsAndTypes.h"
@@ -17,6 +18,7 @@ class UCurveFloat;
 class UInteractablePropDataAsset;
 class AActivePropActor;
 class UInteractableISMComponent;
+class UFragmentAssemblyDataAsset;
 
 /**
  * Physical representation mode of a logical prop (ISID).
@@ -26,7 +28,8 @@ UENUM(BlueprintType)
 enum class EPropRepresentation : uint8
 {
 	ISM UMETA(DisplayName = "ISM (Resting Instanced Representation)"),
-	ASM UMETA(DisplayName = "ASM (Active Static Mesh Actor)")
+	ASM UMETA(DisplayName = "ASM (Active Static Mesh Actor)"),
+	CompositeFragment UMETA(DisplayName = "Original Fragment Component")
 };
 
 /**
@@ -1568,6 +1571,9 @@ struct MARRYBYMIDNIGHT_API FPropProductDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
 	TArray<FPropFractureFragmentEntry> FractureFragments;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TObjectPtr<UFragmentAssemblyDataAsset> FragmentAssembly;
+
 	/** Populates a product definition from a UInteractablePropDataAsset */
 	static FPropProductDefinition FromDataAsset(const UInteractablePropDataAsset* InAsset, int32 InProductID, int32 InStaticMeshID = 0);
 
@@ -1619,6 +1625,11 @@ struct MARRYBYMIDNIGHT_API FISIDRuntimeIndex
 	/** Active ASM actor when Representation == EPropRepresentation::ASM */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ISID Record")
 	TObjectPtr<AActivePropActor> ActiveActor = nullptr;
+
+	/** Original destruction carrier; no pooled ASMID is assigned during this stage. */
+	UPROPERTY() FGuid FragmentGroupID;
+	UPROPERTY() int32 FragmentPieceIndex = INDEX_NONE;
+	UPROPERTY() double FragmentPoseTime = 0;
 
 	/** Direct reference to the owning IISM component */
 	UPROPERTY(BlueprintReadOnly, Category = "ISID Record")
@@ -1712,6 +1723,10 @@ struct MARRYBYMIDNIGHT_API FPropInstanceDelta
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	EPropRepresentation Representation = EPropRepresentation::ISM;
+
+	UPROPERTY() FGuid FragmentGroupID;
+	UPROPERTY() int32 FragmentPieceIndex = INDEX_NONE;
+	UPROPERTY() double FragmentPoseTime = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Replication")
 	EPropState State = EPropState::AtRest;
@@ -1979,6 +1994,9 @@ struct MARRYBYMIDNIGHT_API FPropSerializedInstance
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	FTransform ActiveTransform = FTransform::Identity;
 
+	UPROPERTY(SaveGame) FVector LinearVelocity = FVector::ZeroVector;
+	UPROPERTY(SaveGame) FVector AngularVelocity = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	int64 PackedRuntimeBits = 0;
 
@@ -2021,7 +2039,7 @@ struct MARRYBYMIDNIGHT_API FPropWorldSaveData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
-	int32 SchemaVersion = 3;
+	int32 SchemaVersion = 4;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "SaveLoad")
 	double WorldElapsedSeconds = 0.0;
@@ -2046,6 +2064,8 @@ struct MARRYBYMIDNIGHT_API FPropWorldSaveData
 
 	UPROPERTY(SaveGame)
 	TArray<FPropContentDefinition> ContentDefinitions;
+
+	UPROPERTY(SaveGame) TArray<FReleasedLiquid> ReleasedLiquids;
 };
 
 /**

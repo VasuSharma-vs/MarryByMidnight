@@ -37,6 +37,10 @@ public:
 	bool GetStockEntry(int32 ISID, FShopStockEntry& OutEntry) const;
 	UFUNCTION(BlueprintPure, Category = "Shop")
 	bool IsAvailableShopStock(int32 ISID) const;
+	UFUNCTION(BlueprintPure, Category = "Shop")
+	bool GetCheckoutView(FGuid CheckoutID, FShopCheckoutView& OutView) const;
+	UFUNCTION(BlueprintPure, Category = "Shop")
+	bool GetCompletedReceipt(FGuid CheckoutID, FCompletedCheckoutReceipt& OutReceipt) const;
 
 	void CancelAllCheckouts();
 	FShopCheckoutSaveData ExportCommittedState() const;

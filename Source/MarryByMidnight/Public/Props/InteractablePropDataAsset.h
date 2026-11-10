@@ -350,6 +350,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
 	TArray<FPropFractureFragmentEntry> FractureFragments;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Transformations")
+	TObjectPtr<UFragmentAssemblyDataAsset> FragmentAssembly;
+
 	// -------------------------------------------------------------
 	// Helper Methods
 	// -------------------------------------------------------------

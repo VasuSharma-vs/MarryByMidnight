@@ -144,6 +144,8 @@ bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearToler
 	{
 		return true;
 	}
+	// Chaos sleep is a stronger resting signal than a vertical support trace for stacked/overhanging pieces.
+	if (!TargetMesh->RigidBodyIsAwake()) return true;
 	const float LinTol = (CustomLinearTolerance > 0.0f) ? CustomLinearTolerance : ActiveVelocityTolerance;
 	const float AngTol = (CustomAngularTolerance > 0.0f) ? CustomAngularTolerance : AngularVelocityTolerance;
 	const bool bStationary = (GetLinearSpeed() <= LinTol) && (GetAngularSpeed() <= AngTol);
@@ -167,8 +169,7 @@ bool UStaticMeshPhysicsSimulationComponent::CheckSettled(float CustomLinearToler
 
 		if (!bHasSurface)
 		{
-			// Body is floating or falling in mid-air - keep physics active and awake!
-			TargetMesh->WakeAllRigidBodies();
+			// Keep checking. Forcing a wake here prevents valid stacked bodies from ever sleeping.
 			return false;
 		}
 	}

@@ -274,6 +274,7 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 		Def.MeltedProductID = InAsset->MeltedProductID;
 		Def.BurstBrokenProductID = InAsset->BurstBrokenProductID;
 		Def.FractureFragments = InAsset->FractureFragments;
+		Def.FragmentAssembly = InAsset->FragmentAssembly;
 
 		// Populate DefaultUniqueData
 		Def.DefaultUniqueData.ContinuousData.Temperature = InAsset->ConsumableTemperature;

@@ -1,6 +1,6 @@
 # Fragment actor integration proposal
 
-Status: awaiting approval of one architecture extension. The gameplay lifecycle itself is approved in Implementation_Approvals_2026-11-10.md. Fragment recipes remain configurable; the user will supply the glass/concrete meshes.
+Status: the user explicitly approved the temporary initial-fragment representation during the resumed implementation on 10 November 2026. The supplied glass assembly has eleven pieces in /Game/Assest/meshs/Bottle_Fragments_Mesh, referenced by BP_bottel_Fragments_Visioul_Socase. Concrete recipes remain configurable pending concrete meshes.
 
 ## Conflict with the existing runtime
 
@@ -33,4 +33,6 @@ Save each component's current transform and unique runtime state by its fragment
 - Mid-destruction save/load preserves pieces without replaying impulses or duplicating them.
 - Four-player tests cover late join, simultaneous interactions and independent settlement.
 
-No implementation of this representation extension should proceed before approval because it changes the existing two-representation runtime contract.
+The approved extension is implemented by AFragmentDestructionActor, the manager's sparse original-component bindings, and AFragmentPropActor. Reliable manager deltas carry group IDs and component indices, including late-join snapshots. Bounded unreliable pose batches carry group ID, record version and sample time; clients reject stale or mismatched updates. The original carrier is a local pooled actor driven through the manager's channel, so it does not introduce a competing replicated actor channel.
+
+The eight-piece counts above are illustrative. The supplied production assembly and native integration test use all eleven meshes. Mid-destruction saves normalize moving originals to dedicated ASM restoration, retaining transform and velocities without replaying scatter impulses. See Implementation_Continuation_2026-11-10.md for current validation and remaining work.

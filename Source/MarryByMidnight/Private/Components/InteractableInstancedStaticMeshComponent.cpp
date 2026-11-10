@@ -206,7 +206,7 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 
 			if (TargetMat && GetMaterial(MatIdx) != TargetMat)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[PropConversionDebug] [UInteractableISMComponent::ApplyProductDefinition] Slot %d on Comp '%s' updated: '%s' -> '%s'"),
+				UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug] [UInteractableISMComponent::ApplyProductDefinition] Slot %d on Comp '%s' updated: '%s' -> '%s'"),
 					MatIdx, *GetName(), GetMaterial(MatIdx) ? *GetMaterial(MatIdx)->GetName() : TEXT("nullptr"), *TargetMat->GetName());
 				SetMaterial(MatIdx, TargetMat);
 			}

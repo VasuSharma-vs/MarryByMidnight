@@ -42,21 +42,33 @@ bool UShopCheckoutComponent::IsAvailableShopStock(int32 ISID) const
 	return Entry && !Entry->CustomerOwner.IsValid() && !Reservations.Contains(ISID);
 }
 
+bool UShopCheckoutComponent::GetCheckoutView(FGuid ID, FShopCheckoutView& OutView) const
+{
+	OutView = FShopCheckoutView();
+	if (const FShopCheckoutView* View = ActiveCheckouts.FindByPredicate([ID](const auto& C) { return C.CheckoutID == ID; }))
+	{
+		OutView = *View;
+		return true;
+	}
+	return false;
+}
+
+bool UShopCheckoutComponent::GetCompletedReceipt(FGuid ID, FCompletedCheckoutReceipt& OutReceipt) const
+{
+	OutReceipt = FCompletedCheckoutReceipt();
+	if (const FCompletedCheckoutReceipt* Receipt = Completed.Find(ID)) { OutReceipt = *Receipt; return true; }
+	return false;
+}
+
 EShopCheckoutResult UShopCheckoutComponent::BuildQuote(int32 ISID, FCheckoutItemQuote& Out) const
 {
+	Out = FCheckoutItemQuote();
 	const APropManager* Manager = Cast<APropManager>(GetOwner());
-	const FISIDRuntimeIndex* Record = Manager ? Manager->FindISIDData(ISID) : nullptr;
-	const FPropInstanceUniqueData* Unique = Manager ? Manager->FindUniqueData(ISID) : nullptr;
-	const FPropProductDefinition* Product = Record ? Manager->FindProductDefinition(Record->ProductID) : nullptr;
-	const FPropContentDefinition* Content = Unique ? Manager->FindContentDefinition(Unique->EventData.ContentID) : nullptr;
-	if (!Product || !Content || !Unique || Unique->EventData.ContentLevel <= 0) return EShopCheckoutResult::InvalidProduct;
-	const bool Expired = Content->ExpiryProfile.bHasExpiry && (Manager->WorldElapsedSeconds - Unique->EventData.ContentCreationTime) >= Content->ExpiryProfile.ExpiryLifetimeMinutes * 60.0;
-	const FColaPriceQuote Quote = UColaPricingLibrary::QuoteCola(Unique->EventData.ContentLevel, Product->ConsumableProfile.NumOfPortions, Content->BasePortionPrice,
-		Unique->ContinuousData.Temperature, Content->IdealServingTemperature, Content->TemperaturePenaltyRange, Expired);
-	if (!Quote.bValid) return EShopCheckoutResult::InvalidProduct;
-	if (Expired) return EShopCheckoutResult::ExpiredProduct;
-	Out.ISID = ISID; Out.ProductID = Record->ProductID; Out.ContentID = Content->ContentID;
-	Out.SaleCents = Quote.SaleCents; Out.EventSequence = Unique->EventData.EventSequence;
+	FShopProductScanData Scan;
+	if (!Manager || !Manager->GetProductScanData(ISID, Scan)) return EShopCheckoutResult::InvalidProduct;
+	if (Scan.Price.bExpired) return EShopCheckoutResult::ExpiredProduct;
+	Out.ISID = ISID; Out.ProductID = Scan.ProductID; Out.ContentID = Scan.ContentID;
+	Out.SaleCents = Scan.Price.SaleCents; Out.EventSequence = Scan.EventSequence;
 	return EShopCheckoutResult::Success;
 }
 

@@ -387,6 +387,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Unique Data|Event")
 	virtual void OnApplyEventData(const FPropEventUpdateData& InEventData, uint8 DirtyMask = 0xFF);
 
+	/** Resolve an authored placed instance's initial quantity before its first canonical registration. */
+	UFUNCTION(BlueprintNativeEvent, BlueprintPure, Category = "Unique Data|Initialization")
+	float GetInitialContentLevel(float DefinitionDefault) const;
+	virtual float GetInitialContentLevel_Implementation(float DefinitionDefault) const;
+
 	/** C++ non-UFUNCTION inline overload accepting EPropEventDirtyMask enum for type-safe call sites */
 	void OnApplyEventData(const FPropEventUpdateData& InEventData, EPropEventDirtyMask DirtyMask)
 	{

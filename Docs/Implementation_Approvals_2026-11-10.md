@@ -19,3 +19,9 @@ Subsequent interactions promote a settled piece to a dedicated Fragment ASM with
 The user's final example was truncated after its “All Fragments Settled” heading. The lifecycle rules above were supplied completely. Fragment mesh assets and production tuning remain authored content, not generated substitutes.
 
 The user subsequently approved keeping glass/concrete fragment recipes configurable until they supply the fragment mesh assets.
+
+During resumed implementation, the user supplied eleven glass fragment meshes and the showcase BP_bottel_Fragments_Visioul_Socase. They explicitly approved the temporary initial-fragment representation and sparse component bindings described in Fragment_Actor_Integration_Proposal.md. This resolves the earlier unapproved representation extension; it does not replace the original component-first lifecycle.
+
+After saving their work, the user explicitly authorized the assistant to close and restart UE whenever necessary for this implementation. Graceful editor shutdown is authorized; preserve saved assets and avoid force termination.
+
+The user approved migrating the orphaned PSO_FoodContainer to the modern BP_IPA_FoodContainer behavior while preserving its twelve placed references and quantity data. They then explicitly requested logging and pausing before that migration was applied.

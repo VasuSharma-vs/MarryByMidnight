@@ -4,6 +4,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Props/ColaPricingLibrary.h"
+#include "Props/FragmentAssemblyDataAsset.h"
 
 bool AColaPropActor::CanDemoteToISM() const
 {
@@ -90,9 +91,43 @@ void AColaPropActor::ApplyInitialImpactFromPromotion(FVector Location, const FVe
 bool AColaPropActor::SubmitFailureRequest(const FContainmentFailureRequest& Request)
 {
 	if (!HasAuthority() || Request.FailureType == EContainmentFailureType::None || (AcceptedFailureType != EContainmentFailureType::None && static_cast<uint8>(AcceptedFailureType) <= static_cast<uint8>(Request.FailureType))) return false;
-	AcceptedFailureType = Request.FailureType;
 	const FPropProductDefinition* Def = ResolveProductDefinition();
 	if (!Def) return false;
+	if (Request.FailureType == EContainmentFailureType::BottleBreakage && PropManagerReference && (Def->FragmentAssembly || !Def->FractureFragments.IsEmpty()))
+	{
+		APropManager* Manager = PropManagerReference;
+		const int32 SourceISID = ISID;
+		if (SourceISID <= 0 || !Manager->FindISIDData(SourceISID) || Manager->GetActiveActorFromISID(SourceISID) != this) return false;
+		const int32 CapISID = LocalUniqueData.EventData.AttachedCapISID;
+		const FPropInstanceUniqueData* CapData = CapISID > 0 ? Manager->FindUniqueData(CapISID) : nullptr;
+		if (CapISID > 0 && (!CapData || CapData->EventData.AttachedBottleISID != SourceISID)) return false;
+		if (GetContentLevel() > 0 && !Request.bReleaseContent) return false;
+		UFragmentAssemblyDataAsset* Assembly = Def->FragmentAssembly;
+		const TArray<FPropFractureFragmentEntry> Recipe = Def->FractureFragments;
+		const FVector SourceVelocity = Manager->GetLinearVelocity(SourceISID), SourceAngularVelocity = Manager->GetAngularVelocity(SourceISID);
+		const FTransform CapTransform = CapISID > 0 ? Manager->GetTransform(CapISID) : FTransform::Identity;
+		TArray<int32> Fragments;
+		const bool bCreated = Assembly ? Manager->SpawnFragmentAssembly(Assembly, GetActorTransform(), SourceVelocity, SourceAngularVelocity, Fragments)
+			: Manager->CreateFragmentDestruction(Recipe, GetActorTransform(), SourceVelocity, SourceAngularVelocity, Fragments);
+		if (!bCreated) return false;
+		if (!Manager->ReleaseBottleLiquid(SourceISID))
+		{
+			for (int32 Fragment : Fragments) Manager->ReleaseInstanceToEmpty(Fragment);
+			return false;
+		}
+		if (CapISID > 0)
+		{
+			FPropEventSyncDelta Detach; Detach.ISID = CapISID; Detach.ExtendedDirtyMask = EPropExtendedEventMask::AttachedBottle;
+			Detach.AttachedBottleISID = 0;
+			Manager->SubmitAtomicInstanceEventUpdates({Detach});
+			if (AActivePropActor* Cap = Manager->GetActiveActorFromISID(CapISID)) if (Cap->GetAttachParentActor() == this) Cap->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			Manager->InitializeInstanceTransform(CapISID, CapTransform);
+			Manager->ApplyImpulse(CapISID, SourceVelocity, true);
+		}
+		AcceptedFailureType = Request.FailureType;
+		return Manager->ReleaseInstanceToEmpty(SourceISID);
+	}
+	AcceptedFailureType = Request.FailureType;
 	const int32 TargetPID = Request.FailureType == EContainmentFailureType::BottleBreakage ? Def->BrokenProductID : Request.FailureType == EContainmentFailureType::ThermalFailure ? Def->MeltedProductID : Def->BurstBrokenProductID;
 	if (Request.bReleaseContent) RemoveBottleContent();
 	if (Request.bReleasePressure) { InteractionPressure = FoamPressure = 0; }
@@ -104,6 +139,11 @@ bool AColaPropActor::SubmitFailureRequest(const FContainmentFailureRequest& Requ
 
 FColaPriceQuote AColaPropActor::GetSaleQuote() const
 {
+	if (PropManagerReference && ISID > 0)
+	{
+		FShopProductScanData Scan;
+		return PropManagerReference->GetProductScanData(ISID, Scan) ? Scan.Price : FColaPriceQuote();
+	}
 	const FPropContentDefinition* Content = ResolveContentDefinition();
 	return Content ? UColaPricingLibrary::QuoteCola(GetContentLevel(), GetNumPortions(), Content->BasePortionPrice, GetCurrentTemperature(), Content->IdealServingTemperature, Content->TemperaturePenaltyRange, IsExpired()) : FColaPriceQuote();
 }

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Props/InteractablePropDatabase.h"
+#include "Props/FragmentTypes.h"
 #include "InteractablePropManager.generated.h"
 
 class AActivePropActor;
@@ -18,12 +19,16 @@ class USceneComponent;
 class APlayerController;
 class UInteractablePropDataAsset;
 class UStaticMesh;
+class AFragmentDestructionActor;
+class UFragmentAssemblyDataAsset;
+class UStaticMeshComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSettlingObjectRested, UStaticMeshPhysicsSimulationComponent*, SimComp, AActor*, OwnerActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPropRepresentationChanged, int32, ISID, EPropRepresentation, NewRepresentation, AActivePropActor*, ActiveActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPropStateChanged, int32, ISID, EPropState, NewState, EPropState, PreviousState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPropInteracted, int32, ISID, EPropInteractionType, InteractionType, AActor*, InstigatorActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPropManagerLoadStateChanged, EPropManagerLoadState, NewLoadState, bool, bServerReady, bool, bClientReady);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLiquidReleasesChanged);
 
 /**
  * Central Server-Authoritative Multiplayer Prop Manager (ISM <-> ASM Architecture).
@@ -96,6 +101,35 @@ public:
 	UFUNCTION(NetMulticast, Reliable) void Multicast_SyncEventDeltaBatch(double EventTime, const TArray<FPropEventSyncDelta>& Deltas);
 	UFUNCTION(NetMulticast, Unreliable) void Multicast_SyncContinuousBatch(double BaseWorldSeconds, const TArray<FPropContinuousSyncItem>& Items);
 	void RefreshUniqueRepresentation(int32 InISID, uint8 DirtyMask = 0xFF);
+
+	/** Resolve the same configured quote for resting ISMs, active props, checkout, and UI. */
+	UFUNCTION(BlueprintPure, Category = "Shop|Scanner")
+	bool GetProductScanData(int32 InISID, FShopProductScanData& OutData) const;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ReleasedLiquids, BlueprintReadOnly, Category = "Prop Manager|Liquid") TArray<FReleasedLiquid> ReleasedLiquids;
+	UPROPERTY(BlueprintAssignable, Category = "Prop Manager|Liquid") FOnLiquidReleasesChanged OnLiquidReleasesChanged;
+	UFUNCTION() void OnRep_ReleasedLiquids();
+	bool ReleaseBottleLiquid(int32 ISID);
+	static bool ValidateReleasedLiquids(const TArray<FReleasedLiquid>& Liquids, double WorldTime);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Prop Manager|Fragments")
+	bool SpawnFragmentAssembly(UFragmentAssemblyDataAsset* Assembly, const FTransform& Transform, FVector Velocity, FVector AngularVelocity, TArray<int32>& OutISIDs);
+	bool CreateFragmentDestruction(const TArray<FPropFractureFragmentEntry>& Recipe, const FTransform& Transform, const FVector& Velocity, const FVector& AngularVelocity, TArray<int32>& OutISIDs);
+	bool SettleOriginalFragment(int32 ISID);
+	UStaticMeshComponent* GetOriginalFragmentComponent(int32 ISID) const;
+	void ReleaseOriginalFragment(int32 ISID);
+	void RestoreOriginalFragmentRepresentation(int32 ISID);
+	void ResetFragmentRuntime(bool bDestroyActors = false);
+	void ProcessFragmentPhysics(float DeltaSeconds);
+	UFUNCTION(NetMulticast, Unreliable) void Multicast_FragmentPhysics(const TArray<FFragmentPhysicsSync>& Batch);
+	void ApplyFragmentPhysics(const FFragmentPhysicsSync& Update);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Manager|Fragments", meta = (ClampMin = "1", ClampMax = "16")) int32 FragmentPoolGrowthBatchSize = 2;
+	UPROPERTY(Transient) TArray<TObjectPtr<AFragmentDestructionActor>> FragmentActorPool;
+	UPROPERTY(Transient) TMap<FGuid, TObjectPtr<AFragmentDestructionActor>> ActiveFragmentGroups;
+	UPROPERTY(Transient) TMap<int32, TWeakObjectPtr<UStaticMeshComponent>> OriginalFragmentComponents;
+	float FragmentPhysicsAccumulator = 0;
+	int32 FragmentSyncCursor = 0;
+	AFragmentDestructionActor* AcquireFragmentActor(FGuid GroupID);
 
 
 	/** Static helper to obtain the active Prop Manager in the world */
@@ -253,7 +287,7 @@ public:
 
 	/** Save schema version (Section 30) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prop Manager|SaveLoad")
-	int32 SchemaVersion = 3;
+	int32 SchemaVersion = 4;
 
 	/** Current level initialization and synchronization state (Section 59) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Prop Manager|Loading")

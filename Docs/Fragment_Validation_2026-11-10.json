@@ -1,0 +1,2657 @@
+{
+  "date": "2026-11-10",
+  "module": "UnrealEditor-MarryByMidnight-11110.dll",
+  "native": {
+    "testsWithWarnings": 1,
+    "tests": [
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.DeltaSchema",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.DemotionPolicy",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.FragmentLifecycle",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.PersistentSchema",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.PoolGrowth",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Props.StateRoundTrip",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.BottleReuse",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.CheckoutCancellation",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.CheckoutCommit",
+        "state": "Success"
+      },
+      {
+        "events": [
+          {
+            "type": "Warning",
+            "message": "LogBlueprint: [AssetLog] C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Content\\Characters\\Mannequins\\Anims\\Unarmed\\ABP_Unarmed.uasset: [Compiler] Node  Two Way Blend  uses potentially thread-unsafe call Get Punching State. Disable threaded update or use a thread-safe call. Function may need BlueprintThreadSafe metadata adding.",
+            "context": "log",
+            "artifact": "00000000000000000000000000000000"
+          }
+        ],
+        "name": "MarryByMidnight.Shop.ConfiguredBottleRefill",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.LiquidTransfer",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.PricingRules",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.ProductScanQuery",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.ScannerLifecycle",
+        "state": "Success"
+      },
+      {
+        "events": [],
+        "name": "MarryByMidnight.Shop.SharedWallet",
+        "state": "Success"
+      }
+    ],
+    "failed": 0,
+    "passed": 15
+  },
+  "fourPlayer": {
+    "passed": true,
+    "phases": [
+      {
+        "observations": [
+          {
+            "Stage": 0,
+            "FragmentISIDs": [],
+            "LocalRecordCount": 0,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 0,
+            "LocalReleasedPortions": 0,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 0,
+            "FragmentISIDs": [],
+            "LocalRecordCount": 0,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 0,
+            "LocalReleasedPortions": 0,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 0,
+            "FragmentISIDs": [],
+            "LocalRecordCount": 0,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 0,
+            "LocalReleasedPortions": 0,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 0,
+            "FragmentISIDs": [],
+            "LocalRecordCount": 0,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 0,
+            "LocalReleasedPortions": 0,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Four connected players"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 11,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 59.474752239874,
+                "y": -83.18376836267578,
+                "z": 36.63868885285548
+              },
+              {
+                "x": -18.66679291899452,
+                "y": -22.73262332654798,
+                "z": 21.132880034733333
+              },
+              {
+                "x": 123.16009615448712,
+                "y": -117.47806426309596,
+                "z": 95.65837780607399
+              },
+              {
+                "x": 54.43821154146767,
+                "y": 41.38216347991685,
+                "z": 13.75678275639595
+              },
+              {
+                "x": -5.70318703711056,
+                "y": -17.357591239578866,
+                "z": 111.42947215532007
+              },
+              {
+                "x": -72.56260405039708,
+                "y": -30.48050772755454,
+                "z": 11.13393330932714
+              },
+              {
+                "x": -65.92966833662614,
+                "y": -36.883091749803604,
+                "z": 142.51501371436476
+              },
+              {
+                "x": 59.06615501274858,
+                "y": -40.7924972598059,
+                "z": 28.73364481529852
+              },
+              {
+                "x": -54.812499928951986,
+                "y": 3.9905492083184058,
+                "z": 12.605417601218463
+              },
+              {
+                "x": 34.53825487728264,
+                "y": -24.967393532115686,
+                "z": 5.11043835722684
+              },
+              {
+                "x": -16.33748372269538,
+                "y": 57.33770305135744,
+                "z": 53.21218577222541
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 60.14668329420627,
+                "y": -82.96757709743731,
+                "z": 41.33147561843687
+              },
+              {
+                "x": -16.93212773888897,
+                "y": -20.86545571676992,
+                "z": 37.97676308256471
+              },
+              {
+                "x": 116.11384121780932,
+                "y": -112.58119772899178,
+                "z": 91.20815863509794
+              },
+              {
+                "x": 53.322751752501524,
+                "y": 40.43546413975081,
+                "z": 14.617172120133581
+              },
+              {
+                "x": -5.645716878065229,
+                "y": -17.457352766688672,
+                "z": 103.96232976552714
+              },
+              {
+                "x": -71.9865644697817,
+                "y": -30.79544268507176,
+                "z": 14.37955909050578
+              },
+              {
+                "x": -66.55524087571072,
+                "y": -37.07982456860021,
+                "z": 135.69114554723575
+              },
+              {
+                "x": 59.928124093581104,
+                "y": -40.748522336695245,
+                "z": 20.885651366893903
+              },
+              {
+                "x": -54.85978265250837,
+                "y": 4.612323789598072,
+                "z": 4.710212566323557
+              },
+              {
+                "x": 35.03181711677515,
+                "y": -24.934363872052586,
+                "z": -3.726223670232594
+              },
+              {
+                "x": -16.77959997436557,
+                "y": 58.491655557032466,
+                "z": 45.34772732856599
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 59.96988716818933,
+                "y": -83.35247882396385,
+                "z": 38.10519758341648
+              },
+              {
+                "x": -17.309689787909175,
+                "y": -21.2782639401139,
+                "z": 35.97450184214864
+              },
+              {
+                "x": 120.19502657016966,
+                "y": -114.37587503962757,
+                "z": 96.85844639139046
+              },
+              {
+                "x": 53.54446679064351,
+                "y": 40.51581911275948,
+                "z": 16.601111276508753
+              },
+              {
+                "x": -5.663351117458744,
+                "y": -17.412167680354244,
+                "z": 107.88202051467984
+              },
+              {
+                "x": -72.87665621902097,
+                "y": -30.953255463416887,
+                "z": 11.168699986222196
+              },
+              {
+                "x": -66.34614828525395,
+                "y": -36.98922336285435,
+                "z": 139.3100892667366
+              },
+              {
+                "x": 59.58432681628872,
+                "y": -40.8529391732879,
+                "z": 24.83686513981424
+              },
+              {
+                "x": -54.77838963224359,
+                "y": 4.468825935044774,
+                "z": 8.82743562875433
+              },
+              {
+                "x": 34.85051441008261,
+                "y": -24.984943988159426,
+                "z": 0.7095101511822008
+              },
+              {
+                "x": -16.572442986618146,
+                "y": 57.979306710708904,
+                "z": 49.35755877358917
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 62.101306676804704,
+                "y": -85.44567607520206,
+                "z": 39.28292075349395
+              },
+              {
+                "x": -20.630257411801107,
+                "y": -24.82785342808912,
+                "z": -6.061522959341943
+              },
+              {
+                "x": 130.72154349795815,
+                "y": -130.30239308891285,
+                "z": 74.74024583372454
+              },
+              {
+                "x": 51.61929534119444,
+                "y": 42.26296491890347,
+                "z": 15.62278044566427
+              },
+              {
+                "x": -5.046041157388587,
+                "y": -17.955640103620212,
+                "z": 86.59568430567712
+              },
+              {
+                "x": -76.68535200747328,
+                "y": -34.295910784467424,
+                "z": 8.845676311558389
+              },
+              {
+                "x": -72.444035720279,
+                "y": -38.00046156974848,
+                "z": 121.20288506038236
+              },
+              {
+                "x": 65.68762074274848,
+                "y": -43.581901772649566,
+                "z": 3.832070726260188
+              },
+              {
+                "x": -55.57409570643579,
+                "y": 4.691093421669586,
+                "z": -6.009873087227133
+              },
+              {
+                "x": 39.01688381982083,
+                "y": -25.796111877385858,
+                "z": -31.81599524369758
+              },
+              {
+                "x": -18.902293702906558,
+                "y": 64.68491974529259,
+                "z": 31.550538895260274
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Eleven independent originals in every world"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50597833507871,
+                "y": -198.0404266506657,
+                "z": 0.09399648765136703
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50597833507871,
+                "y": -198.0404266506657,
+                "z": 0.09399648765136703
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50597833507871,
+                "y": -198.0404266506657,
+                "z": 0.09399648765136703
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50597833507871,
+                "y": -198.0404266506657,
+                "z": 0.09399648765136703
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Eleven settled ISMs in every world"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 3,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 10,
+            "LocalASMCount": 1,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 10,
+            "LocalDedicatedActorCount": 1,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.5059624688145,
+                "y": -198.04031546740248,
+                "z": 0.10013781212620643
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 3,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 10,
+            "LocalASMCount": 1,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 10,
+            "LocalDedicatedActorCount": 1,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50395391966264,
+                "y": -198.0385169694843,
+                "z": 0.1000980106954259
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 3,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 10,
+            "LocalASMCount": 1,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 10,
+            "LocalDedicatedActorCount": 1,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50395391966264,
+                "y": -198.0385169694843,
+                "z": 0.1000980106954259
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 3,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 10,
+            "LocalASMCount": 1,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 10,
+            "LocalDedicatedActorCount": 1,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.50395391966264,
+                "y": -198.0385169694843,
+                "z": 0.1000980106954259
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "One dedicated active fragment in every world"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 4,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.5059624688145,
+                "y": -198.04031546740248,
+                "z": 0.10013781212620643
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 4,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.5059624688145,
+                "y": -198.04031546740248,
+                "z": 0.10013781212620643
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 4,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.5059624688145,
+                "y": -198.04031546740248,
+                "z": 0.10013781212620643
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 4,
+            "FragmentISIDs": [
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 71.5059624688145,
+                "y": -198.04031546740248,
+                "z": 0.10013781212620643
+              },
+              {
+                "x": -73.9425121471804,
+                "y": -74.9141308784362,
+                "z": 36.44624772412491
+              },
+              {
+                "x": 109.39641998596187,
+                "y": -6.818576459448238,
+                "z": 37.734469104696686
+              },
+              {
+                "x": 25.324069595893633,
+                "y": 81.33086076888975,
+                "z": 36.4910127302556
+              },
+              {
+                "x": -95.3219813262315,
+                "y": 47.23038236819113,
+                "z": -71.83519474685033
+              },
+              {
+                "x": -80.08126581532137,
+                "y": -53.24841957299338,
+                "z": -10.068769745781358
+              },
+              {
+                "x": 230.27426971096227,
+                "y": 114.14450809783455,
+                "z": 30.514113885570616
+              },
+              {
+                "x": 63.18386935841339,
+                "y": -48.99810304138471,
+                "z": -5.556943197493112
+              },
+              {
+                "x": -39.792590878031056,
+                "y": -46.56885535926625,
+                "z": 64.68658227260207
+              },
+              {
+                "x": -0.44453157600776194,
+                "y": -49.62024412154418,
+                "z": 36.445833569129924
+              },
+              {
+                "x": -76.25298002397861,
+                "y": 77.69466958068482,
+                "z": 36.79276103933304
+              }
+            ],
+            "LocalPreviousRestCount": 0,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 1,
+            "LocalReleasedPortions": 135,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Dedicated fragment returned to its ISM"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 11,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 25.93991503933009,
+                "y": -38.171389508377146,
+                "z": 81.3473835841551
+              },
+              {
+                "x": -7.2179655714616615,
+                "y": -15.975350358825242,
+                "z": 109.40842708705773
+              },
+              {
+                "x": 50.36137543173978,
+                "y": -41.185951658267385,
+                "z": 130.95710462786968
+              },
+              {
+                "x": 37.49431860179454,
+                "y": 15.864185392342215,
+                "z": 109.83148552913184
+              },
+              {
+                "x": -16.494874107192768,
+                "y": -21.869061201533697,
+                "z": 137.2914670259841
+              },
+              {
+                "x": -52.49784962528165,
+                "y": -25.14220233204957,
+                "z": 84.93146247061262
+              },
+              {
+                "x": -29.598417052735165,
+                "y": -26.009398014620743,
+                "z": 153.00155453499653
+              },
+              {
+                "x": 10.160573347213052,
+                "y": -25.03772806416019,
+                "z": 112.47215391659017
+              },
+              {
+                "x": -26.625902009021196,
+                "y": 11.804391916605361,
+                "z": 97.79994362719881
+              },
+              {
+                "x": 15.417579915559429,
+                "y": -48.433108540539195,
+                "z": 140.33020265273566
+              },
+              {
+                "x": -8.102107679515488,
+                "y": 27.359031376972446,
+                "z": 105.39125504629571
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 22.487738866549666,
+                "y": -33.36360097766999,
+                "z": 88.06267590652425
+              },
+              {
+                "x": -5.971887504408142,
+                "y": -13.675637752902706,
+                "z": 113.2844468236588
+              },
+              {
+                "x": 43.70721070797006,
+                "y": -35.70055872933297,
+                "z": 131.1586654988474
+              },
+              {
+                "x": 33.8592650093372,
+                "y": 13.138151980099725,
+                "z": 113.33716972058512
+              },
+              {
+                "x": -15.570502238804737,
+                "y": -20.440830304266196,
+                "z": 136.8963934577344
+              },
+              {
+                "x": -45.325082497732176,
+                "y": -22.68578446178171,
+                "z": 90.76424346284536
+              },
+              {
+                "x": -26.203226209429488,
+                "y": -26.568763308230803,
+                "z": 151.99708549808204
+              },
+              {
+                "x": 8.566663033754278,
+                "y": -21.189354321437044,
+                "z": 115.07249843866909
+              },
+              {
+                "x": -18.78779929102371,
+                "y": 8.239385698709603,
+                "z": 107.31505206409952
+              },
+              {
+                "x": 14.280296378722243,
+                "y": -41.669042864702554,
+                "z": 138.3792364092897
+              },
+              {
+                "x": -7.436422038883887,
+                "y": 24.919762306411993,
+                "z": 109.24511139087856
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 27.993574144168136,
+                "y": -41.05031837745255,
+                "z": 76.05823230381364
+              },
+              {
+                "x": -7.962219312095352,
+                "y": -17.384214413700136,
+                "z": 105.77885733932865
+              },
+              {
+                "x": 54.244610700772085,
+                "y": -44.53514662428276,
+                "z": 129.70805206302225
+              },
+              {
+                "x": 39.672054149242946,
+                "y": 17.543016737914588,
+                "z": 106.45096431195559
+              },
+              {
+                "x": -17.05171865324915,
+                "y": -22.72148012242746,
+                "z": 136.23486476366284
+              },
+              {
+                "x": -56.789563535280635,
+                "y": -26.611961909258575,
+                "z": 80.13648541346691
+              },
+              {
+                "x": -31.624174004828735,
+                "y": -25.69142979924249,
+                "z": 152.36932384532966
+              },
+              {
+                "x": 8.802262157452576,
+                "y": -21.886386079565955,
+                "z": 114.90538948677515
+              },
+              {
+                "x": -28.046593001125206,
+                "y": 12.29496381917071,
+                "z": 94.2749864796362
+              },
+              {
+                "x": 15.914543852342124,
+                "y": -51.73939865286406,
+                "z": 139.74111719061057
+              },
+              {
+                "x": -8.546208823300194,
+                "y": 28.841501385180763,
+                "z": 101.82974977489872
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 1,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 11,
+            "LocalISMCount": 0,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 11,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 0,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 32.085087251592874,
+                "y": -46.80150128937072,
+                "z": 63.913559703924726
+              },
+              {
+                "x": -9.445604282686926,
+                "y": -20.20461674102936,
+                "z": 96.90283906549975
+              },
+              {
+                "x": 61.85769702115143,
+                "y": -51.28610980383196,
+                "z": 125.79967436835501
+              },
+              {
+                "x": 44.01917328062541,
+                "y": 20.955145798066585,
+                "z": 98.0983439491007
+              },
+              {
+                "x": -18.168194173514436,
+                "y": -24.420809546301456,
+                "z": 132.51143275693227
+              },
+              {
+                "x": -65.3588970526359,
+                "y": -29.546654191498128,
+                "z": 68.93370293073097
+              },
+              {
+                "x": -32.07591960732459,
+                "y": -25.618318681119547,
+                "z": 152.40034370436467
+              },
+              {
+                "x": 12.973614690726741,
+                "y": -29.843511623068384,
+                "z": 104.63287772589301
+              },
+              {
+                "x": -32.249983699846,
+                "y": 13.84123360242501,
+                "z": 84.34394829358223
+              },
+              {
+                "x": 16.907833579025695,
+                "y": -58.52714171554966,
+                "z": 137.31390454955852
+              },
+              {
+                "x": -9.503624845752741,
+                "y": 31.88209995830416,
+                "z": 93.19694448281012
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Reused carrier preserved earlier fragments"
+      },
+      {
+        "observations": [
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 39.63345906131665,
+                "y": -63.353657725596314,
+                "z": 17.22144627965526
+              },
+              {
+                "x": -97.72147921583085,
+                "y": -97.47824626976532,
+                "z": 28.319293007592048
+              },
+              {
+                "x": 107.33777569705444,
+                "y": -124.65182504021026,
+                "z": -44.06426274863269
+              },
+              {
+                "x": 95.45080910048388,
+                "y": 86.73852990259526,
+                "z": 35.88697518417527
+              },
+              {
+                "x": -53.08287344209811,
+                "y": -59.55784120267762,
+                "z": 166.20184740829413
+              },
+              {
+                "x": -98.78452143521866,
+                "y": -41.437385424031675,
+                "z": -2.9385143953601656
+              },
+              {
+                "x": 241.39974663437343,
+                "y": -33.19714810664037,
+                "z": -4.93596231800273
+              },
+              {
+                "x": 61.68902246504003,
+                "y": -23.816231354073835,
+                "z": 74.33350217255474
+              },
+              {
+                "x": -145.1876379166453,
+                "y": 1.8805571240328476,
+                "z": 35.9313770993031
+              },
+              {
+                "x": 83.74079210983228,
+                "y": -175.63122670518823,
+                "z": -44.577793402335494
+              },
+              {
+                "x": -8.366348346859528,
+                "y": 81.94348191559058,
+                "z": -9.769772206031053
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_0_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 39.63345906131665,
+                "y": -63.353657725596314,
+                "z": 17.22144627965526
+              },
+              {
+                "x": -97.72147921583085,
+                "y": -97.47824626976532,
+                "z": 28.319293007592048
+              },
+              {
+                "x": 107.33777569705444,
+                "y": -124.65182504021026,
+                "z": -44.06426274863269
+              },
+              {
+                "x": 95.45080910048388,
+                "y": 86.73852990259526,
+                "z": 35.88697518417527
+              },
+              {
+                "x": -53.08287344209811,
+                "y": -59.55784120267762,
+                "z": 166.20184740829413
+              },
+              {
+                "x": -98.78452143521866,
+                "y": -41.437385424031675,
+                "z": -2.9385143953601656
+              },
+              {
+                "x": 241.39974663437343,
+                "y": -33.19714810664037,
+                "z": -4.93596231800273
+              },
+              {
+                "x": 61.68902246504003,
+                "y": -23.816231354073835,
+                "z": 74.33350217255474
+              },
+              {
+                "x": -145.1876379166453,
+                "y": 1.8805571240328476,
+                "z": 35.9313770993031
+              },
+              {
+                "x": 83.74079210983228,
+                "y": -175.63122670518823,
+                "z": -44.577793402335494
+              },
+              {
+                "x": -8.366348346859528,
+                "y": 81.94348191559058,
+                "z": -9.769772206031053
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_1_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 39.63345906131665,
+                "y": -63.353657725596314,
+                "z": 17.22144627965526
+              },
+              {
+                "x": -97.72147921583085,
+                "y": -97.47824626976532,
+                "z": 28.319293007592048
+              },
+              {
+                "x": 107.33777569705444,
+                "y": -124.65182504021026,
+                "z": -44.06426274863269
+              },
+              {
+                "x": 95.45080910048388,
+                "y": 86.73852990259526,
+                "z": 35.88697518417527
+              },
+              {
+                "x": -53.08287344209811,
+                "y": -59.55784120267762,
+                "z": 166.20184740829413
+              },
+              {
+                "x": -98.78452143521866,
+                "y": -41.437385424031675,
+                "z": -2.9385143953601656
+              },
+              {
+                "x": 241.39974663437343,
+                "y": -33.19714810664037,
+                "z": -4.93596231800273
+              },
+              {
+                "x": 61.68902246504003,
+                "y": -23.816231354073835,
+                "z": 74.33350217255474
+              },
+              {
+                "x": -145.1876379166453,
+                "y": 1.8805571240328476,
+                "z": 35.9313770993031
+              },
+              {
+                "x": 83.74079210983228,
+                "y": -175.63122670518823,
+                "z": -44.577793402335494
+              },
+              {
+                "x": -8.366348346859528,
+                "y": 81.94348191559058,
+                "z": -9.769772206031053
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_2_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          },
+          {
+            "Stage": 2,
+            "FragmentISIDs": [
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024
+            ],
+            "LocalRecordCount": 11,
+            "LocalOriginalCount": 0,
+            "LocalISMCount": 11,
+            "LocalASMCount": 0,
+            "LocalVisibleOriginalCount": 0,
+            "LocalSimulatingOriginalCount": 0,
+            "LocalVisibleISMCount": 11,
+            "LocalDedicatedActorCount": 0,
+            "LocalFragmentPositions": [
+              {
+                "x": 39.63345906131665,
+                "y": -63.353657725596314,
+                "z": 17.22144627965526
+              },
+              {
+                "x": -97.72147921583085,
+                "y": -97.47824626976532,
+                "z": 28.319293007592048
+              },
+              {
+                "x": 107.33777569705444,
+                "y": -124.65182504021026,
+                "z": -44.06426274863269
+              },
+              {
+                "x": 95.45080910048388,
+                "y": 86.73852990259526,
+                "z": 35.88697518417527
+              },
+              {
+                "x": -53.08287344209811,
+                "y": -59.55784120267762,
+                "z": 166.20184740829413
+              },
+              {
+                "x": -98.78452143521866,
+                "y": -41.437385424031675,
+                "z": -2.9385143953601656
+              },
+              {
+                "x": 241.39974663437343,
+                "y": -33.19714810664037,
+                "z": -4.93596231800273
+              },
+              {
+                "x": 61.68902246504003,
+                "y": -23.816231354073835,
+                "z": 74.33350217255474
+              },
+              {
+                "x": -145.1876379166453,
+                "y": 1.8805571240328476,
+                "z": 35.9313770993031
+              },
+              {
+                "x": 83.74079210983228,
+                "y": -175.63122670518823,
+                "z": -44.577793402335494
+              },
+              {
+                "x": -8.366348346859528,
+                "y": 81.94348191559058,
+                "z": -9.769772206031053
+              }
+            ],
+            "LocalPreviousRestCount": 11,
+            "LocalSlotChanges": 0,
+            "LocalReleasedLiquidCount": 2,
+            "LocalReleasedPortions": 270,
+            "bLocalSourcePresent": false,
+            "LocalPlayerCount": 4,
+            "LastFailure": "",
+            "WorldObject": "/Game/ColaShopTests/UEDPIE_3_FragmentReplication.FragmentReplication:PersistentLevel.FragmentNetworkTestActor_0"
+          }
+        ],
+        "name": "Both destruction groups settled without slot changes"
+      }
+    ],
+    "cleanup": {
+      "mapRestored": "/Game/FirstPerson/Lvl_FirstPerson",
+      "settingsRestored": true,
+      "pieStopped": true
+    },
+    "error": null
+  },
+  "blueprints": {
+    "assets": [
+      {
+        "asset": "/Game/AI/AI_IntractAssets/BP_CheckInStandPosition",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/BPC_BasicNPC",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/BP_Basic_NPC",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_FindProduct",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_GetBucket",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_GetProduct",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveToColaShop",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_BaseInteractableProp",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_Cable",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_ChargoTruck",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_CheckInPoints",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_Check_In_Counter",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_ColaTank",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/BP_IPA_FoodContainer",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/FoodCountr",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/NewBlueprint",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_BaseMesh",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_FoodChopper",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_FoodContainer",
+        "status": "<BlueprintStatus.BS_ERROR: 2>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_FoodDrum",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_GasCylender",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_HeavyMetalDesk",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_Patatos",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_Plate",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_Sink",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_Stove",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/Blueprints/PSO_StovePlate",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Assest/meshs/Bottle_Fragments_Mesh/BP_bottel_Fragments_Visioul_Socase",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/ColaShopTests/BP_WalletReplicationFixture",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_Bucket",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_CheckooutLine",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_CheckoutCounter",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/BP_ProductSceaner",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/ClaShopGate",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/DirtyActors/FakeShell",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonCameraManager",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonCharacter",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonGameMode",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_FirstPersonPlayerController",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/FirstPerson/Blueprints/BP_ShopGameState",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/BIP_PropIntraction",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/BP_ASM_Actor",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/BP_PropManager",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_Cola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_PlastickBottel",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_SpicyCola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/Colas/BP_SugerCrushCola",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/InstanceTestLocation",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      },
+      {
+        "asset": "/Game/Props/NewBlueprint",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+        "package_unchanged": true
+      }
+    ]
+  },
+  "legacyParents": [
+    {
+      "asset": "/Game/Assest/Blueprints/PSO_BaseMesh",
+      "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.NPCConsumableProp'",
+      "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.NPCConsumableProp'",
+      "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'"
+    },
+    {
+      "asset": "/Game/Assest/Blueprints/PSO_FoodContainer",
+      "ParentClass": "None",
+      "NativeParentClass": "None",
+      "GeneratedClass": "None"
+    },
+    {
+      "asset": "/Game/Assest/Blueprints/BP_IPA_FoodContainer",
+      "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/BP_BaseInteractableProp.BP_BaseInteractableProp_C'",
+      "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.InteractableProp'",
+      "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/BP_IPA_FoodContainer.BP_IPA_FoodContainer_C'"
+    }
+  ],
+  "legacyRepairTrial": {
+    "source": "/Game/Assest/Blueprints/PSO_FoodContainer",
+    "original_sha256": "7e3669ebae0b3ae457d9afb3d6388a716b042cbccc2bc565e725d9ed84605a1b",
+    "proposed_parent": "/Game/Assest/Blueprints/PSO_BaseMesh",
+    "review_asset": "/Game/ColaShopTests/LegacyFoodContainerRepairReview",
+    "original_variables": [
+      "Food amount"
+    ],
+    "status": "<BlueprintStatus.BS_ERROR: 2>",
+    "review_variables": [
+      "Food amount"
+    ],
+    "components": [
+      "SceneRoot",
+      "PropMesh",
+      "SkeletalMeshComponent",
+      "StaticMesh_GEN_VARIABLE",
+      "DebugText",
+      "PhysicsSimComponent"
+    ],
+    "original_unchanged": true
+  },
+  "scannerSHA256": "6F883206717F374BC2A59D80260DFC7658A52000516EC6693A719E53AEAA8452",
+  "showcaseSHA256": "6840709384C5D26DC90E8C9C8860E3D0EF41DFD709458D10BE8C90C5D1DAE9BA"
+}

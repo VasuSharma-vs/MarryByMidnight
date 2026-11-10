@@ -280,6 +280,11 @@ void UPropBatchUpdateComponent::ProcessBatchUpdate(float DeltaSeconds)
 			Item.WorldTransform = Record->ActiveActor->GetActorTransform();
 			Item.WorldLocation = Record->ActiveActor->GetActorLocation();
 		}
+		else if (Record->Representation == EPropRepresentation::CompositeFragment)
+		{
+			Item.WorldTransform = Manager->GetTransform(CheckISID);
+			Item.WorldLocation = Item.WorldTransform.GetLocation();
+		}
 
 		CurrentBatch.Add(Item);
 	}

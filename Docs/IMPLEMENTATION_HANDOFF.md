@@ -1,14 +1,16 @@
-# Implementation handoff — user requested stop
+# Implementation handoff — paused by user
 
 ## Status
 
-Stop requested explicitly by the user near the context limit. No task work should continue until the user resumes. The complete documented game is unfinished; do not claim completion. No commits were made and no user edits were reverted.
+The user explicitly requested logging and pausing near the remaining usage limit. Implementation is stopped. Do not resume until the user asks. Read PAUSE_CHECKPOINT_2026-11-10.md first, then Implementation_Continuation_2026-11-10.md. The complete documented game is unfinished; do not claim completion. Remaining historical sections below do not override this pause.
+
+The complete earlier working tree was committed and pushed to main as e3be512c2a780904ce409f361f2676bda10a2a3d. Current work is on codex/shop-checkout-integration. Preserve user changes to BP_ProductSceaner and the newly supplied mesh/showcase, splash/icon and placed actor assets.
 
 ## Workspace
 
 C:/Users/PC/Documents/Unreal Projects/MarryByMidnight — UE 5.8, PowerShell, Windows.
 
-Native module currently selected: Binaries/Win64/UnrealEditor-MarryByMidnight-11016.dll. Build succeeded. All eleven native automation tests passed with zero failures/test warnings. 28 saved gameplay Blueprints compiled successfully before the later GameState bridge/test-fixture edits; both edited Blueprints subsequently compiled in the interactive editor with warnings treated as errors.
+Last validated interactive module: UnrealEditor-MarryByMidnight-11110.dll, verified from PID 37044. All fifteen native tests passed; one actual-asset test reports the existing ABP_Unarmed Get Punching State thread-safety warning. The strengthened four-player fragment test passed all seven phases. See Docs/Fragment_Validation_2026-11-10.json. A subsequent placed-quantity hook compiled successfully in module 11111, but its food migration preview failed and this latest addition has not passed the full test suite. The editor still holds 11110; do not confuse build selection with editor reload.
 
 Read Implementation_Progress_2026-11-10.md for completed native behavior, files, test coverage, caveats and remaining domains. Source attribution is against Saved/ImplementationBaseline/Source, not Git HEAD, because substantial user changes already existed. Source and content SHA-256 inventories are in Implementation_Change_Manifest_2026-11-10.json and Implementation_Asset_Manifest_2026-11-10.json.
 
@@ -16,20 +18,21 @@ Read Implementation_Progress_2026-11-10.md for completed native behavior, files,
 
 Read README.md precedence, Core_Gameplay_Design_Decisions.md, Core_Design_Decisions_Update_2026-11-10.md and Implementation_Approvals_2026-11-10.md. All-player purchasing/loans, correct-change-only completion, canceled stock return, 60-second autosave, owed compensation when insolvent, per-portion/temperature pricing and persistent pressure/cap/content-age extensions are approved. No old-save migration required.
 
-Fragment workflow clarified twice by the user: original Fragment Destruction Actor simulates multiple original static-mesh pieces; each settles independently into its ISM, with its own ISID; later interactions use separate dedicated Fragment ASM actors; original actor pool return must not affect settled pieces. Mesh recipes stay configurable until the user supplies glass/concrete meshes. The proposed CompositeFragment enum extension was not explicitly approved: the user restated the desired lifecycle. Do not invent approval or ask for the gameplay workflow again.
+Fragment workflow: original Fragment Destruction Actor simulates multiple original static-mesh pieces; each settles independently into its ISM, with its own ISID; later interactions use separate dedicated Fragment ASM actors; original actor pool return must not affect settled pieces. The user has now supplied eleven glass meshes and explicitly approved CompositeFragment/component bindings. The runtime and supplied glass recipe are implemented; concrete meshes remain outstanding.
 
 ## Editor and cleanup
 
-The user closed the old editor after saving. The assistant opened the project using UE5.8 UnrealEditor.exe with -NoLiveCoding (PID 29128 at launch). MCP endpoint is http://127.0.0.1:8000/mcp; use the mcp__ue5 meta tools. Confirm connection before editing. Do not assume a headless validation process proves the interactive editor restarted.
+The user explicitly authorized the assistant to close/restart UE after saving their work. Use graceful CloseMainWindow and verify exit before writing locked packages. The assistant restarted UE with the new native build. MCP endpoint is http://127.0.0.1:8000/mcp. The mcp__ue5 tool namespace is absent in this resumed turn; direct local MCP initialization/discovery works through Saved/Invoke-UnrealMCP.ps1. This session must be renewed after restart. Do not assume a headless validation process proves the interactive editor restarted.
 
-Confirmed at stop: no PIE; current map /Game/FirstPerson/Lvl_FirstPerson; original play settings restored: PIE_ListenServer, PlayNumberOfClients 2, RunUnderOneProcess true, client windows 640×480. Editor remains open. Native schema changes generally need a fresh editor; the open editor holds its DLL, so side-by-side builds were used.
+The resumed four-player fragment harness restores the original map and captured play settings in finally. The final strengthened run passed with cleanup: no PIE, /Game/FirstPerson/Lvl_FirstPerson restored; editor left open. The user's original settings were already four-player listen server, one process, 480×1040 primary window; read Saved/FragmentOriginalPlaySettings.json for all captured dimensions.
 
 ## Exact next work on resume
 
-1. Review the current scanner/player interaction graphs and finish routing real scanning, cash/change, inventory registration and customer identities through UShopCheckoutComponent. Its APIs are implemented/tested, but gameplay UI/AI is not wired. The scanner’s legacy GameState money writes are still present and will be overwritten by the new authoritative wallet display bridge. Avoid duplicate money authorities.
-2. Add a canonical Blueprint-callable product quote query if needed. Current BuildQuote is private inside UShopCheckoutComponent; scanner must handle resting ISMs without promoting solely to read a quote. Do not duplicate pricing formulas or hardcode the configurable temperature range.
+1. Only after the user resumes: finish the approved PSO_FoodContainer migration to BP_IPA_FoodContainer behavior. The user already approved modern migration; do not ask that choice again. Its twelve placed references and original Blueprint are untouched. The migration preview failed before saving. Use PAUSE_CHECKPOINT_2026-11-10.md for exact errors, files, backups and next steps. The fragment stage and strengthened four-player checks passed on 11110; latest migration additions remain unvalidated.
+2. Finish routing real scanning, cash/change, inventory registration and customer identities through UShopScannerComponent/UShopCheckoutComponent. Their APIs are implemented/tested, but gameplay UI/AI is not wired. The scanner's legacy GameState money writes are still present and will be overwritten by the authoritative wallet display bridge. Preserve the user's scanner graph and avoid duplicate money authorities.
+The canonical Blueprint-callable GetProductScanData query is now implemented and used by checkout and the native scanner adapter. Do not duplicate its pricing formulas or hardcode the configurable temperature range.
 3. Connect UBottleFillingComponent to the existing nozzle/tank interaction path. Server liquid-transfer APIs are implemented and tested; the actual nozzle Blueprint is not yet connected.
-4. Implement the component-first Fragment Destruction Actor and dedicated individual Fragment ASM lifecycle, including failure dispatch, contents release, persistence and independent settlement. Existing recipes/types alone do not implement this feature.
+4. Fragment lifecycle, failure dispatch, persistent liquid-release accounting and the supplied glass assets are implemented. Add authored break effects, puddle rendering/hazard behavior and concrete recipes once their assets are available. Release records preserve liquid accounting; they do not constitute completed puddle/hazard visuals.
 5. Continue caps, complete pressure/dual thermal/spill/failure systems, compensation obligations, loans/rent/purchases/recycling, stations, NPC shopping/buckets, UI/progression, wider hazards/vehicles/content and full network acceptance. See progress report for explicit incomplete systems.
 
 ## Multiplayer test assets and last harness issue
