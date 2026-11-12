@@ -93,6 +93,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	float Price = 2.0f;
 
+	/** Gameplay mass is independent of giant visual dimensions and thermal mass. Zero preserves authored physics. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Physics", meta=(ClampMin="0"))
+	float GameplayMassKg = 0;
+	/** Empty bottle mass, independent of liquid and giant mesh scale. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Physics|Bottle", meta=(ClampMin="0.001", Units="kg"))
+	float BottleMass = .05f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Physics|Bottle", meta=(ClampMin="0.001"))
+	float PortionVolumeMl = 20.f;
+	/** Used when registering this product's liquid content definition. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Physics|Bottle", meta=(ClampMin="0.001"))
+	float LiquidDensityGPerMl = 1.04f;
+
 	/** Total number of portions (e.g. 4 sips or bites) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quantity", meta = (DisplayName = "Num of Portions", ClampMin = "0"))
 	int32 NumOfPortions = 4;
@@ -304,6 +316,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (Bitmask, BitmaskEnum = "/Script/MarryByMidnight.EBottleCapMaskFlags"))
 	uint8 SupportedCapMask = 0xFF;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bottle|Cap") bool bIsBottleCap = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bottle|Cap") FTransform CapAttachmentTransform = FTransform(FVector(0,0,170));
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
 	EBottleCapType DefaultCapType = EBottleCapType::Twist;

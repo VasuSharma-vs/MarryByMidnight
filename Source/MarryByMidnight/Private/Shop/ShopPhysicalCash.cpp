@@ -1,5 +1,6 @@
 #include "Shop/ShopCheckoutComponent.h"
 #include "Shop/SharedTeamWalletComponent.h"
+#include "Shop/ShopInteractionGeometry.h"
 #include "Props/InteractablePropManager.h"
 #include "Props/InteractablePropDataAsset.h"
 #include "Engine/StaticMesh.h"
@@ -57,6 +58,28 @@ EShopCheckoutResult UShopCheckoutComponent::IssueCustomerCoins(FGuid ID, FGuid C
 	return CreateCoins(ID, Customer, Values, Output, false, Out);
 }
 
+TArray<int32> UShopCheckoutComponent::GetCustomerCoinISIDs(FGuid Customer) const
+{
+	TArray<int32> Result;
+	if (IsServer() && Customer.IsValid()) for (const auto& Pair : Coins) if (Pair.Value.CustomerOwner == Customer) Result.Add(Pair.Key);
+	return Result;
+}
+
+bool UShopCheckoutComponent::ReclaimCustomerCoins(FGuid Customer, const TArray<int32>& IDs)
+{
+	auto* Manager=Cast<APropManager>(GetOwner());
+	if (!IsServer() || bCommitting || !Manager || !Customer.IsValid()) return false;
+	TSet<int32> Seen;
+	for (int32 ID:IDs)
+	{
+		const auto* Coin=Coins.Find(ID);
+		if (!Coin || Coin->CustomerOwner!=Customer || Coin->CheckoutID.IsValid() || Seen.Contains(ID)) return false;
+		Seen.Add(ID);
+	}
+	for (int32 ID:IDs) { Manager->ReleaseInstanceToEmpty(ID); Coins.Remove(ID); }
+	return true;
+}
+
 EShopCheckoutResult UShopCheckoutComponent::CreateCoins(FGuid ID, FGuid Customer, const TArray<int32>& Values, const FTransform& Output, bool bWithdraw, TArray<int32>& Out, bool bStartPhysics)
 {
 	Out.Reset();
@@ -74,6 +97,7 @@ EShopCheckoutResult UShopCheckoutComponent::CreateCoins(FGuid ID, FGuid Customer
 	int64 Amount = 0;
 	TArray<const FShopCurrencyRecipe*> Recipes;
 	TArray<TStrongObjectPtr<UInteractablePropDataAsset>> Products;
+	FVector CellSize=FVector::ZeroVector;
 	for (int32 D : Values)
 	{
 		if (!IsSupportedDenomination(D)) return EShopCheckoutResult::InvalidRequest;
@@ -83,6 +107,7 @@ EShopCheckoutResult UShopCheckoutComponent::CreateCoins(FGuid ID, FGuid Customer
 			|| Product->bCanConsume || Product->bHasExpiry || Product->NumOfPortions != 0) return EShopCheckoutResult::CashUnavailable;
 		const UBodySetup* Body = Product->StaticMesh->GetBodySetup();
 		if (!Body || Body->CollisionTraceFlag == CTF_UseComplexAsSimple || Body->AggGeom.GetElementCount() == 0) return EShopCheckoutResult::CashUnavailable;
+		CellSize=CellSize.ComponentMax(ShopInteractionGeometry::MeshGridSpacing(Product->StaticMesh,Output.GetScale3D()*Recipe->MeshScale));
 		Recipes.Add(Recipe); Products.Emplace(Product); Amount += int64(D) * 100;
 	}
 	if (bWithdraw && Amount > Manager->SharedWallet->GetWalletState().BalanceCents - FMath::Min(GetOutstandingBankDebt(), Manager->SharedWallet->GetWalletState().BalanceCents)) return EShopCheckoutResult::WalletFailure;
@@ -90,9 +115,7 @@ EShopCheckoutResult UShopCheckoutComponent::CreateCoins(FGuid ID, FGuid Customer
 	for (int32 I = 0; I < Values.Num(); ++I)
 	{
 		const int32 PID = Manager->RegisterProductFromDataAsset(Products[I].Get());
-		FTransform Transform = Output;
-		Transform.SetScale3D(Output.GetScale3D() * Recipes[I]->MeshScale);
-		Transform.AddToTranslation(Output.TransformVectorNoScale(FVector((I % 8) * 8, ((I / 8) % 8) * 8, (I / 64) * 4)));
+		const FTransform Transform=ShopInteractionGeometry::GridItemTransform(Output,CellSize,I,Values.Num(),FVector(Recipes[I]->MeshScale));
 		const int32 ISID = PID > 0 ? Manager->GenerateProductInstance(PID, Transform) : 0;
 		if (ISID <= 0)
 		{

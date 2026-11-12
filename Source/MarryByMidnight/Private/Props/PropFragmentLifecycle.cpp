@@ -116,6 +116,7 @@ void APropManager::ReleaseOriginalFragment(int32 ISID)
 bool APropManager::SettleOriginalFragment(int32 ISID)
 {
 	if (!HasAuthority() || GetNetMode() == NM_Client) return false;
+	if (IsInstanceKeptActive(ISID)) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(ISID);
 	UStaticMeshComponent* Mesh = GetOriginalFragmentComponent(ISID);
 	AFragmentDestructionActor* Actor = Mesh ? Cast<AFragmentDestructionActor>(Mesh->GetOwner()) : nullptr;

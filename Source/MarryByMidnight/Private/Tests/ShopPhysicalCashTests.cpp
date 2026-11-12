@@ -75,6 +75,36 @@ bool FShopATMConservationTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopGiantCoinSpacingTest, "MarryByMidnight.Shop.GiantCoinSpacing", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FShopGiantCoinSpacingTest::RunTest(const FString& Parameters)
+{
+	UWorld* World=PhysicalCashTests::MakeWorld(); if (!World) return false;
+	ON_SCOPE_EXIT { PhysicalCashTests::Cleanup(World); };
+	auto* Manager=World->SpawnActor<APropManager>(); Manager->bEnableAutosave=false;
+	auto* Cash=Manager->ShopCheckout.Get();
+	for (auto& Recipe:Cash->CurrencyRecipes) Recipe.MeshScale=1;
+	Manager->SharedWallet->Credit(FGuid::NewGuid(),18800,TEXT("IsolatedGiantCoinFunding"));
+	TArray<int32> IDs;
+	if (!TestEqual(TEXT("Full sized supplied coins withdraw successfully"),Cash->WithdrawCoins(FGuid::NewGuid(),{1,2,5,10,20,50,100},FTransform(FVector(300,0,200)),IDs),EShopCheckoutResult::Success)) return false;
+	for (int32 I=0;I<IDs.Num();++I)
+	{
+		TestTrue(TEXT("Supplied giant coin scale is retained"),Manager->GetTransform(IDs[I]).GetScale3D().Equals(FVector::OneVector));
+		FShopCashCoin A; Cash->GetCoin(IDs[I],A);
+		const auto* ProductA=Manager->FindProductDefinition(A.ProductID);
+		if (!TestNotNull(TEXT("Coin mesh product remains registered"),ProductA)) return false;
+		const FBox BoundsA=ProductA->StaticMesh->GetBoundingBox().TransformBy(Manager->GetTransform(IDs[I]));
+		for (int32 J=I+1;J<IDs.Num();++J)
+		{
+			FShopCashCoin B; Cash->GetCoin(IDs[J],B);
+			const auto* ProductB=Manager->FindProductDefinition(B.ProductID);
+			if (!TestNotNull(TEXT("Other coin retains mesh definition"),ProductB)) return false;
+			TestFalse(TEXT("Giant coin delivery bounds do not intersect"),BoundsA.Intersect(ProductB->StaticMesh->GetBoundingBox().TransformBy(Manager->GetTransform(IDs[J]))));
+		}
+	}
+	TestEqual(TEXT("Giant geometry does not create or lose monetary value"),Cash->GetTeamCashCents()+Manager->SharedWallet->GetWalletState().BalanceCents,int64(18800));
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopATMAtomicFailureTest, "MarryByMidnight.Shop.ATMAtomicFailure", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FShopATMAtomicFailureTest::RunTest(const FString& Parameters)
 {

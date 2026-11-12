@@ -2,11 +2,21 @@
 
 This catalog outlines all physical bottle types, capping hardware, liquid cola formulas, agitation reactions, and giant customer demographics for **Midnight Fizz: Giant Thirst**.
 
+**Current prototype authority — 11 November 2026:** [Plastic Bottle Pressure System](Prototype_Plastic_Bottle_Pressure_2026-11-11.md) selects **plastic bottles, five Normal Colas and Normal manual twist caps only**. Impact/shake/drop pressure exceeding bottle tolerance triggers cola-powered, orientation/force-dependent physics rocket behavior; it does not enable automatic-relief caps or glass fragments. The former glass/twist-cap choice is resolved to plastic, with product/material/label alignment still pending. Preserve current bottle/player/NPC sizes.
+
+**Full-game material/cap reference:** Use [core decisions](Core_Gameplay_Design_Decisions.md#32-initial-bottle-material-definitions) and [chat reconciliation](Chat_Design_Decisions_2026-11-11.md) for later glass stoppers/non-auto-lock pressure caps, other plastic cap variants and welded metal lids. Those materials/caps are excluded from the prototype. Reuse still requires Strength > 70%, clean and completely empty with material-specific closure constraints; caps cannot be recycled. Full-game plastic recycling is up to 40%, metal can recycling 20%; this update does not require their complete recycling infrastructure for the pressure subsystem.
+
+**Contents authority — 11 November 2026:** [Bottle Contents Catalog](Bottle_Contents_Catalog.md) defines the current 21-type working taxonomy and relative prices. The demo uses five Normal types only; Spicy and Zero Calories share the highest Normal base price. Older formula names, numeric formula prices and named effects below are historical proposals where they differ; they are not approved balance/effects or additional demo scope.
+
+**Approved scale/mass update — 11 November 2026:** Follow [GDD Master, Section 3](GDD_Master.md#3-the-scale-twist-tiny-people-giant-world). Preserve current NPC, player and Cola sizes from `Lvl_FirstPerson`; retain the default player size for mechanic compatibility. Most environmental objects serve giants, while vehicles, filling/cleaning equipment and direct-use tools fit the player. NPCs and movable props are lighter than the player regardless of visual size.
+
 ---
 
 ## 1. Bottle Types & Material Properties
 
-Because players are tiny, empty bottles represent significant physical structures. Different materials have distinct weight, durability, pressure capacity, and reusability characteristics.
+**Historical table below:** PSI ratings, carry-speed values, plastic single-use, indestructible metal and enchanted-stone assumptions are superseded or unapproved proposals. Do not use this table to override current normalized pressure, mass, material, recycling or reuse rules. Current player/NPC/bottle dimensions stay unchanged.
+
+Because the environment is built for giants, bottles retain the approved existing size and remain prominent physical structures. Material handling categories and carry-speed modifiers are separate from rigid-body mass. Every movable bottle stays below the player's reference mass; labels such as Heavy describe relative handling among props, not a requirement to outweigh the player.
 
 | Bottle Material | In-Game Asset | Weight (Carry Speed) | Max Safe Pressure | Durability & Breakage | Thermal Speed | Reusability Tier |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -18,6 +28,8 @@ Because players are tiny, empty bottles represent significant physical structure
 ---
 
 ## 2. Cap Types & Mechanical Features
+
+**Historical diagram/table below:** Crown Cork, Bolt-Lock and Rune Seal pairings, PSI ratings and torque windows are older proposals. Current closure rules are in the core decisions, including the glass pressure-release/no-auto-lock distinction. Specific hammering and welding tools/timings remain open; cap styling does not approve functional behavior by itself.
 
 Caps seal the carbonation inside the bottle. Each cap type has a specific mechanical strength, torque tolerance, and specialized utility.
 
@@ -51,7 +63,7 @@ Colas differ not only in taste and price, but in carbonation rate, volatility, a
       Poison Gas Cloud        Arachnid Infestation      Inverted Controls
 ```
 
-### 3.1 Detailed Formula Matrix
+### 3.1 Historical Formula Proposals — Not Approved Content Balance or Effects
 | Cola Formula | Base Retail ($/Portion) | Carbonation Speed | Agitation Multiplier | Ideal Temp | Catastrophic Failure Effect |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Basic Classic Cola** (`DA_BasicCola`) | $\$2.50$ | $1.0\times$ | $1.0\times$ | $4.0^\circ\text{C}$ | **Foam Geyser / Classic Rocket:** Bounces erratically around shop, knocking down bottles. |
@@ -99,32 +111,32 @@ Because customers are enormous fantasy beings, the tavern counter is designed as
        [ Serving Pedestal ]         [ Checkout Scanner ]      [ Ramps ]
          (Giant grabs here)         (Tiny players scan)
          
-          o o  <-- Miniature Players (25 cm tall)
+          o o  <-- Default-sized players, small relative to the giant environment
     =====================================================================  <-- FLOOR / SHELF
 ```
 
 ### 5.1 Patron Roster
 
 #### 1. The Mountain Giant
-- **Physical Scale:** $12\times$ Player Height ($300\text{ cm}$).
+- **Physical Scale:** Authored giant proportions matched to `Lvl_FirstPerson`; preserve existing NPC size.
 - **Behavior:** Boisterous, bangs heavy stone tankards, demands high volume ($4\times$ portions in Metal Kegs).
 - **Preferred Colas:** Spicy/Fire Cola, Basic Classic. Must be ice-cold.
 - **Wrath Mechanic:** If impatient, slams fist onto the counter, causing a physical shockwave that bounces all loose props into the air.
 
 #### 2. The Bog Witch
-- **Physical Scale:** $8\times$ Player Height ($200\text{ cm}$).
+- **Physical Scale:** Authored patron variant using the approved world reference; no fixed player-height multiplier.
 - **Behavior:** Sneering, hunched, accompanied by a hovering raven. Demands bizarre and forbidden concoctions.
 - **Preferred Colas:** Spider Nest Cola, Toxic Swamp Fizz.
 - **Wrath Mechanic:** Cackles and casts a hex on workstations (e.g., inverts conveyor directions or disables the freezer for 15 seconds).
 
 #### 3. The Iron Golem
-- **Physical Scale:** $10\times$ Player Height ($250\text{ cm}$).
+- **Physical Scale:** Authored giant proportions using the approved world reference; no fixed player-height multiplier.
 - **Behavior:** Slow, metallic groaning speech, zero tolerance for temperature errors.
 - **Preferred Colas:** Super-chilled Heavy Metal Colas.
 - **Wrath Mechanic:** Emits an electromagnetic pulse that disrupts electronic checkout scanners and conveyor belts.
 
 #### 4. The Counter Pixie / Goblin Swarm
-- **Physical Scale:** $1.5\times$ Player Height ($35\text{ cm}$).
+- **Physical Scale:** Smaller authored patron variant; final art dimensions are separate from the unchanged player baseline.
 - **Behavior:** Small, agile, erratic. Slips directly onto the counter rather than staying on the customer side.
 - **Preferred Colas:** Sugar Crush in Plastic Mini-Bottles.
 - **Wrath Mechanic:** If ignored, runs around the counter knocking over bottles and tossing caps into the trash.
@@ -141,7 +153,7 @@ To overcome the colossal scale of the shop floor and transport heavy industrial 
 +--------------------------+------------------------------+-------------------------------+
 |  "The Fizz-Mule"         |  "The Micro-Forklift"        |  "The Mobile Capper Buggy"    |
 |  High-Speed Cargo Hauler |  Heavy Cylinder Manifold Rig |  Drive-By Pneumatic Press     |
-|  Holds 12 Bottles/Crates |  Lifts 200kg Colossal Tanks  |  Rapid F1 Torque on the Move  |
+|  Holds 12 Bottles/Crates |  Hoists Bulky Cola Tanks    |  Rapid F1 Torque on the Move  |
 +--------------------------+------------------------------+-------------------------------+
 ```
 
@@ -149,7 +161,7 @@ To overcome the colossal scale of the shop floor and transport heavy industrial 
 | Vehicle Model | Blueprint Asset | Top Speed | Cargo Slots / Payload | Fuel / Power Source | Primary Function | Unique Hazard |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Fizz-Mule Flatbed** | `BP_Vehicle_FizzMule` | $750\text{ cm/s}$ | $2\text{ Large Crates}$ (12 Bottles total) or 1 Ice Block | Electric Battery (Recharge at Dock) | Rapid transit of bottles, ice, and players across long counters. | Flinging cargo off the bed during un-magnetized drift turns. |
-| **Micro-Forklift** | `BP_Vehicle_Forklift` | $400\text{ cm/s}$ | $1\text{ Bulk Cylinder}$ ($50 - 200\text{ kg}$) | Pneumatic Steam Piston | Hoisting cylinders from freight elevator onto dispensing docks. | Front-heavy tipping hazard when carrying heavy cylinders with forks raised high. |
+| **Micro-Forklift** | `BP_Vehicle_Forklift` | $400\text{ cm/s}$ | $1\text{ Bulk Cylinder}$ (configured mass below player baseline) | Pneumatic Steam Piston | Hoisting cylinders from freight elevator onto dispensing docks. | Tipping risk is tuned through payload position and handling, without making an individual cylinder heavier than the player. |
 | **Mobile Capper Buggy** | `BP_Vehicle_CapperBuggy` | $550\text{ cm/s}$ | $1\text{ Driver} + 1\text{ Hopper}$ (30 Caps) | Pressurized CO2 Cylinder | Drive-by mechanized capping of bottle assembly lines. | Bumping bottles with bumper triggers immediate bottle tipping and rocket bursts. |
 
 ### 6.2 Vehicle Hazards & Driving Mishaps

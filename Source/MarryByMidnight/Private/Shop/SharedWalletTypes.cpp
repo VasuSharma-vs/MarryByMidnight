@@ -1,5 +1,14 @@
 #include "Shop/SharedWalletTypes.h"
 
+bool FSharedWalletLedger::FindReceipt(const FGuid& OperationID, FWalletReceipt& OutReceipt) const
+{
+	OutReceipt = FWalletReceipt();
+	const int32* Index = ReceiptIndex.Find(OperationID);
+	if (!Index || !Receipts.IsValidIndex(*Index)) return false;
+	OutReceipt = Receipts[*Index];
+	return true;
+}
+
 EWalletOperationResult FSharedWalletLedger::Apply(const FGuid& OperationID, int64 DeltaCents, FName Reason)
 {
 	if (!OperationID.IsValid() || DeltaCents == 0 || DeltaCents == MIN_int64 || Reason.IsNone()) return EWalletOperationResult::InvalidOperation;

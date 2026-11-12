@@ -1,7 +1,11 @@
 # Technical Implementation & Unreal Engine 5 Architecture Plan
 
+**Latest equipment requirement — 11 November 2026:** [Equipment Design Specification](Equipment_Design_Specification.md) and [equipment integration/conflicts](Equipment_Design_Integration_2026-11-11.md) select the two-player Manual Wheel Rotator as the only demo type from that catalog. Extend shared C++ bottle/cap/liquid/pressure interaction services, with server-authoritative operator roles, G-press holding contributions, declining holding effectiveness, rotation progress, sealing and leakage. Do not count current direct CloseCap APIs/tests as acceptance of this new station. Shared equipment data covers voltage/power/operating-pressure range and applicable variant/price/portability/players/energy/capacity fields; advanced powered/fuel machines remain full-game-only. G-versus-grab routing, transport, mass/tuning and session cancellation/persistence require resolution before dependent implementation. No schema change or runtime implementation is established by this documentation update.
+
 > [!IMPORTANT]
-> **Architecture Alignment Notice (Superseded Data & Pooling Details):** Section 1.2 (`FPropPackedRuntimeData` 64-bit portion/minute packing, integer `RemainingPortions`, `EBottleCapState` packed bits, and single-use destruction on empty) and `FBottleRuntimeState` below reflect an earlier prototype draft. They are superseded by the zero-copy Continuous vs. Event architecture defined in [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md), [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md), [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md), and [`BP_Cola_Technical_Documentation.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/BP_Cola_Technical_Documentation.md). Workstation (`BP_ColaTank`, `BP_CappingStation`, `BP_CheckoutScanner`, `AShopVehiclePawn`) and HUD specs in Sections 3–5 remain active gameplay integration targets.
+> **Architecture Alignment Notice (Superseded Data & Pooling Details):** Section 1.2 (`FPropPackedRuntimeData` 64-bit portion/minute packing, integer `RemainingPortions`, `EBottleCapState` packed bits, and single-use destruction on empty) and `FBottleRuntimeState` below reflect an earlier prototype draft. They are superseded by the zero-copy Continuous vs. Event architecture defined in [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md), [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md), [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md), and [`BP_Cola_Technical_Documentation.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/BP_Cola_Technical_Documentation.md). Workstation/HUD proposals in Sections 3–5 apply only where consistent with the current Normal-only scope and latest approved mechanics; older class names, countdowns and numeric examples are not evidence of current implementation.
+
+**11 November chat integration and subsequent prototype restriction:** [Current requirements and conflicts](Chat_Design_Decisions_2026-11-11.md) define the Normal Bulk Cola Container and separate filling-equipment stage. [Plastic Bottle Pressure System](Prototype_Plastic_Bottle_Pressure_2026-11-11.md) now selects plastic bottles, the five Normal Colas and Normal manual twist caps exclusively. Hits/shaking/drops/impacts increase pressure; exceeding the bottle's tolerance triggers cola-powered physics-driven rocket motion influenced by orientation/forces. Prefer existing C++ Prop Manager, bottle pressure/rocket, liquid/filling/cap/scanner/cash services; Blueprints supply adapters/art where needed. Preserve current player/NPC/bottle sizes, ISIDs, replication and persistence. The earlier glass/twist-cap choice is resolved to plastic, but asset/material/label alignment is pending. Pressure gains/tolerance, sealed-cap escape and held/empty/uncapped/end-state behavior need definition and tests. Hot source output/cooling also remain unaccepted. Power, coal generation, other liquids/materials/caps/fragments and excluded legacy PSOs are outside prototype scope.
 
 This document details how the game design specifications map directly onto the Unreal Engine 5 C++ architecture, Blueprint assets, and multiplayer systems already present in the **MarryByMidnight** codebase.
 
@@ -163,33 +167,44 @@ struct FBottleRuntimeState
 
 ## 3. Workstation Blueprint Implementations
 
-### 3.1 BP_ColaTank & Gas-Pump Dispenser Nozzle
-- **Components:**
-  - `StaticMeshComponent` (Cylinder Tank).
-  - `UCableComponent` (Flexible physics hose connecting tank to nozzle).
-  - `ChildActorComponent` or spawned `BP_DispenserNozzle` actor with an attachment constraint.
-- **Dispenser Logic:**
-  - When a player picks up the nozzle (`AttachToComponent` on character hand), the hose physics stretches dynamically.
-  - Line trace or spherical overlap from the nozzle tip detects `BP_Cola`.
-  - While holding `Use` (Left Mouse / Right Trigger):
-    - Increment `CurrentFillVolume` at $+0.25/\text{sec}$.
-    - `CurrentPortions = FMath::Clamp(FMath::FloorToInt(CurrentFillVolume * MaxPortions), 0, MaxPortions)`.
-    - Update liquid level scalar parameter on the bottle's dynamic material instance (`M_ColaLiquid`).
-    - If `CurrentFillVolume > 1.25`, call `TriggerOverfillExplosion()`.
+### 3.1 Normal Bulk Cola Container → Hose/Dispenser → Filling Equipment → Bottle
 
-### 3.2 BP_CappingStation (F1 Nut-Gun Minigame)
+- The design/UI name is **Normal Bulk Cola Container**; existing Cylinder/Tank class names need not be renamed. Reuse current product/content definitions and source/target ISIDs.
+- Opening the source valve produces high-pressure hot cola. Demo source behavior must not fail from its own internal pressure and must not depend on electricity or progressive container heating. Final temperatures, source capacity and pressure/flow settings remain open.
+- Route supply through a hose/dispenser and a **separate compatible filling-equipment stage** before the bottle. Specific four-bottle heads, pumps, nozzle compatibility and hose constraints need later design; no particular Blueprint component arrangement is mandated by the chat.
+- `UBottleFillingComponent`, `UShopProductionStationComponent` and Prop Manager's liquid-transfer path already provide shared native foundations. Extend/reuse them after resolving the missing interactions rather than implementing independent Blueprint content arithmetic or replacing them with legacy station prototypes.
+- Server validation governs connections, source availability, target capacity/condition, liquid identity, fractional accepted quantities and source deductions. Preserve container history and initialize the new liquid's own age/expiry. Use existing shared state/visual publication and persistent ISID/pooling paths.
+- Do not floor liquid quantities into integer portions, force an explosion above 1.25, or start a mandatory eruption countdown. Material pressure tolerance and structural/containment behavior remain authoritative.
+- Uncaptured spray/spill accounting and the hot-bottle cooling workflow require explicit definitions. Visual effects must not manufacture or silently erase quantity. Prior service tests alone do not accept physical spray, hose control, practical cooling or giant-scale interaction.
+- Full-game electrical cooling, low-voltage heating, coal generation and additional bulk-container types remain deferred. Do not add power dependencies to the Normal demo.
+
+### 3.2 Manual Wheel Rotator — Shared Native Cooperative Sealing
+
+- Prototype path: plastic bottle + Normal manual twist cap + two cooperating operators. Manual power; RequiredVoltage not applicable and PowerConsumption 0. Essential source/hose/filling services remain available without any full-game machine.
+- Server validates two distinct operators' access/roles, bottle/cap ISIDs, input contributions and session state. One operator repeatedly presses G for downward holding force; its effectiveness declines with time despite continued pressing. The other rotates toward closure. Exact sampling, decay, force/pressure relationship, rotation input/rate and state transitions remain open.
+- Insufficient hold before closure invokes shared leakage/pressure behavior with correct liquid accounting. Once properly sealed, releasing hold does not reopen the cap. Continue to use the existing pressure-threshold rocket rule, not a forced timeout or duplicated bottle physics.
+- Reuse existing bottle/cap/liquid/identity services and practical player-sized operator positions around the unchanged bottles. Handle G/grab input context, operator contention, cancel/disconnect/rejoin and cleanup without bypassing the two-player design. Proposed major class/replication/save changes still require review under existing approvals.
+- Exact station dimensions/weight, carrier/delivery availability and equipment-session save/reset policy remain open. Keep approved below-player gameplay masses; a carrier restriction is a handling rule, not an instruction to change player size or infer extreme rigid-body mass.
+- Required acceptance: two real operators including a remote client, hold/decay/rotation success and failure, post-seal hold release, no unintended G grab/drop, correct leaked quantity/IDs, pressure-rocket integration, no electrical dependency, and the repeated Normal business loop. No such station-specific runtime tests were performed for this documentation task.
+
+#### Historical BP_CappingStation / F1 Gun Proposal — Full Game Only
+
+**Historical/future equipment proposal:** prototype sealing is a Normal manual twist cap on plastic only. Glass stopper/pressure caps, welded lids, automatic plastic variants and the gun/torque mechanics below are not prototype requirements. The earlier material/closure choice is resolved to plastic; runtime material/settings/labels still need alignment. The mandatory timer is withdrawn. Reuse compatible existing bottle/rocket C++ behavior for the specified pressure-threshold reaction rather than creating a second pressure or movement authority.
+
+The new full-game Cap Gun and Automatic Fill and Cap Machine specifications govern their actual power, controls and failure requirements; this historical diagram/tuning does not override them.
+
 - **Components:**
   - Base clamp socket (holds bottle upright).
   - Pneumatic capping gun arm (pivoting mechanical arm).
   - Diegetic 3D Widget Component (`WBP_TorqueDial`).
 - **Timing & Torque Mechanics:**
-  - When filled bottle is placed in clamp, start `CapUrgencyCountdown` ($5.0\text{s}$).
+  - Placing a filled bottle in a clamp does not start a mandatory eruption countdown.
   - Player interacts with the capping gun to start torque rotation.
   - `WBP_TorqueDial` sweeps a needle:
     - *Under-Torque Window (0.0 - 0.40):* Loose seal.
     - *Green Window (0.41 - 0.75):* Perfect seal. Triggers satisfying air-wrench sound (`SFX_PneumaticGun_Tight`).
     - *Over-Torque Window (0.76 - 1.0):* Over-tightened. Plays snap sound (`SFX_GlassCrack` or `SFX_BoltStrip`).
-  - If the player fails to cap within the $5.0\text{s}$ countdown, trigger unsealed rocket launch!
+  - Any leak, release or launch depends on configured pressure/force/containment conditions, not a five-second deadline.
 
 ### 3.3 URocketProjectileComponent Activation
 The existing `URocketProjectileComponent` in the project is used to execute chaotic rocket flights:
@@ -220,6 +235,8 @@ void ABP_Cola::LaunchAsRocket(FVector LaunchDirection, float ThrustStrength)
 ```
 
 ### 3.4 BP_CheckoutScanner (The Value & Loss Calculation)
+**Superseded pseudocode retained for history:** the code and `AddSharedMoney` call below must not be implemented. They conflict with approved fractional/clamped content pricing, the maximum 20% temperature discount, no bottle rebate and physical-cash/ATM accounting. Reuse `UShopScannerComponent`, `UShopCheckoutComponent`, physical-cash/register and shared-bank services instead. The server locks the invoice, validates finite tender/exact change, records expiry adjustments separately and credits bank funds only through ATM deposit. See [scanner rules](Scanner_Checkout_Design_Update_2026-11-10.md) and [ATM accounting](ATM_Cash_Accounting_Proposal.md).
+
 - **Platter Overlap:** Detects `BP_Cola` placed on the scanner scale.
 - **Formula Execution:**
   ```cpp
@@ -261,7 +278,7 @@ void ABP_Cola::LaunchAsRocket(FVector LaunchDirection, float ThrustStrength)
   The updated balance immediately replicates to all connected players via `OnRep_SharedMoney()`.
 
 ### 3.5 Shop Vehicles & Material Handling Machines Architecture
-To support moving across the massive shop floor and handling colossal 100 kg cylinders, vehicles are implemented as physical pawn actors:
+To support movement and bulk handling across the giant-scale shop, vehicles are implemented as physical pawn actors. Vehicles and their controls fit the unchanged default player; current NPC and Cola sizes follow `Lvl_FirstPerson`. The [approved scale/mass policy](GDD_Master.md#33-gameplay-mass-is-independent-of-visual-scale) replaces earlier 25 cm player and 100 kg cylinder assumptions. Movable actors and NPCs must use gameplay masses below the player baseline. Apply configured mass consistently when spawning/promoting/resetting pooled actors; do not derive gameplay mass from giant mesh volume or confuse it with thermal mass. This policy requires implementation and tuning validation; this design update alone does not establish that current assets comply.
 
 ```cpp
 UCLASS(BlueprintType, Blueprintable)

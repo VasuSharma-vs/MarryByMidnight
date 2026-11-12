@@ -19,6 +19,24 @@ float AActivePropActor::GetInitialContentLevel_Implementation(float DefinitionDe
 	return DefinitionDefault;
 }
 
+float AActivePropActor::ResolveRegistrationContentLevel(float DefinitionDefault) const
+{
+	if (ISID > 0 && PropManagerReference)
+		if (const FPropInstanceUniqueData* Existing=PropManagerReference->FindUniqueData(ISID))
+			return Existing->EventData.ContentLevel;
+#if !UE_BUILD_SHIPPING
+	if (HasAuthority() && ISID <= 0 && bDebugRandomizeContentLevelOnISMRegistration)
+	{
+		// Sanitize Blueprint/script values as well as editor inputs. Keep the normal
+		// full-bottle interval; this diagnostic does not manufacture overfill.
+		const float A=FMath::IsFinite(DebugMinInitialContentLevel) ? FMath::Clamp(DebugMinInitialContentLevel,0.f,1.f) : 0.f;
+		const float B=FMath::IsFinite(DebugMaxInitialContentLevel) ? FMath::Clamp(DebugMaxInitialContentLevel,0.f,1.f) : 1.f;
+		return FMath::FRandRange(FMath::Min(A,B),FMath::Max(A,B));
+	}
+#endif
+	return GetInitialContentLevel(DefinitionDefault);
+}
+
 void AActivePropActor::OnRep_LocalUniqueData()
 {
 	if (!bHasValidUniqueData) return;
@@ -28,17 +46,38 @@ void AActivePropActor::OnRep_LocalUniqueData()
 void AActivePropActor::OnApplySharedDefinitions(const FPropProductDefinition* ProductDef, const FPropContentDefinition* ContentDef)
 {
 	if (ProductDef) { NumOfPortions = ProductDef->ConsumableProfile.NumOfPortions; }
+	if (PropMesh && ProductDef)
+	{
+		if (FMath::IsFinite(ProductDef->GameplayMassKg) && ProductDef->GameplayMassKg>0)
+		{
+			if (!bProductMassOverrideApplied)
+			{
+				bOriginalMassOverride=PropMesh->BodyInstance.bOverrideMass;
+				OriginalMassKg=PropMesh->BodyInstance.GetMassOverride(); bProductMassOverrideApplied=true;
+			}
+			PropMesh->SetMassOverrideInKg(NAME_None,ProductDef->GameplayMassKg,true);
+		}
+		else RestoreAuthoredMass();
+	}
 	if (ContentDef && SkeletalMeshComponent && ContentDef->LiquidMaterial) SkeletalMeshComponent->SetMaterial(1, ContentDef->LiquidMaterial);
+}
+void AActivePropActor::RestoreAuthoredMass()
+{
+	if (!bProductMassOverrideApplied || !PropMesh) return;
+	PropMesh->SetMassOverrideInKg(NAME_None,OriginalMassKg,bOriginalMassOverride); bProductMassOverrideApplied=false;
 }
 void AActivePropActor::OnApplyEventData(const FPropEventUpdateData& InEventData, uint8 DirtyMask)
 {
 	if (&InEventData != &LocalUniqueData.EventData && bHasValidUniqueData && static_cast<int32>(InEventData.EventSequence - LocalUniqueData.EventData.EventSequence) < 0) return;
+	const int32 PreviousBottle=LocalUniqueData.EventData.AttachedBottleISID;
 	LocalUniqueData.EventData = InEventData;
 	bHasValidUniqueData = true;
 	RemainingPortions = GetRemainingPortions();
 	QuantityLevel = GetContentLevel();
 	bIsGrabbable = InEventData.bIsGrabbable;
 	UpdateMaterialCustomPrimitiveData();
+	if (PreviousBottle>0 && InEventData.AttachedBottleISID==0) DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	if (bIsActive && PropManagerReference) PropManagerReference->SynchronizeCapAssembly(ISID);
 }
 void AActivePropActor::OnApplyContinuousData(const FPropContinuousUpdateData& InData, float NewStrength, bool bStrengthChanged)
 {
@@ -69,14 +108,25 @@ void AActivePropActor::EmitPropEventUpdate(uint8 DirtyMask, uint8 ExtendedDirtyM
 	else LocalUniqueData.EventData.EventSequence++;
 	ForceNetUpdate();
 }
+bool AActivePropActor::IsKeptActiveByVolume() const
+{
+	return HasAuthority() && bIsActive && PropManagerReference && PropManagerReference->IsInstanceKeptActive(ISID);
+}
 bool AActivePropActor::CanDemoteToISM() const
 {
-	if (bIsHeld || bIsInMotion || bIsInterpolatingToRest || HasActiveThermalSources()) return false;
+	if (bIsHeld || bIsInMotion || bIsInterpolatingToRest || HasActiveThermalSources() || IsKeptActiveByVolume()) return false;
 	if (const URocketProjectileComponent* Rocket = FindComponentByClass<URocketProjectileComponent>())
 		if (Rocket->GetSimulationState() != ERocketSimulationState::Idle && Rocket->GetSimulationState() != ERocketSimulationState::AtRest) return false;
 	return true;
 }
 bool AActivePropActor::HasActiveThermalSources() const { return false; }
+void AActivePropActor::ApplyUnsettlingImpulse(const FVector& Impulse)
+{
+	if (!PropMesh || !PropMesh->IsSimulatingPhysics() || Impulse.ContainsNaN()) return;
+	FVector LegacyKick = Impulse;
+	LegacyKick.Z = FMath::Clamp(LegacyKick.Z, -40.0, 35.0);
+	PropMesh->AddImpulse(LegacyKick.GetClampedToMaxSize(220.0), NAME_None, true);
+}
 void AActivePropActor::ApplyInitialImpactFromPromotion(FVector Location, const FVector& Impulse, AActor* InstigatorActor, int32 EventID)
 {
 	if (!HasAuthority() || Impulse.ContainsNaN()) return;
@@ -87,8 +137,10 @@ void AActivePropActor::ApplyInitialImpactFromPromotion(FVector Location, const F
 	EmitPropEventUpdate(EPropEventDirtyMask::Strength);
 }
 void AActivePropActor::OnBeforePoolDeactivate() { ResetTransientPoolState(); }
+void AActivePropActor::ResetForInstanceBinding() { ResetTransientPoolState(); }
 void AActivePropActor::ResetTransientPoolState()
 {
+	RestoreAuthoredMass();
 	++PoolGeneration;
 	bPendingServerPromoteAck = false;
 	LinearVelocity = AngularVelocity = FVector::ZeroVector;

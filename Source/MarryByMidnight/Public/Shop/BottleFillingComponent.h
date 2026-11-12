@@ -16,6 +16,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filling", meta = (ClampMin = "0.01")) float PortionsPerSecond = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filling", meta = (ClampMin = "1")) float MaxConnectionDistance = 300;
+	/** Zero retains the equipment's physical-capacity behavior. Positive values stop at a selected content level. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filling", meta = (ClampMin = "0")) float TargetContentLevel = 0;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Filling") bool bIsFilling = false;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Filling") int32 SourceISID = 0;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Filling") int32 TargetISID = 0;

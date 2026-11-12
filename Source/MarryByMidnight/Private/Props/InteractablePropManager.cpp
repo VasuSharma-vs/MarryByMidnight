@@ -28,6 +28,7 @@
 #include "TimerManager.h"
 #include "Shop/SharedTeamWalletComponent.h"
 #include "Shop/ShopCheckoutComponent.h"
+#include "Shop/ShopProcurementComponent.h"
 #include "Props/FragmentDestructionActor.h"
 
 APropManager::APropManager()
@@ -42,6 +43,7 @@ APropManager::APropManager()
 
 	SharedWallet = CreateDefaultSubobject<USharedTeamWalletComponent>(TEXT("SharedTeamWallet"));
 	ShopCheckout = CreateDefaultSubobject<UShopCheckoutComponent>(TEXT("ShopCheckout"));
+	ShopSupplies = CreateDefaultSubobject<UShopProcurementComponent>(TEXT("ShopSupplies"));
 	ASMComponent = CreateDefaultSubobject<UASMComponent>(TEXT("ASMComponent"));
 	BatchUpdateComponent = CreateDefaultSubobject<UPropBatchUpdateComponent>(TEXT("BatchUpdateComponent"));
 	SenseSightComponent = CreateDefaultSubobject<UInteractablePropSenseSightComponent>(TEXT("SenseSightComponent"));
@@ -114,7 +116,7 @@ void APropManager::EnsureLevelPropsInitialized()
 	if (!bHasInitializedLevelProps)
 	{
 		bHasInitializedLevelProps = true;
-		InitializePropManager();
+		InitializeLevelProps(InitialSaveSlot);
 	}
 }
 
@@ -2003,6 +2005,14 @@ TArray<int32> APropManager::GenerateNewISMInstances(int32 InProductID, int32 Qua
 		}
 	}
 
+	// Allocate factory assemblies only after the creation loop has released registry
+	// references. Representation changes must never create logical identities.
+	CreatedISIDs.RemoveAll([this](int32 ID)
+	{
+		if (EnsureDefaultPhysicalCap(ID)) return false;
+		UE_LOG(LogTemp,Error,TEXT("Cannot initialize factory cap for newly created prop %d"),ID);
+		ReleaseInstanceToEmpty(ID); return true;
+	});
 	return CreatedISIDs;
 }
 
@@ -2196,7 +2206,7 @@ bool APropManager::CanComponentReuseForProduct(const UInteractableISMComponent* 
 			TargetMat = TargetDef->StaticMesh->GetMaterial(MatIdx);
 		}
 
-		if (TargetMat && Comp->GetMaterial(MatIdx) != TargetMat)
+		if (TargetMat && Comp->GetProductMaterial(MatIdx) != TargetMat)
 		{
 			return false;
 		}
@@ -2282,6 +2292,7 @@ int32 APropManager::ReuseEmptyInstance(int32 InProductID, int32 InICID, int32 In
 	Comp->ReuseOrAddInstanceWithISID(NewISID, InTransform, InitialPacked, InISMI, true);
 	InitializeGeneratedInstance(NewISID, InProductID, InICID, InISMI, InTransform);
 
+	if (!EnsureDefaultPhysicalCap(NewISID)) { ReleaseInstanceToEmpty(NewISID); return 0; }
 	return NewISID;
 }
 
@@ -2852,6 +2863,7 @@ bool APropManager::ConvertISMToASM(
 		MarkInstanceDirty(SignedISID, EPropDirtyFlags::Representation | EPropDirtyFlags::State | EPropDirtyFlags::Transform);
 	}
 	OnPropRepresentationChanged.Broadcast(SignedISID, EPropRepresentation::ASM, OutActor);
+	SynchronizeCapAssembly(SignedISID);
 	return true;
 }
 
@@ -2920,6 +2932,7 @@ bool APropManager::ConvertASMToISM(
 	}
 
 	const int32 SignedISID = static_cast<int32>(ISID);
+	if (IsInstanceKeptActive(SignedISID)) return false;
 	FISIDRuntimeIndex* Record = FindISIDData(SignedISID);
 	if (!Record)
 	{
@@ -2958,6 +2971,7 @@ bool APropManager::ConvertASMToISM(
 
 	AActivePropActor* ActiveActor = Record->ActiveActor.Get() ? Record->ActiveActor.Get() : GetActiveActorFromISID(SignedISID);
 	if (ActiveActor && !ActiveActor->CanDemoteToISM()) return false;
+	if (!PrepareCapForBottleRest(SignedISID)) return false;
 	if (ActiveActor)
 	{
 		if (ActiveActor->PropDataAsset)
@@ -3145,6 +3159,9 @@ bool APropManager::ConvertASMToISM(
 			}
 		}
 
+		// Material reconciliation above stores asset references in product definitions;
+		// restore the component-local runtime liquid selector after that reconciliation.
+		ISMComp->RefreshBottleLiquidMaterial();
 		TargetISMI = Record->ISMI;
 		if (TargetISMI == INDEX_NONE || Record->IISMComponentID != ISMComp->IISMComponentID || !ISMComp->IsValidInstance(TargetISMI))
 		{
@@ -3354,6 +3371,7 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 		}
 	}
 
+	ISMComp->RefreshBottleLiquidMaterial();
 	const FString CompMatsAfter = FormatCompMaterialsList(ISMComp);
 
 	UE_LOG(LogTemp, Verbose, TEXT("[PropConversionDebug]   Resolved ProductID: %d"), InActor->ProductID);
@@ -3371,7 +3389,7 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	}
 
 	const int32 NewISID = (InActor->ISID > 0) ? InActor->ISID : AllocateISID();
-	const float InitialContentLevel = ProductDefPtr ? InActor->GetInitialContentLevel(ProductDefPtr->DefaultUniqueData.EventData.ContentLevel) : 0;
+	const float InitialContentLevel = ProductDefPtr ? InActor->ResolveRegistrationContentLevel(ProductDefPtr->DefaultUniqueData.EventData.ContentLevel) : 0;
 	if (!FMath::IsFinite(InitialContentLevel) || InitialContentLevel < 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid initial content level on placed prop '%s'; preserving the actor without conversion."), *InActor->GetName());
@@ -3416,6 +3434,7 @@ int32 APropManager::ConvertPlacedActorToISM(AActivePropActor* InActor, bool bFor
 	}
 
 	// Deactivate the placed actor and park it into the ASMComponent pool at ResetTransform
+	if (!EnsureDefaultPhysicalCap(NewISID)) { ReleaseInstanceToEmpty(NewISID); return 0; }
 	if (bAuthoredShopStock && ShopCheckout)
 	{
 		FShopStockEntry Existing;
@@ -3763,7 +3782,7 @@ void APropManager::ProcessPendingASMConversions(int32 MaxPerFrame)
 
 	if (Batch.Num() > 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PropManager] ProcessPendingASMConversions: Sending multicast batch of %d conversions to clients"), Batch.Num());
+		UE_LOG(LogTemp, Verbose, TEXT("[PropManager] ProcessPendingASMConversions: Sending multicast batch of %d conversions to clients"), Batch.Num());
 		Multicast_NotifyBatchISMConvertedToASM(Batch);
 	}
 }
@@ -4822,6 +4841,7 @@ bool APropManager::Server_RequestGrab_Validate(int32 InISID, AActor* InstigatorA
 
 bool APropManager::ValidateGrab(int32 InISID, AActor* InstigatorActor) const
 {
+	if (const auto* Unique=FindUniqueData(InISID)) if (Unique->EventData.AttachedBottleISID>0) return false;
 	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 	if (!Record->PackedRuntimeData.bIsGrabbable) return false;
@@ -4952,8 +4972,6 @@ bool APropManager::ReleaseGrab(int32 InISID, AActor* InstigatorActor, FVector Re
 		return false;
 	}
 
-	SetGrabber(InISID, nullptr);
-
 	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
 	{
 		ASM->OnPlayerRelease(ReleaseVelocity);
@@ -4965,6 +4983,9 @@ bool APropManager::ReleaseGrab(int32 InISID, AActor* InstigatorActor, FVector Re
 		SetPropState(InISID, ReleaseVelocity.SizeSquared() > 100.0f ? EPropState::InMotion : EPropState::Settling);
 	}
 
+	// Release needs the original holder to remove collision ignores and detach safely.
+	// Publish the free registry state after the representation has completed that work.
+	SetGrabber(InISID, nullptr);
 	MarkInstanceDirty(InISID, EPropDirtyFlags::State | EPropDirtyFlags::Transform | EPropDirtyFlags::RuntimeData);
 	return true;
 }
@@ -5540,6 +5561,7 @@ bool APropManager::CheckSettled(int32 InISID) const
 
 bool APropManager::EvaluateRestTolerance(int32 InISID) const
 {
+	if (IsInstanceKeptActive(InISID)) return false;
 	// Section 12: Settling should evaluate both linear and angular movement rather than only one value.
 	const FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return true;
@@ -5569,6 +5591,7 @@ bool APropManager::EvaluateRestTolerance(int32 InISID) const
 
 bool APropManager::StartSettling(int32 InISID)
 {
+	if (IsInstanceKeptActive(InISID)) return false;
 	SetPropState(InISID, EPropState::Settling);
 	if (AActivePropActor* ASM = GetActiveActorFromISID(InISID))
 	{
@@ -5996,6 +6019,7 @@ EPropState APropManager::GetPropState(int32 InISID) const
 
 bool APropManager::SetPropState(int32 InISID, EPropState NewState)
 {
+	if ((NewState==EPropState::AtRest || NewState==EPropState::Settling) && IsInstanceKeptActive(InISID)) NewState=EPropState::Unsettled;
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
 
@@ -6327,9 +6351,7 @@ bool APropManager::SetInstanceToUnsettled(
 		}
 	}
 
-	FVector SafeImpulse = HitImpulse;
-	SafeImpulse.Z = FMath::Clamp(SafeImpulse.Z, -40.0f, 35.0f);
-	SafeImpulse = SafeImpulse.GetClampedToMaxSize(220.0f);
+	if (HitImpulse.ContainsNaN()) return false;
 
 	// If already simulating as an ASM, simply retrigger unsettled timer and apply impulse locally without flooding RPCs
 	if (Record->Representation == EPropRepresentation::ASM)
@@ -6340,9 +6362,9 @@ bool APropManager::SetInstanceToUnsettled(
 			{
 				ExistingASM->PhysicsSimComponent->SetStateUnsettled(UnsettledDelay);
 			}
-			if (!SafeImpulse.IsNearlyZero() && ExistingASM->PropMesh && ExistingASM->PropMesh->IsSimulatingPhysics())
+			if (!HitImpulse.IsNearlyZero())
 			{
-				ExistingASM->PropMesh->AddImpulse(SafeImpulse, NAME_None, true);
+				ExistingASM->ApplyUnsettlingImpulse(HitImpulse);
 			}
 			if (HasAuthority() && !HitImpulse.IsNearlyZero()) ExistingASM->ApplyInitialImpactFromPromotion(ImpactPoint, HitImpulse, nullptr, NextRequestID++);
 			return true;
@@ -6362,9 +6384,9 @@ bool APropManager::SetInstanceToUnsettled(
 			{
 				PredictedASM->PhysicsSimComponent->SetStateUnsettled(UnsettledDelay);
 			}
-			if (!SafeImpulse.IsNearlyZero() && PredictedASM->PropMesh && PredictedASM->PropMesh->IsSimulatingPhysics())
+			if (!HitImpulse.IsNearlyZero())
 			{
-				PredictedASM->PropMesh->AddImpulse(SafeImpulse, NAME_None, true);
+				PredictedASM->ApplyUnsettlingImpulse(HitImpulse);
 			}
 		}
 		else if (ISMComp)
@@ -6374,7 +6396,7 @@ bool APropManager::SetInstanceToUnsettled(
 
 		if (GetNetConnection() != nullptr)
 		{
-			Server_SetInstanceState(InISID, EPropState::Unsettled, SafeImpulse, ImpactPoint, UnsettledDelay, PredictedASM);
+			Server_SetInstanceState(InISID, EPropState::Unsettled, HitImpulse, ImpactPoint, UnsettledDelay, PredictedASM);
 		}
 		return true;
 	}
@@ -6391,9 +6413,9 @@ bool APropManager::SetInstanceToUnsettled(
 		PromotedASM->PhysicsSimComponent->SetStateUnsettled(UnsettledDelay);
 	}
 
-	if (!SafeImpulse.IsNearlyZero() && PromotedASM->PropMesh && PromotedASM->PropMesh->IsSimulatingPhysics())
+	if (!HitImpulse.IsNearlyZero() && PromotedASM->PropMesh)
 	{
-		PromotedASM->PropMesh->AddImpulse(SafeImpulse, NAME_None, true);
+		PromotedASM->ApplyUnsettlingImpulse(HitImpulse);
 		PromotedASM->LinearVelocity = PromotedASM->PropMesh->GetComponentVelocity();
 		PromotedASM->AngularVelocity = PromotedASM->PropMesh->GetPhysicsAngularVelocityInDegrees();
 	}
@@ -6406,6 +6428,7 @@ bool APropManager::SetInstanceToUnsettled(
 bool APropManager::SetInstanceToSettling(int32 InISID, float VelocityTolerance)
 {
 	if (InISID <= 0) return false;
+	if (IsInstanceKeptActive(InISID)) return false;
 
 	FISIDRuntimeIndex* Record = FindISIDData(InISID);
 	if (!Record) return false;
@@ -6646,14 +6669,7 @@ void APropManager::Server_SetInstanceState_Implementation(
 				}
 				else if (TargetState == EPropState::Unsettled)
 				{
-					if (ExistingServerASM->PhysicsSimComponent)
-					{
-						ExistingServerASM->PhysicsSimComponent->SetStateUnsettled(CustomParam);
-					}
-					if (!HitImpulse.IsNearlyZero() && ExistingServerASM->PropMesh && ExistingServerASM->PropMesh->IsSimulatingPhysics())
-					{
-						ExistingServerASM->PropMesh->AddImpulse(HitImpulse, NAME_None, true);
-					}
+					SetInstanceToUnsettled(InISID, HitImpulse, ImpactPoint, CustomParam);
 				}
 				else if (TargetState == EPropState::Settling)
 				{
@@ -7928,6 +7944,9 @@ bool APropManager::LoadPropDatabase(const FString& SlotName, int32 UserIndex)
 
 	RebuildLevelMappings();
 	RebuildLevelEmptyInstances();
+	TArray<int32> RestoredUniqueIDs;
+	UniqueDataByISID.GetKeys(RestoredUniqueIDs);
+	for (int32 ID:RestoredUniqueIDs) if (!EnsureDefaultPhysicalCap(ID)) return false;
 	RestoreActiveActors();
 
 	return true;
@@ -7979,6 +7998,11 @@ int32 APropManager::SaveDirtyInstances(const FString& SlotName, int32 UserIndex)
 			});
 		}
 	}
+
+	// Normalize cached companions too: an unchanged cap may not be in DirtyISIDs
+	// when its bottle's incomplete checkout needs to return to the stock location.
+	for (FPropSerializedInstance& Serialized:WorldSaveData.SavedInstances)
+		if (ShopCheckout && ShopCheckout->GetCanceledStockTransform(Serialized.ISID,Serialized.ActiveTransform)) Serialized.State=EPropState::AtRest;
 
 	UPropDatabaseSaveGame* SaveObj = Cast<UPropDatabaseSaveGame>(UGameplayStatics::CreateSaveGameObject(UPropDatabaseSaveGame::StaticClass()));
 	if (!SaveObj)

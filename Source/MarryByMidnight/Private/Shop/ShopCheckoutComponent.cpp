@@ -217,8 +217,22 @@ void UShopCheckoutComponent::EndPlay(const EEndPlayReason::Type Reason)
 bool UShopCheckoutComponent::GetCanceledStockTransform(int32 ISID, FTransform& Out) const
 {
 	const FShopStockEntry* Entry = Stock.Find(ISID);
-	if (!Entry || !Reservations.Contains(ISID) || Entry->CustomerOwner.IsValid()) return false;
-	Out = Entry->StockTransform; return true;
+	if (Entry && Reservations.Contains(ISID) && !Entry->CustomerOwner.IsValid())
+	{
+		Out=Entry->StockTransform; return true;
+	}
+	// A physical cap is a separate persistent instance, but must return with its
+	// reserved bottle when the unfinished checkout is canceled during save/load.
+	const auto* Manager=Cast<APropManager>(GetOwner());
+	const auto* Cap=Manager ? Manager->FindUniqueData(ISID) : nullptr;
+	const int32 BottleID=Cap ? Cap->EventData.AttachedBottleISID : 0;
+	const auto* Bottle=Manager ? Manager->FindUniqueData(BottleID) : nullptr;
+	const auto* Record=Manager ? Manager->FindISIDData(BottleID) : nullptr;
+	const auto* Definition=Record ? Manager->FindProductDefinition(Record->ProductID) : nullptr;
+	const auto* BottleStock=Stock.Find(BottleID);
+	if (!Bottle || Bottle->EventData.AttachedCapISID!=ISID || !Definition || !BottleStock
+		|| !Reservations.Contains(BottleID) || BottleStock->CustomerOwner.IsValid()) return false;
+	Out=Definition->CapAttachmentTransform*BottleStock->StockTransform; return true;
 }
 
 FShopCheckoutSaveData UShopCheckoutComponent::ExportCommittedState() const

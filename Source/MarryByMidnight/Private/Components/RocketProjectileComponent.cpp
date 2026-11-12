@@ -1891,6 +1891,8 @@ void URocketProjectileComponent::ApplyClientLaunch(
 
 	bPendingLaunch = false;
 	LastReplicatedServerLaunchTime = InServerLaunchTime;
+	FlightNetState.bPressurePhysicsFlight=false;
+	FlightNetState.bPhysicsSimulating=false;
 
 	SavePrimitiveSettings();
 
@@ -2095,6 +2097,8 @@ void URocketProjectileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// A powered pressure jet can be pressed against a surface; that is not settlement.
+	if (FlightNetState.bPressurePhysicsFlight && CurrentState==ERocketSimulationState::Rocketing) return;
 
 	// If server handed off to physics simulation, monitor the physics body until it settles
 	if (FlightNetState.bPhysicsSimulating)
@@ -2124,8 +2128,11 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 			{
 				FHitResult GroundCheck;
 				FCollisionQueryParams QP(SCENE_QUERY_STAT(RocketGroundCheckBeforeSettle), false, GetOwner());
-				const FVector CenterLoc = TargetPrimitive->GetComponentLocation();
-				const bool bNearGround = GetWorld() && GetWorld()->LineTraceSingleByChannel(GroundCheck, CenterLoc, CenterLoc - FVector(0.0f, 0.0f, 150.0f), ECC_WorldStatic, QP);
+				// The root can be at the upper end of an inverted giant bottle. Trace
+				// from its bounds, so contact does not depend on pivot or orientation.
+				const FVector CenterLoc = TargetPrimitive->Bounds.Origin;
+				const float ContactDistance = TargetPrimitive->Bounds.BoxExtent.Z + 25.0f;
+				const bool bNearGround = GetWorld() && GetWorld()->LineTraceSingleByChannel(GroundCheck, CenterLoc, CenterLoc - FVector(0.0f, 0.0f, ContactDistance), ECC_WorldStatic, QP);
 
 				if (bNearGround)
 				{
@@ -2276,7 +2283,7 @@ void URocketProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickT
 			RemainingTime -= SubStep;
 			SubStepCount++;
 
-			if (CurrentState == ERocketSimulationState::AtRest || CurrentState == ERocketSimulationState::Idle)
+			if (FlightNetState.bPhysicsSimulating || CurrentState == ERocketSimulationState::AtRest || CurrentState == ERocketSimulationState::Idle)
 			{
 				break;
 			}
@@ -2328,6 +2335,8 @@ void URocketProjectileComponent::RestorePrimitiveSettings()
 
 	if (TargetPrimitive)
 	{
+		// Change collision while non-simulating; pooled settings can legitimately disable collision.
+		TargetPrimitive->SetSimulatePhysics(false);
 		TargetPrimitive->SetMobility(SavedMobility);
 		if (!SavedCollisionProfileName.IsNone())
 		{
@@ -2352,6 +2361,7 @@ void URocketProjectileComponent::RestorePrimitiveSettings()
 
 void URocketProjectileComponent::ResetRocketSimulation()
 {
+	ProjectileAngularVelocityDegrees=FVector::ZeroVector; bProjectileHasAscended=false;
 	CurrentState = ERocketSimulationState::Idle;
 	CurrentVelocity = FVector::ZeroVector;
 	ElapsedFlightTime = 0.0f;
@@ -2400,6 +2410,10 @@ void URocketProjectileComponent::ResetRocketSimulation()
 	SetActive(false);
 
 	RestorePrimitiveSettings();
+	// SetActive(false) invokes Deactivate(), whose ordinary stop state is AtRest.
+	// A pool reset must finish Idle, including its replicated pressure-mode flag.
+	CurrentState=ERocketSimulationState::Idle;
+	FlightNetState=FRocketFlightNetState();
 }
 
 void URocketProjectileComponent::Deactivate()
@@ -2456,6 +2470,10 @@ void URocketProjectileComponent::LaunchRocket(
 
 	if (TargetPrimitive)
 	{
+		// A retained/reused bottle may previously have used pressure-physics flight.
+		// Clear that mode before any original projectile state is initialized.
+		FlightNetState.bPressurePhysicsFlight=false;
+		FlightNetState.bPhysicsSimulating=false;
 		// Disable physics simulation and lock to movable so manual sweep movement is not overridden by Chaos physics
 		TargetPrimitive->SetMobility(EComponentMobility::Movable);
 		TargetPrimitive->SetSimulatePhysics(false);
@@ -2523,6 +2541,11 @@ void URocketProjectileComponent::LaunchRocket(
 				}
 			}
 		}
+		// Prop/PhysicsSim InMotion transitions above may enable Chaos again.
+		// Original projectile flight exclusively owns swept root movement, just
+		// as ApplyClientLaunch does after its owner-state transitions.
+		TargetPrimitive->SetSimulatePhysics(false);
+		TargetPrimitive->SetEnableGravity(false);
 	}
 	else
 	{
@@ -2703,7 +2726,8 @@ void URocketProjectileComponent::HandoffToPhysicsSimulation(FVector AdditionalIm
 
 	// 2. Generate natural bottle tumble if angular velocity is zero
 	FVector FinalAngularVelocity = AngularVelocityInDegrees;
-	if (FinalAngularVelocity.IsNearlyZero() && !CurrentVelocity.IsNearlyZero())
+	if (FlightNetState.bHandoffAtApexOrDistance) FinalAngularVelocity=ProjectileAngularVelocityDegrees;
+	else if (FinalAngularVelocity.IsNearlyZero() && !CurrentVelocity.IsNearlyZero())
 	{
 		const FVector CrossAxis = FVector::CrossProduct(CurrentVelocity.GetSafeNormal(), FVector::UpVector);
 		FinalAngularVelocity = (CrossAxis * 360.0f) + FVector(RandomStream.FRandRange(-120.0f, 120.0f), RandomStream.FRandRange(-120.0f, 120.0f), 0.0f);
@@ -3079,6 +3103,9 @@ void URocketProjectileComponent::SetSimulationState(ERocketSimulationState NewSt
 
 void URocketProjectileComponent::PerformSimulationStep(float DeltaTime)
 {
+	if (FlightNetState.bPhysicsSimulating) return;
+	const FQuat BeforeRotation=TargetPrimitive ? TargetPrimitive->GetComponentQuat() : FQuat::Identity;
+	const auto BeforeState=CurrentState;
 	switch (CurrentState)
 	{
 	case ERocketSimulationState::TippingOver:
@@ -3106,6 +3133,22 @@ void URocketProjectileComponent::PerformSimulationStep(float DeltaTime)
 	default:
 		break;
 	}
+	if (TargetPrimitive && DeltaTime>UE_SMALL_NUMBER && !FlightNetState.bPhysicsSimulating)
+	{
+		FQuat Delta=(TargetPrimitive->GetComponentQuat()*BeforeRotation.Inverse()).GetNormalized();
+		if (Delta.W<0) Delta=Delta*-1.f;
+		FVector Axis; float Angle; Delta.ToAxisAndAngle(Axis,Angle);
+		ProjectileAngularVelocityDegrees=Axis*FMath::RadiansToDegrees(Angle)/DeltaTime;
+	}
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !FlightNetState.bHandoffAtApexOrDistance || FlightNetState.bPhysicsSimulating) return;
+	// Bottle accounting observes the exact sub-step, including the distance limit.
+	OnMovementStep.Broadcast(DeltaTime);
+	if (FlightNetState.bPhysicsSimulating) return;
+	const bool WasFlying=BeforeState==ERocketSimulationState::Rocketing || BeforeState==ERocketSimulationState::LowFuelSputter;
+	if (WasFlying && CurrentVelocity.Z>10) bProjectileHasAscended=true;
+	if ((WasFlying && bProjectileHasAscended && CurrentVelocity.Z<=0)
+		|| CurrentState==ERocketSimulationState::SpentFalling
+		|| TotalFlightDistanceTraveled>=FMath::Max(1.f,MaxFuelDistance)) FinishPressureThrust();
 }
 
 void URocketProjectileComponent::ProcessTippingStep(float DeltaTime)
@@ -3418,6 +3461,8 @@ void URocketProjectileComponent::ProcessRocketStep(float DeltaTime)
 			}
 		}
 
+		if (FlightNetState.bHandoffAtApexOrDistance && FlightNetState.Acceleration>0 && CurrentIdx<RocketingEndIndex)
+			TargetSpeed=FMath::Min(TargetSpeed,FlightSettings.BaseSpeed*.2f+FlightNetState.Acceleration*ElapsedFlightTime);
 		// 3. Step forward along trajectory
 		const float StepDist = TargetSpeed * DeltaTime;
 		CurrentSegmentDistTraveled += StepDist;
@@ -4690,6 +4735,11 @@ void URocketProjectileComponent::SetTargetTransformAroundCenter(const FVector& N
 void URocketProjectileComponent::OnRep_FlightNetState()
 {
 	AutoResolveTargetPrimitive();
+	if (FlightNetState.bPressurePhysicsFlight && FlightNetState.State != ERocketSimulationState::AtRest)
+	{
+		ApplyPressurePhysicsNetState();
+		return;
+	}
 
 	LogDebug(FString::Printf(TEXT("OnRep_FlightNetState: State=%s, Bounces=%d, PhysSim=%d, FuelMax=%.1f, LaunchTime=%.2f, RestLoc=%s"),
 		*UEnum::GetValueAsString(FlightNetState.State), FlightNetState.BounceCount, FlightNetState.bPhysicsSimulating ? 1 : 0,
@@ -4783,7 +4833,7 @@ void URocketProjectileComponent::OnRep_FlightNetState()
 			false,
 			FlightNetState.LaunchLocation,
 			FlightNetState.LaunchSeed,
-			FlightNetState.FuelDuration,
+			MaxFuelDistance, // Replicated centimetres; FuelDuration is seconds, not a path length.
 			FlightNetState.Speed
 		);
 		return;

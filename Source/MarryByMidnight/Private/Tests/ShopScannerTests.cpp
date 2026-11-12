@@ -6,6 +6,7 @@
 #include "Shop/ShopScannerComponent.h"
 #include "Shop/SharedTeamWalletComponent.h"
 #include "ShopCashTestHelpers.h"
+#include "Components/BoxComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopScannerTest, "MarryByMidnight.Shop.ScannerLifecycle", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -29,6 +30,7 @@ bool FShopScannerTest::RunTest(const FString& Parameters)
 	auto MakeScanner = [World]()
 	{
 		AActor* Owner = World->SpawnActor<AActor>();
+		auto* Root=NewObject<USceneComponent>(Owner); Owner->SetRootComponent(Root); Root->RegisterComponent();
 		Owner->SetReplicates(true);
 		UShopScannerComponent* Scanner = NewObject<UShopScannerComponent>(Owner);
 		Owner->AddInstanceComponent(Scanner); Scanner->RegisterComponent();
@@ -50,6 +52,13 @@ bool FShopScannerTest::RunTest(const FString& Parameters)
 	Scanner->MaxScanDistance = 0;
 	TestEqual(TEXT("Invalid scanner range rejects scan"), Scanner->ScanProduct(10001), EShopCheckoutResult::Unavailable);
 	Scanner->MaxScanDistance = 300;
+	// Giant counter origin is deliberately far from the physical scan aperture.
+	auto* Aperture=NewObject<UBoxComponent>(Scanner->GetOwner()); Scanner->GetOwner()->AddInstanceComponent(Aperture);
+	Aperture->SetWorldLocation(FVector::ZeroVector); Aperture->SetCollisionEnabled(ECollisionEnabled::NoCollision); Aperture->RegisterComponent();
+	Scanner->ScanVolume=Aperture;
+	Scanner->GetOwner()->SetActorLocation(FVector(1000,0,0));
+	TestEqual(TEXT("Scan reach uses the actual aperture on giant equipment"),Scanner->ScanProduct(10001),EShopCheckoutResult::Success);
+	Scanner->GetOwner()->SetActorLocation(FVector::ZeroVector);
 	Scanner->ScanProduct(10001); Other->ScanProduct(10001);
 	TestEqual(TEXT("Customer identity is required"), Scanner->BeginCheckout(), EShopCheckoutResult::InvalidRequest);
 	const FGuid Customer = FGuid::NewGuid();

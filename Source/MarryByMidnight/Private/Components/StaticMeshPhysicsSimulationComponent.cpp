@@ -205,7 +205,7 @@ void UStaticMeshPhysicsSimulationComponent::TickComponent(float DeltaTime, ELeve
 
 	if (const AActivePropActor* Prop = Cast<AActivePropActor>(Owner))
 	{
-		if (!Prop->bIsActive || Prop->bIsHeld || Prop->bIsInMotion)
+		if (!Prop->bIsActive || Prop->bIsHeld || Prop->bIsInMotion || Prop->IsKeptActiveByVolume())
 		{
 			return;
 		}
@@ -575,6 +575,9 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 {
 	AActor* Owner = GetOwner();
 	AActivePropActor* ActivePropOwner = Cast<AActivePropActor>(Owner);
+	const bool bKeepActive=ActivePropOwner && ActivePropOwner->IsKeptActiveByVolume();
+	if (bKeepActive && (NewState==EPhysicsSimulationState::Settling || NewState==EPhysicsSimulationState::AtRest))
+		NewState=EPhysicsSimulationState::Unsettled;
 
 	// Guard against invalid state transitions:
 	// 1. A Held prop cannot transition into Settling, AtRest, or Unsettled while still held by owner
@@ -777,7 +780,7 @@ void UStaticMeshPhysicsSimulationComponent::ApplyState(EPhysicsSimulationState N
 			Owner->SetReplicateMovement(bReplicateMovementWhenFree);
 		}
 
-		if (World && Owner && Owner->HasAuthority())
+		if (World && Owner && Owner->HasAuthority() && !bKeepActive)
 		{
 			float Delay = (CustomDelay > 0.0f) ? CustomDelay : DefaultUnsettledDelay;
 			if (Delay <= 0.0f)

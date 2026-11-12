@@ -12,6 +12,7 @@
 #include "Components/NPCMentalStateComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/World.h"
 #include "Components/ASMComponent.h"
 
 AActivePropActor::AActivePropActor()
@@ -586,7 +587,7 @@ void AActivePropActor::InitializeFromISIDRecord(const FISIDRuntimeIndex& Record,
 
 	UpdateDebugBillboard();
 
-	ResetTransientPoolState();
+	ResetForInstanceBinding();
 	bHasValidUniqueData = UniqueData != nullptr;
 	if (UniqueData) { LocalUniqueData = *UniqueData; OnApplyEventData(UniqueData->EventData); OnApplyContinuousData(UniqueData->ContinuousData); }
 	OnApplySharedDefinitions(ProductDef, ContentDef);
@@ -780,6 +781,7 @@ void AActivePropActor::ActivateASMRepresentation(const FTransform& GameplayTrans
 		BP_OnPropStateChanged(InitialPropState, PrevPropState);
 		OnActivePropStateChanged.Broadcast(this, InitialPropState, PrevPropState);
 	}
+	if (PropManagerReference) PropManagerReference->SynchronizeCapAssembly(ISID);
 }
 
 void AActivePropActor::NotifyBeforeReturnToRestPosition()
@@ -1459,6 +1461,8 @@ void AActivePropActor::OnRep_State(EPropState PreviousState)
 		}
 		if (PropMesh)
 		{
+			PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+			PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			PropMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 			PropMesh->SetNotifyRigidBodyCollision(true);
 		}
@@ -1482,6 +1486,7 @@ void AActivePropActor::OnRep_State(EPropState PreviousState)
 
 void AActivePropActor::SetPropState(EPropState NewState)
 {
+	if ((NewState==EPropState::AtRest || NewState==EPropState::Settling) && IsKeptActiveByVolume()) NewState=EPropState::Unsettled;
 	const EPropState PrevState = State;
 	if (PrevState == NewState)
 	{
@@ -1621,10 +1626,6 @@ void AActivePropActor::OnRep_IsActive()
 		SetReplicateMovement(false);
 
 		SetActorHiddenInGame(true);
-		if (GetActorEnableCollision())
-		{
-			SetActorEnableCollision(false);
-		}
 		SetActorTickEnabled(false);
 		if (PropMesh)
 		{
@@ -1637,6 +1638,12 @@ void AActivePropActor::OnRep_IsActive()
 			{
 				PropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			}
+		}
+		// Actor collision also updates the physics body. Stop simulation first
+		// when a remote ASM is being returned to its pooled representation.
+		if (GetActorEnableCollision())
+		{
+			SetActorEnableCollision(false);
 		}
 
 		if (SkeletalMeshComponent)
@@ -1834,6 +1841,7 @@ void AActivePropActor::OnRep_IsActive()
 		}
 	}
 
+	if (PropManagerReference) PropManagerReference->SynchronizeCapAssembly(ISID);
 	// Apply initial Server velocity once upon activation if simulating physics (without hard-snapping ReplicatedMovement)
 	if (bIsBecomingActiveNow && PropMesh && PropMesh->IsSimulatingPhysics() && State != EPropState::Held)
 	{
@@ -2061,6 +2069,68 @@ bool AActivePropActor::InteractWithPlayer_Implementation(APawn* PlayerPawn)
 	return false;
 }
 
+bool AActivePropActor::AttachForInteraction(USceneComponent* Parent, FName SocketName)
+{
+	if (!IsValid(Parent) || Parent->GetWorld() != GetWorld() || !IsValid(Parent->GetOwner())) return false;
+	AActor* Holder = Parent->GetOwner();
+	// Container pockets carried by a pawn keep that pawn's exclusive interaction ownership.
+	for (AActor* Ancestor = Holder; IsValid(Ancestor); Ancestor = Ancestor->GetAttachParentActor())
+		if (Cast<APawn>(Ancestor)) { Holder = Ancestor; break; }
+	if (!HasAuthority() || GetNetMode() == NM_Client) return OnPlayerGrab(Parent, SocketName);
+	if (!PropManagerReference) PropManagerReference = APropManager::Get(this);
+	if (PropManagerReference && ISID > 0)
+	{
+		const FISIDRuntimeIndex* Record = PropManagerReference->FindISIDData(ISID);
+		if (!Record || Record->ActiveActor != this) return false;
+		// The existing Holding Actor RepNotify may repeat the same attach on the server.
+		if (Record->State == EPropState::Held && Record->RuntimeData.InteractionOwner.Get() == Holder)
+			return AttachToComponent(Parent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+		if (!PropManagerReference->ValidateGrab(ISID, Holder)) return false;
+		return PropManagerReference->BeginGrab(ISID, Holder, Parent, SocketName);
+	}
+	return OnPlayerGrab(Parent, SocketName);
+}
+
+bool AActivePropActor::DetachForInteraction()
+{
+	if (!HasAuthority() || GetNetMode() == NM_Client)
+	{
+		// Presentation only. The server's normal state/transform synchronization owns dropped physics.
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		SetHeld(false);
+		return true;
+	}
+	if (!PropManagerReference) PropManagerReference = APropManager::Get(this);
+	if (PropManagerReference && ISID > 0)
+	{
+		const FISIDRuntimeIndex* Record = PropManagerReference->FindISIDData(ISID);
+		if (!Record || Record->ActiveActor != this) return false;
+		return PropManagerReference->ReleaseGrab(ISID, Record->RuntimeData.InteractionOwner.Get());
+	}
+	return OnPlayerRelease(FVector::ZeroVector);
+}
+
+bool AActivePropActor::MoveHeldToLocation(FVector Location)
+{
+	if (!HasAuthority() || GetNetMode() == NM_Client || Location.ContainsNaN() || !bIsHeld) return false;
+	if (!PropManagerReference) PropManagerReference = APropManager::Get(this);
+	if (!PropManagerReference || ISID <= 0) return false;
+	const FISIDRuntimeIndex* Record = PropManagerReference->FindISIDData(ISID);
+	if (!Record || Record->ActiveActor != this || Record->State != EPropState::Held || !Record->RuntimeData.InteractionOwner.IsValid()) return false;
+	AActor* Holder = Record->RuntimeData.InteractionOwner.Get();
+	const auto* Product = PropManagerReference->FindProductDefinition(Record->ProductID);
+	if (!Product) return false;
+	const float Range = Product->InteractionProfile.MaxInteractionDistance;
+	if (!FMath::IsFinite(Range) || (Range > 0 && FVector::DistSquared(Holder->GetActorLocation(), Location) > FMath::Square(Range * 1.5f))) return false;
+	FVector Eyes; FRotator View;
+	Holder->GetActorEyesViewPoint(Eyes, View);
+	FCollisionQueryParams Query(SCENE_QUERY_STAT(HeldPropPlacement), false, Holder); Query.AddIgnoredActor(this);
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Eyes, Location, ECC_Visibility, Query) && Hit.Distance + 1 < FVector::Distance(Eyes, Location)) return false;
+	FTransform Transform = GetActorTransform(); Transform.SetLocation(Location);
+	return PropManagerReference->UpdateHeldTransform(ISID, Transform);
+}
+
 bool AActivePropActor::OnPlayerGrab_Implementation(USceneComponent* AttachToParent, FName SocketName)
 {
 	if (!AttachToParent) return false;
@@ -2098,7 +2168,17 @@ bool AActivePropActor::OnPlayerGrab_Implementation(USceneComponent* AttachToPare
 
 bool AActivePropActor::OnPlayerRelease_Implementation(FVector LaunchVelocity)
 {
+	if (PropMesh && IsValid(InteractionOwner)) PropMesh->IgnoreActorWhenMoving(InteractionOwner.Get(), false);
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	// Customer pockets and physical cap assemblies suppress collision while carried.
+	// Restore the body before the settling component can enable physics.
+	if (PropMesh)
+	{
+		PropMesh->SetCollisionProfileName(FName(TEXT("PhyBody")));
+		PropMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		PropMesh->SetCollisionResponseToChannel(ECC_Pawn,ECR_Block);
+		PropMesh->SetNotifyRigidBodyCollision(true);
+	}
 
 	bIsHeld = false;
 	bIsGrabbable = true;

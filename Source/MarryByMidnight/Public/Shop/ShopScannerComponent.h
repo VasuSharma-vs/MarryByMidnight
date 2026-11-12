@@ -39,6 +39,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult ReturnChange(FGuid CashOperationID, int64 AmountCents);
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult CompleteCheckout();
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult ClearCart();
+	/** Customer lifecycle boundary. Refuses stale visits and unresolved compensation choices. */
+	EShopCheckoutResult ReleaseCustomer(FGuid CustomerID, FGuid ExpectedSession);
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult SaveProducts();
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") EShopCheckoutResult SetProductInVolume(int32 ISID, bool bInside);
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Scanner") void RefreshLiveProducts();

@@ -93,6 +93,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ASM State", meta = (DisplayName = "Set Prop State"))
 	void SetPropState(EPropState NewState);
 
+	/** Thin Blueprint-interface adapters share the native grab ownership and physics lifecycle. */
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Carry") bool AttachForInteraction(USceneComponent* Parent, FName SocketName = NAME_None);
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Carry") bool DetachForInteraction();
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Interaction|Carry") bool MoveHeldToLocation(FVector Location);
+
 	/** Monotonically increasing instance version for stale-update detection */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "ASM State")
 	int32 Version = 1;
@@ -396,6 +401,19 @@ public:
 	float GetInitialContentLevel(float DefinitionDefault) const;
 	virtual float GetInitialContentLevel_Implementation(float DefinitionDefault) const;
 
+	/** Development-only initial contents; never rerolls a registered or restored instance. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Debug|Content Level", meta=(DisplayName="Randomize Content Level On ISM Registration"))
+	bool bDebugRandomizeContentLevelOnISMRegistration = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Debug|Content Level", meta=(EditCondition="bDebugRandomizeContentLevelOnISMRegistration", ClampMin="0.0", ClampMax="1.0", DisplayName="Minimum Initial Content Level"))
+	float DebugMinInitialContentLevel = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Debug|Content Level", meta=(EditCondition="bDebugRandomizeContentLevelOnISMRegistration", ClampMin="0.0", ClampMax="1.0", DisplayName="Maximum Initial Content Level"))
+	float DebugMaxInitialContentLevel = 1.f;
+
+	/** Called only by authoritative placed-actor registration, before assigning its ISID. */
+	float ResolveRegistrationContentLevel(float DefinitionDefault) const;
+
 	/** C++ non-UFUNCTION inline overload accepting EPropEventDirtyMask enum for type-safe call sites */
 	void OnApplyEventData(const FPropEventUpdateData& InEventData, EPropEventDirtyMask DirtyMask)
 	{
@@ -423,6 +441,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "ASM Lifecycle")
 	virtual bool CanDemoteToISM() const;
+	/** Authoritative spatial policy, independent of held and rocket motion. */
+	UFUNCTION(BlueprintPure, Category="ASM State")
+	bool IsKeptActiveByVolume() const;
 
 	/**
 	 * Returns true when this ASM currently has active thermal sources (e.g. nearby heat/cold sources)
@@ -440,6 +461,8 @@ public:
 	 * @param InteractionEventID Unique interaction event ID allocated by PropManager (0 = no dedup).
 	 */
 	virtual void ApplyInitialImpactFromPromotion(FVector ImpulseLocation, const FVector& ImpulseDirection, AActor* InstigatorActor, int32 InteractionEventID = 0);
+	/** Collision wake-up kick. Bottles override the legacy mass-independent prop response. */
+	virtual void ApplyUnsettlingImpulse(const FVector& Impulse);
 
 	/**
 	 * Called by the pool manager immediately before this ASM unit is deactivated and returned to the pool.
@@ -454,6 +477,8 @@ public:
 	 * Always call Super::ResetTransientPoolState() first.
 	 */
 	virtual void ResetTransientPoolState();
+	/** Clear local residue during binding; subclasses may retain an incoming server snapshot. */
+	virtual void ResetForInstanceBinding();
 
 	// ---------------------------------------------------------
 	// Data Asset Configuration
@@ -909,5 +934,9 @@ protected:
 	void HandlePhysicsSimStateChanged(EPhysicsSimulationState NewSimState, EPhysicsSimulationState PrevSimState);
 
 private:
+	bool bProductMassOverrideApplied = false;
+	bool bOriginalMassOverride = false;
+	float OriginalMassKg = 0;
+	void RestoreAuthoredMass();
 	bool bHasNotifiedBeforeReturnToRest = false;
 };

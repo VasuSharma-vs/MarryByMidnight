@@ -30,6 +30,9 @@ public:
 	EShopCheckoutResult ReconcilePhysicalCash(FGuid CheckoutID, FGuid RegisterID, const TArray<int32>& Tender, const TArray<int32>& Change);
 	void ReleasePhysicalCash(FGuid CheckoutID);
 	bool GetCoin(int32 ISID, FShopCashCoin& Out) const;
+	/** Retire only customer-owned, unallocated currency. Never removes team cash or changes the bank. */
+	bool ReclaimCustomerCoins(FGuid CustomerID, const TArray<int32>& CoinISIDs);
+	TArray<int32> GetCustomerCoinISIDs(FGuid CustomerID) const;
 	bool ShouldPersistInstance(int32 ISID) const;
 	int64 GetTeamCashCents() const;
 	int64 GetOutstandingBankDebt() const;
@@ -63,6 +66,9 @@ public:
 	bool GetStockEntry(int32 ISID, FShopStockEntry& OutEntry) const;
 	UFUNCTION(BlueprintPure, Category = "Shop")
 	bool IsAvailableShopStock(int32 ISID) const;
+	TArray<int32> GetCustomerOwnedStockISIDs(FGuid CustomerID) const;
+	/** Revalidate live contents and production readiness when an NPC claims or collects stock. */
+	bool IsAvailableColaStockISID(int32 ISID) const;
 	/** Cola-shop selection only. The generic Prop Manager registry continues to include coins, fragments and other products. */
 	UFUNCTION(BlueprintPure, Category = "Shop|Stock") TArray<int32> GetAvailableColaStockISIDs() const;
 	UFUNCTION(BlueprintPure, Category = "Shop")

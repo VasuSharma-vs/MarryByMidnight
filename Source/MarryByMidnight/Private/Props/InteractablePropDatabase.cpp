@@ -249,6 +249,9 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 
 		// Thermal physics
 		Def.ThermalMass = FMath::Max(0.01f, InAsset->ThermalMass);
+		Def.GameplayMassKg = FMath::IsFinite(InAsset->GameplayMassKg) ? FMath::Max(0.f,InAsset->GameplayMassKg) : 0.f;
+		Def.BottleMass = FMath::IsFinite(InAsset->BottleMass) ? FMath::Max(.001f,InAsset->BottleMass) : .05f;
+		Def.PortionVolumeMl = FMath::IsFinite(InAsset->PortionVolumeMl) ? FMath::Max(.001f,InAsset->PortionVolumeMl) : 20.f;
 		Def.ThermalConductivity = FMath::Max(0.0f, InAsset->ThermalConductivity);
 		Def.HeatingRateMultiplier = FMath::Max(0.01f, InAsset->HeatingRateMultiplier);
 		Def.CoolingRateMultiplier = FMath::Max(0.01f, InAsset->CoolingRateMultiplier);
@@ -261,6 +264,8 @@ FPropProductDefinition FPropProductDefinition::FromDataAsset(const UInteractable
 
 		// Cap & transformations
 		Def.SupportedCapMask = InAsset->SupportedCapMask;
+		Def.bIsBottleCap = InAsset->bIsBottleCap;
+		Def.CapAttachmentTransform = InAsset->CapAttachmentTransform;
 		Def.DefaultCapType = InAsset->DefaultCapType;
 		Def.DefaultCapMesh = InAsset->DefaultCapMesh;
 		Def.CapReleasePressure = InAsset->CapReleasePressure;

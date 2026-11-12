@@ -27,7 +27,7 @@ namespace ShopTerminal
 void UShopTerminalButton::Configure(UShopTerminalWidget* Owner, const FString& Label)
 {
 	Terminal = Owner;
-	auto* Text = NewObject<UTextBlock>(this); Text->SetText(FText::FromString(Label)); Text->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	auto* Text = NewObject<UTextBlock>(this); Text->SetText(FText::FromString(Label)); Text->SetAutoWrapText(true); Text->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 	SetContent(Text); SetBackgroundColor(FLinearColor(.08f,.24f,.3f));
 	OnClicked.AddDynamic(this, &UShopTerminalButton::HandleClick);
 }
@@ -39,10 +39,11 @@ TSharedRef<SWidget> UShopTerminalWidget::RebuildWidget()
 	auto* Size = WidgetTree->ConstructWidget<USizeBox>(); Size->SetWidthOverride(720); Size->SetHeightOverride(650);
 	auto* Border = WidgetTree->ConstructWidget<UBorder>(); Border->SetPadding(FMargin(16)); Border->SetBrushColor(FLinearColor(.025f,.035f,.045f,.98f)); Size->SetContent(Border);
 	auto* Layout = WidgetTree->ConstructWidget<UVerticalBox>(); Border->SetContent(Layout);
-	Summary = WidgetTree->ConstructWidget<UTextBlock>(); Summary->SetAutoWrapText(true); Layout->AddChild(Summary);
-	ResultText = WidgetTree->ConstructWidget<UTextBlock>(); ResultText->SetAutoWrapText(true); Layout->AddChild(ResultText);
 	auto* Scroll = WidgetTree->ConstructWidget<UScrollBox>(); Layout->AddChildToVerticalBox(Scroll)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	Body = WidgetTree->ConstructWidget<UVerticalBox>(); Scroll->AddChild(Body);
+	auto* Contents = WidgetTree->ConstructWidget<UVerticalBox>(); Scroll->AddChild(Contents);
+	Summary = WidgetTree->ConstructWidget<UTextBlock>(); Summary->SetAutoWrapText(true); Contents->AddChild(Summary);
+	ResultText = WidgetTree->ConstructWidget<UTextBlock>(); ResultText->SetAutoWrapText(true); Contents->AddChild(ResultText);
+	Body = WidgetTree->ConstructWidget<UVerticalBox>(); Contents->AddChild(Body);
 	WidgetTree->RootWidget = Size;
 	SetIsFocusable(true);
 	return Super::RebuildWidget();
@@ -53,6 +54,11 @@ void UShopTerminalWidget::Configure(UShopPlayerInteractionComponent* InActions, 
 	InActions->OnActionResult.AddUniqueDynamic(this, &UShopTerminalWidget::ActionResult);
 	LastContents.Empty(); RefreshCountdown = 0;
 }
+void UShopTerminalWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	Refresh(); // Populate the first visible frame rather than flashing an empty tree.
+}
 void UShopTerminalWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
@@ -62,11 +68,30 @@ void UShopTerminalWidget::NativeTick(const FGeometry& Geometry, float DeltaSecon
 FReply UShopTerminalWidget::NativeOnKeyDown(const FGeometry& Geometry, const FKeyEvent& Event)
 {
 	if (Event.GetKey() == EKeys::Escape) { Close(); return FReply::Handled(); }
+	if (Station.IsValid() && Actions.IsValid())
+		if (auto* Production=Station->FindComponentByClass<UShopProductionStationComponent>())
+			if (Production->bRequiresCooperativeCap && (Event.GetKey()==EKeys::G || Event.GetKey()==EKeys::R))
+			{
+				int32 BottleID=Production->View.ManualBottleISID;
+				if (!BottleID)
+				{
+					for (const auto& Candidate:Production->View.Bottles) if (Candidate.AttachedCapISID>0 && Candidate.CapSealed<1)
+					{
+						if (BottleID) { BottleID=0; break; } // Explicit selection when several bottles are eligible.
+						BottleID=Candidate.ISID;
+					}
+				}
+				if (!Event.IsRepeat() && BottleID>0)
+					Actions->RequestProductionAction(Production,Production->View.SessionID,
+						Event.GetKey()==EKeys::G ? EShopProductionAction::PressCap : EShopProductionAction::TurnCap,BottleID);
+				return FReply::Handled();
+			}
 	return Super::NativeOnKeyDown(Geometry, Event);
 }
-void UShopTerminalWidget::AddText(const FString& Value)
+UTextBlock* UShopTerminalWidget::AddText(const FString& Value)
 {
 	auto* Text = WidgetTree->ConstructWidget<UTextBlock>(); Text->SetText(FText::FromString(Value)); Text->SetAutoWrapText(true); Body->AddChild(Text);
+	return Text;
 }
 UShopTerminalButton* UShopTerminalWidget::AddButton(const FString& Label)
 {
@@ -79,6 +104,7 @@ void UShopTerminalWidget::Refresh()
 	auto* Manager = APropManager::Get(this);
 	if (!Manager || !Manager->SharedWallet || !Manager->ShopCheckout) return;
 	Summary->SetText(FText::FromString(FString::Printf(TEXT("Shop bank: %s    Physical shop cash: %s\n"), *ShopTerminal::Money(Manager->SharedWallet->GetWalletState().BalanceCents), *ShopTerminal::Money(Manager->ShopCheckout->TeamCashCents))));
+	if (auto* Production=Station->FindComponentByClass<UShopProductionStationComponent>()) { RefreshProduction(Production); return; }
 	auto* Scanner = Station->FindComponentByClass<UShopScannerComponent>();
 	if (!Scanner)
 	{
@@ -88,27 +114,43 @@ void UShopTerminalWidget::Refresh()
 		AddButton(TEXT("Close"))->bClose = true; return;
 	}
 	const auto State = Scanner->GetScannerState();
-	FString Contents = State.SessionID.ToString() + FString::FromInt(int32(State.Phase)) + FString::Printf(TEXT("/%lld/%lld/%lld"), State.Checkout.TotalCents, State.Checkout.TenderCents, State.Checkout.ChangeCents);
-	for (const auto& Item : State.Checkout.Items) Contents += FString::Printf(TEXT("/%d/%lld/%d/%d/%d/%.3f/%.2f"), Item.ISID, Item.SaleCents, Item.Snapshot.Price.bExpired, Item.bSaved, Item.bAvailable, Item.Snapshot.ContentLevel, Item.Snapshot.Temperature);
-	for (const auto& Case : Manager->ShopCheckout->PendingExpiryCases) if (Case.CheckoutID == State.Checkout.CheckoutID) Contents += Case.CaseID.ToString() + FString::Printf(TEXT("/%d/%lld/%lld"), int32(Case.Choice), Case.AutomaticPaidCents, Case.CompensationPaidCents);
-	for (const auto& Candidate : State.ReplacementCandidates) Contents += FString::Printf(TEXT("/%d/%d/%d/%.3f"), Candidate.ISID, Candidate.ContentID, Candidate.NominalPortions, Candidate.ContentLevel);
-	for (const auto& Settlement : Manager->ShopCheckout->RecentSettlements) if (Settlement.CheckoutID == State.Checkout.CheckoutID)
-		Contents += FString::Printf(TEXT("/%lld/%lld"), Settlement.AdjustedRevenueCents, Settlement.OutstandingDeductionCents);
-	if (Contents == LastContents) return;
-	LastContents = Contents; Body->ClearChildren();
-	AddText(FString::Printf(TEXT("%s\nBill: %s   Tender: %s   Change counted: %s\nChange required: %s"),
+	FString Contents = State.SessionID.ToString()+FString::FromInt(int32(State.Phase));
+	for (const auto& Item : State.Checkout.Items) Contents += FString::Printf(TEXT("/%d/%d/%d/%d"),Item.ISID,Item.bExpiredAtSale || Item.Snapshot.Price.bExpired,Item.bSaved,Item.bAvailable);
+	for (const auto& Case : Manager->ShopCheckout->PendingExpiryCases) if (Case.CheckoutID==State.Checkout.CheckoutID) Contents+=Case.CaseID.ToString()+FString::FromInt(int32(Case.Choice));
+	for (const auto& Candidate : State.ReplacementCandidates) Contents+=FString::Printf(TEXT("/R%d/%d/%d"),Candidate.ISID,Candidate.ContentID,Candidate.NominalPortions);
+	TArray<FString> TextRows;
+	TextRows.Add(FString::Printf(TEXT("%s\nBill: %s   Tender: %s   Change counted: %s\nChange required: %s"),
 		State.Phase == EShopScannerPhase::Scanning ? TEXT("Scan bottles") : State.Phase == EShopScannerPhase::Checkout ? TEXT("Invoice locked — count physical payment") : TEXT("Sale completed"),
 		*ShopTerminal::Money(State.Checkout.TotalCents), *ShopTerminal::Money(State.Checkout.TenderCents), *ShopTerminal::Money(State.Checkout.ChangeCents),
 		*ShopTerminal::Money(FMath::Max(int64(0), State.Checkout.TenderCents - State.Checkout.TotalCents))));
 	for (const auto& Group : State.Groups)
 	{
-		AddText(FString::Printf(TEXT("\n%s x%d   %s\nBase %s   Content discount %s   Temperature discount %s"), *Group.DisplayName.ToString(), Group.BottleISIDs.Num(),
+		TextRows.Add(FString::Printf(TEXT("\n%s x%d   %s\nBase %s   Content discount %s   Temperature discount %s"), *Group.DisplayName.ToString(), Group.BottleISIDs.Num(),
 			*ShopTerminal::Money(Group.FinalSubtotalCents), *ShopTerminal::Money(Group.OriginalSubtotalCents), *ShopTerminal::Money(Group.ContentDiscountCents), *ShopTerminal::Money(Group.TemperatureDiscountCents)));
 	}
 	for (const auto& Item : State.Checkout.Items)
 	{
-		AddText(FString::Printf(TEXT("Bottle #%d: %.0f%% full, %.1f C (optimum %.1f C), %s%s"), Item.ISID, Item.Snapshot.ContentLevel * 100,
+		TextRows.Add(FString::Printf(TEXT("Bottle #%d: %.0f%% full, %.1f C (optimum %.1f C), %s%s"), Item.ISID, Item.Snapshot.ContentLevel * 100,
 			Item.Snapshot.Temperature, Item.Snapshot.OptimumTemperature, (Item.bExpiredAtSale || Item.Snapshot.Price.bExpired) ? TEXT("EXPIRED") : TEXT("fresh"), Item.bSaved ? TEXT(" — saved") : TEXT("")));
+	}
+	if (State.Phase==EShopScannerPhase::Completed)
+	{
+		int64 Adjusted=0,Owed=0; Manager->ShopCheckout->GetAdjustedRevenue(State.Checkout.CheckoutID,Adjusted,Owed);
+		TextRows.Add(FString::Printf(TEXT("Adjusted sale revenue: %s   Bank deductions still owed: %s"),*ShopTerminal::Money(Adjusted),*ShopTerminal::Money(Owed)));
+	}
+	if (Contents==LastContents && CheckoutTextRows.Num()==TextRows.Num())
+	{
+		for (int32 I=0;I<TextRows.Num();++I) CheckoutTextRows[I]->SetText(FText::FromString(TextRows[I]));
+		return; // Price/temperature/payment updates retain buttons, focus and scroll state.
+	}
+	LastContents=Contents; Body->ClearChildren(); CheckoutTextRows.Empty();
+	int32 TextIndex=0;
+	auto AddRow=[&](){ auto* Row=AddText(TextRows[TextIndex++]); CheckoutTextRows.Add(Row); };
+	AddRow();
+	for (const auto& Group:State.Groups) AddRow();
+	for (const auto& Item:State.Checkout.Items)
+	{
+		AddRow();
 		if (State.Phase == EShopScannerPhase::Scanning)
 		{
 			auto* Remove = AddButton(FString::Printf(TEXT("Remove bottle #%d"), Item.ISID)); Remove->Action = EShopScannerAction::RemoveItem; Remove->ISID = Item.ISID; Remove->SessionID = State.SessionID;
@@ -126,8 +168,7 @@ void UShopTerminalWidget::Refresh()
 	if (State.Phase == EShopScannerPhase::Checkout) ScannerButton(TEXT("Complete paid checkout"), EShopScannerAction::Complete);
 	if (State.Phase == EShopScannerPhase::Completed)
 	{
-		int64 Adjusted = 0, Owed = 0; Manager->ShopCheckout->GetAdjustedRevenue(State.Checkout.CheckoutID, Adjusted, Owed);
-		AddText(FString::Printf(TEXT("Adjusted sale revenue: %s   Bank deductions still owed: %s"), *ShopTerminal::Money(Adjusted), *ShopTerminal::Money(Owed)));
+		AddRow();
 		for (const auto& Case : Manager->ShopCheckout->PendingExpiryCases) if (Case.CheckoutID == State.Checkout.CheckoutID && Case.Choice == EShopCompensationChoice::Unselected)
 		{
 			AddText(FString::Printf(TEXT("Expired bottle #%d: mandatory penalty %s. Choose compensation:"), Case.OriginalISID, *ShopTerminal::Money(Case.OriginalBaseCents)));
@@ -146,6 +187,12 @@ void UShopTerminalWidget::HandleButton(const UShopTerminalButton* Button)
 {
 	if (Button->bClose) { Close(); return; }
 	if (!Actions.IsValid() || !Station.IsValid()) return;
+	if (auto* Production=Station->FindComponentByClass<UShopProductionStationComponent>())
+	{
+		if (!Button->SupplyOfferID.IsNone()) Actions->RequestSupplyPurchase(Production,Button->SessionID,Button->SupplyOfferID,Button->SupplyQuantity);
+		else if (Button->bProduction) Actions->RequestProductionAction(Production,Button->SessionID,Button->ProductionAction,Button->ISID,Button->OtherISID);
+		return;
+	}
 	if (Button->Denomination > 0) Actions->RequestATMWithdrawal(Station->FindComponentByClass<UShopATMComponent>(), {Button->Denomination});
 	else Actions->RequestScannerAction(Station->FindComponentByClass<UShopScannerComponent>(), Button->SessionID, Button->Action, Button->ISID, Button->CaseID);
 }
@@ -155,6 +202,10 @@ void UShopTerminalWidget::ActionResult(int64 Sequence, EShopCheckoutResult Resul
 }
 void UShopTerminalWidget::Close()
 {
+	if (Actions.IsValid() && Station.IsValid())
+		if (auto* Production=Station->FindComponentByClass<UShopProductionStationComponent>())
+			if (Production->View.CapHolder==Actions->GetOwner() || Production->View.CapRotator==Actions->GetOwner())
+				Actions->RequestProductionAction(Production,Production->View.SessionID,EShopProductionAction::LeaveCapRole,Production->View.ManualBottleISID);
 	if (Actions.IsValid()) Actions->OnActionResult.RemoveDynamic(this, &UShopTerminalWidget::ActionResult);
 	RemoveFromParent();
 	if (auto* PC = GetOwningPlayer()) { PC->SetInputMode(FInputModeGameOnly()); PC->SetShowMouseCursor(false); }

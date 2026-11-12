@@ -8,6 +8,13 @@ void UShopInteractionLibrary::OpenShopTerminal(AActor* Player, AActor* Station)
 {
 	if (IsValid(Player)) if (auto* Actions = Player->FindComponentByClass<UShopPlayerInteractionComponent>()) Actions->OpenTerminal(Station);
 }
+
+bool UShopInteractionLibrary::TryOpenShopTerminalFromView(AActor* Player)
+{
+	if (IsValid(Player)) if (auto* Actions=Player->FindComponentByClass<UShopPlayerInteractionComponent>())
+		return Actions->TryOpenTerminalFromView();
+	return false;
+}
 bool UShopInteractionLibrary::RegisterCustomerAtCounter(AActor* Customer, AActor* Counter)
 {
 	if (!IsValid(Customer) || !IsValid(Counter) || !Customer->HasAuthority() || Customer->GetNetMode() == NM_Client || Customer->GetWorld() != Counter->GetWorld()) return false;

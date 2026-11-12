@@ -23,7 +23,7 @@ FGuid APropManager::BeginLiquidTransfer(int32 SourceID, int32 TargetID)
 	const FPropProductDefinition* TargetDef = TargetRecord ? FindProductDefinition(TargetRecord->ProductID) : nullptr;
 	const FPropContentDefinition* Content = Source ? FindContentDefinition(Source->EventData.ContentID) : nullptr;
 	if (!SourceDef || !TargetDef || !Source || !Target || !Content || SourceDef->ConsumableProfile.NumOfPortions <= 0 || TargetDef->ConsumableProfile.NumOfPortions <= 0
-		|| Source->EventData.ContentLevel <= 0 || Target->EventData.CapSealed > 0 || !UColaPricingLibrary::CanReuseBottle(Target->EventData.Strength, Target->EventData.bClean, Target->EventData.ContentLevel)
+		|| Source->EventData.ContentLevel <= 0 || Target->EventData.CapSealed > 0 || Target->EventData.AttachedCapISID>0 || !UColaPricingLibrary::CanReuseBottle(Target->EventData.Strength, Target->EventData.bClean, Target->EventData.ContentLevel)
 		|| IsExpiredSupply(*Source, *Content, WorldElapsedSeconds) || (!TargetDef->SupportedContentIDs.IsEmpty() && !TargetDef->SupportedContentIDs.Contains(Content->ContentID))) return FGuid();
 	for (const auto& Pair : FillSessions) if (Pair.Value.TargetISID == TargetID) return FGuid();
 	if (ShopCheckout)
@@ -52,7 +52,7 @@ float APropManager::TransferLiquid(FGuid SessionID, float RequestedPortions)
 	const FPropProductDefinition* TargetDef = TargetRecord ? FindProductDefinition(TargetRecord->ProductID) : nullptr;
 	const FPropContentDefinition* Content = FindContentDefinition(Session.ContentID);
 	if (!Source || !Target || !SourceDef || !TargetDef || !Content || Source->EventData.ContentID != Session.ContentID
-		|| (Target->EventData.ContentID && Target->EventData.ContentID != Session.ContentID) || Target->EventData.CapSealed > 0
+		|| (Target->EventData.ContentID && Target->EventData.ContentID != Session.ContentID) || Target->EventData.CapSealed > 0 || Target->EventData.AttachedCapISID>0
 		|| Target->EventData.Strength <= 0.70f || !Target->EventData.bClean || IsExpiredSupply(*Source, *Content, WorldElapsedSeconds))
 	{
 		EndLiquidTransfer(SessionID); return 0;

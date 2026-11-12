@@ -1,5 +1,7 @@
 #include "Components/InteractableInstancedStaticMeshComponent.h"
 #include "Props/InteractableProp.h"
+#include "Props/ColaPropActor.h"
+#include "Props/ColaLiquidMotion.h"
 #include "Props/InteractablePropDataAsset.h"
 #include "Props/InteractablePropManager.h"
 #include "Components/StaticMeshPhysicsSimulationComponent.h"
@@ -10,6 +12,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/CollisionProfile.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 UInteractableISMComponent::UInteractableISMComponent()
 {
@@ -20,7 +23,7 @@ UInteractableISMComponent::UInteractableISMComponent()
 	SetCollisionProfileName(UCollisionProfile::BlockAllDynamic_ProfileName);
 	SetGenerateOverlapEvents(false);
 	ISMComponent = this;
-	NumCustomDataFloats = 4;
+	NumCustomDataFloats = 6;
 
 	// Default ResetTransform places parked ISM instances far below the gameplay world with near-zero scale
 	ResetTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -100000.0f), FVector(0.0001f));
@@ -31,9 +34,9 @@ void UInteractableISMComponent::OnRegister()
 	Super::OnRegister();
 
 	ISMComponent = this;
-	if (NumCustomDataFloats < 4)
+	if (NumCustomDataFloats < 6)
 	{
-		NumCustomDataFloats = 4;
+		SetNumCustomDataFloats(6);
 	}
 	SetGenerateOverlapEvents(false);
 	SetNotifyRigidBodyCollision(true);
@@ -229,6 +232,8 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 			Mat->CheckMaterialUsage(MATUSAGE_InstancedStaticMeshes);
 		}
 	}
+	bUsesBottleLiquidVolume=InDefinition.CustomActiveActorClass && InDefinition.CustomActiveActorClass->IsChildOf(AColaPropActor::StaticClass());
+	RefreshBottleLiquidMaterial();
 	MarkRenderStateDirty();
 
 	if (GetCollisionEnabled() == ECollisionEnabled::NoCollision)
@@ -236,6 +241,46 @@ void UInteractableISMComponent::ApplyProductDefinition(const FPropProductDefinit
 		SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		SetCollisionProfileName(UCollisionProfile::BlockAllDynamic_ProfileName);
 	}
+}
+
+void UInteractableISMComponent::RefreshBottleLiquidMaterial()
+{
+	if (bUsesBottleLiquidVolume)
+	{
+		// Outside play, material previews must respect the artist's Liquid Level.
+		// During play, every resting bottle uses its authoritative per-instance fill.
+		if (GetWorld() && GetWorld()->IsGameWorld())
+		{
+			UMaterialInterface* Source=GetMaterial(1);
+			if (Source && Source!=LiquidInstanceMaterial)
+			{
+				if (!LiquidInstanceMaterial || Source!=LiquidInstanceMaterialSource)
+				{
+					LiquidInstanceMaterialSource=Source;
+					LiquidInstanceMaterial=UMaterialInstanceDynamic::Create(Source,this);
+				}
+				if (LiquidInstanceMaterial) SetMaterial(1,LiquidInstanceMaterial);
+			}
+			if (LiquidInstanceMaterial)
+			{
+				LiquidInstanceMaterial->SetScalarParameterValue(TEXT("Use Instance Liquid Data"),1);
+				LiquidInstanceMaterial->SetScalarParameterValue(TEXT("Native Liquid Motion"),0);
+			}
+		}
+		if (UMaterialInterface* Liquid=GetMaterial(1))
+		{
+			Liquid->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Liquid Container Height")),LiquidVolumeHeightCm);
+			Liquid->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Liquid Container Radius")),LiquidVolumeRadiusCm);
+		}
+		LiquidVolumeHeightCm=FMath::Max(1.f,LiquidVolumeHeightCm); LiquidVolumeRadiusCm=FMath::Max(1.f,LiquidVolumeRadiusCm);
+	}
+}
+
+UMaterialInterface* UInteractableISMComponent::GetProductMaterial(int32 MaterialIndex) const
+{
+	UMaterialInterface* Material=GetMaterial(MaterialIndex);
+	return MaterialIndex==1 && Material && Material==LiquidInstanceMaterial
+		? LiquidInstanceMaterialSource.Get() : Material;
 }
 
 // -----------------------------------------------------------------------------
@@ -529,7 +574,9 @@ bool UInteractableISMComponent::SetInstanceTransformByISID(int32 InISID, const F
 
 	BindISIDToISMI(InISID, ISMI);
 	CachedGameplayTransformsByISID.Add(InISID, NewTransform);
-	return UpdateInstanceTransform(ISMI, NewTransform, bWorldSpace, bMarkRenderStateDirty, bTeleport);
+	const bool bUpdated=UpdateInstanceTransform(ISMI, NewTransform, bWorldSpace, bMarkRenderStateDirty, bTeleport);
+	if (bUpdated && bUsesBottleLiquidVolume) UpdateInstanceCustomData(ISMI,bMarkRenderStateDirty);
+	return bUpdated;
 }
 
 bool UInteractableISMComponent::SetInstanceTransformByISMI(int32 InISMI, const FTransform& NewTransform, bool bWorldSpace, bool bMarkRenderStateDirty, bool bTeleport)
@@ -544,7 +591,9 @@ bool UInteractableISMComponent::SetInstanceTransformByISMI(int32 InISMI, const F
 	{
 		CachedGameplayTransformsByISID.Add(FoundISID, NewTransform);
 	}
-	return UpdateInstanceTransform(InISMI, NewTransform, bWorldSpace, bMarkRenderStateDirty, bTeleport);
+	const bool bUpdated=UpdateInstanceTransform(InISMI, NewTransform, bWorldSpace, bMarkRenderStateDirty, bTeleport);
+	if (bUpdated && bUsesBottleLiquidVolume) UpdateInstanceCustomData(InISMI,bMarkRenderStateDirty);
+	return bUpdated;
 }
 
 FTransform UInteractableISMComponent::GetEffectiveResetTransform() const
@@ -730,9 +779,9 @@ void UInteractableISMComponent::UpdateInstanceCustomDataDirect(
 		return;
 	}
 
-	if (NumCustomDataFloats < 4)
+	if (NumCustomDataFloats < 6)
 	{
-		NumCustomDataFloats = 4;
+		SetNumCustomDataFloats(6);
 	}
 
 	// Slot 0: ContentLevel [0.0 .. MaxOverfillLevel]
@@ -814,7 +863,17 @@ void UInteractableISMComponent::UpdateInstanceCustomDataDirect(
 	SetCustomDataValue(InISMI, 0, ContentLevelValue, false);
 	SetCustomDataValue(InISMI, 1, ExpiryAge, false);
 	SetCustomDataValue(InISMI, 2, TempCelsius, false);
-	SetCustomDataValue(InISMI, 3, StrengthRatio, bMarkRenderStateDirty);
+	SetCustomDataValue(InISMI, 3, StrengthRatio, false);
+	float PlaneOffset=0;
+	if (bUsesBottleLiquidVolume)
+	{
+		FTransform Transform;
+		if (!GetInstanceTransformByISID(FindISID(InISMI),Transform,true)) GetInstanceTransform(InISMI,Transform,true);
+		const FVector LocalNormal=Transform.InverseTransformVectorNoScale(FVector::UpVector).GetSafeNormal();
+		PlaneOffset=FColaLiquidMotion::CylinderPlaneOffset(FMath::Clamp(ContentLevelValue,0.f,1.f),LocalNormal,LiquidVolumeHeightCm*.5f,LiquidVolumeRadiusCm);
+	}
+	SetCustomDataValue(InISMI,4,PlaneOffset,false);
+	SetCustomDataValue(InISMI,5,bUsesBottleLiquidVolume ? 1.f : 0.f,bMarkRenderStateDirty);
 }
 
 void UInteractableISMComponent::UpdateAllInstancesCustomData()
@@ -1486,9 +1545,16 @@ bool UInteractableISMComponent::OnInstanceHit(int32 InISMI, AActor* OtherActor, 
 	}
 
 	FVector RawImpulse = FVector::ZeroVector;
+	const FPropProductDefinition* Definition = Manager ? Manager->FindProductDefinition(ProductID) : nullptr;
+	const bool bBottle = Definition && Definition->CustomActiveActorClass
+		&& Definition->CustomActiveActorClass->IsChildOf(AColaPropActor::StaticClass());
 	if (OtherComp && OtherComp->IsSimulatingPhysics())
 	{
-		RawImpulse = OtherComp->GetComponentVelocity() * 0.65f;
+		// A bottle uses actual momentum. A heavy moving prop must remain stronger
+		// than an equally fast light object when waking its resting ISM.
+		RawImpulse = bBottle
+			? (!NormalImpulse.IsNearlyZero() ? NormalImpulse : OtherComp->GetComponentVelocity() * OtherComp->GetMass() * .65f)
+			: OtherComp->GetComponentVelocity() * .65f;
 	}
 	else if (OtherActor)
 	{
@@ -1497,7 +1563,7 @@ bool UInteractableISMComponent::OnInstanceHit(int32 InISMI, AActor* OtherActor, 
 
 	if (RawImpulse.IsNearlyZero() && !NormalImpulse.IsNearlyZero())
 	{
-		RawImpulse = NormalImpulse.GetSafeNormal() * (NormalImpulse.Size() * 0.05f);
+		RawImpulse = NormalImpulse * (bBottle ? 1.f : .05f);
 	}
 
 	// Clamp physics kick separately so bottles topple naturally while preserving unclamped RawImpulse for impact damage
@@ -1505,7 +1571,7 @@ bool UInteractableISMComponent::OnInstanceHit(int32 InISMI, AActor* OtherActor, 
 	SafeImpulse.Z = FMath::Clamp(SafeImpulse.Z, -40.0f, 35.0f);
 	SafeImpulse = SafeImpulse.GetClampedToMaxSize(220.0f);
 
-	// 2. Forward hit with unclamped RawImpulse on Authority (or predicted SafeImpulse on Client)
+	// Bottles need the same mass-aware momentum on both peers. Other props retain their legacy kick.
 	if (Manager && CompOwner && CompOwner->HasAuthority())
 	{
 		return Manager->SendISMHitByICIDToPropManager(
@@ -1518,7 +1584,7 @@ bool UInteractableISMComponent::OnInstanceHit(int32 InISMI, AActor* OtherActor, 
 			OtherActor);
 	}
 
-	return SetInstanceUnsettledByISMI(InISMI, SafeImpulse, Hit.ImpactPoint);
+	return SetInstanceUnsettledByISMI(InISMI, bBottle ? RawImpulse : SafeImpulse, Hit.ImpactPoint);
 }
 
 bool UInteractableISMComponent::SetInstanceUnsettledByISMI(int32 InISMI, FVector HitImpulse, FVector HitLocation)

@@ -63,6 +63,7 @@ class MARRYBYMIDNIGHT_API FSharedWalletLedger
 public:
 	EWalletOperationResult Apply(const FGuid& OperationID, int64 DeltaCents, FName Reason);
 	const FSharedWalletState& GetState() const { return State; }
+	bool FindReceipt(const FGuid& OperationID, FWalletReceipt& OutReceipt) const;
 	FSharedWalletSaveData Export() const;
 	bool Import(const FSharedWalletSaveData& Saved);
 	/** Roll back only the most recent unpublished operation; used by atomic physical-cash conversion. */

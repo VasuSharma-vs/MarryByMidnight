@@ -10,6 +10,7 @@ class AActivePropActor;
 class UASMComponent;
 class USharedTeamWalletComponent;
 class UShopCheckoutComponent;
+class UShopProcurementComponent;
 class UPropBatchUpdateComponent;
 class UInteractablePropSenseSightComponent;
 class UInteractableISMComponent;
@@ -22,6 +23,7 @@ class UStaticMesh;
 class AFragmentDestructionActor;
 class UFragmentAssemblyDataAsset;
 class UStaticMeshComponent;
+class UPropActivationVolumeComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSettlingObjectRested, UStaticMeshPhysicsSimulationComponent*, SimComp, AActor*, OwnerActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPropRepresentationChanged, int32, ISID, EPropRepresentation, NewRepresentation, AActivePropActor*, ActiveActor);
@@ -62,8 +64,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
 	TObjectPtr<UShopCheckoutComponent> ShopCheckout;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	TObjectPtr<UShopProcurementComponent> ShopSupplies;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad")
 	bool bEnableAutosave = true;
+	/** Optional map-specific load slot. Empty keeps the existing explicit initialization behavior. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad")
+	FString InitialSaveSlot;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveLoad", meta = (ClampMin = "1"))
 	float AutosaveIntervalSeconds = 60.0f;
@@ -92,6 +100,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Shop|Filling")
 	void EndLiquidTransfer(FGuid SessionID);
 	void CancelLiquidTransfers();
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Shop|Capping") bool AttachPhysicalCap(int32 BottleISID, int32 CapISID);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Shop|Capping") bool ClosePhysicalCap(int32 BottleISID, float Torque);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Shop|Capping") bool DetachPhysicalCap(int32 BottleISID, FVector ReleaseVelocity = FVector::ZeroVector);
+	void SynchronizeCapAssembly(int32 InISID);
+	/** Give scoped, factory-sealed starter bottles their existing physical cap identity once. */
+	bool EnsureDefaultPhysicalCap(int32 BottleISID);
+	bool PrepareCapForBottleRest(int32 BottleISID);
+	TSet<int32> SynchronizingCapBottles;
 	struct FFillSession { int32 SourceISID = 0; int32 TargetISID = 0; int32 ContentID = 0; };
 	TMap<FGuid, FFillSession> FillSessions;
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Prop Manager|Product Conversion")
@@ -101,6 +117,8 @@ public:
 	UFUNCTION(NetMulticast, Reliable) void Multicast_SyncEventDeltaBatch(double EventTime, const TArray<FPropEventSyncDelta>& Deltas);
 	UFUNCTION(NetMulticast, Unreliable) void Multicast_SyncContinuousBatch(double BaseWorldSeconds, const TArray<FPropContinuousSyncItem>& Items);
 	void RefreshUniqueRepresentation(int32 InISID, uint8 DirtyMask = 0xFF);
+	/** Existing persistent pressure field and continuous replication channel; server only. */
+	bool SetBottleAgitationPressure(int32 InISID, float Pressure, bool bPublish = true);
 
 	/** Resolve the same configured quote for resting ISMs, active props, checkout, and UI. */
 	UFUNCTION(BlueprintPure, Category = "Shop|Scanner")
@@ -110,6 +128,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Prop Manager|Liquid") FOnLiquidReleasesChanged OnLiquidReleasesChanged;
 	UFUNCTION() void OnRep_ReleasedLiquids();
 	bool ReleaseBottleLiquid(int32 ISID);
+	/** Account for gradual leakage/exhaust in one release episode without creating a ledger entry per tick. */
+	bool ReleaseBottleLiquidPortions(int32 ISID,double RequestedPortions,FGuid ReleaseEpisode);
 	static bool ValidateReleasedLiquids(const TArray<FReleasedLiquid>& Liquids, double WorldTime);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Prop Manager|Fragments")
@@ -135,6 +155,17 @@ public:
 	/** Static helper to obtain the active Prop Manager in the world */
 	UFUNCTION(BlueprintPure, Category = "Prop Manager", meta = (WorldContext = "WorldContextObject"))
 	static APropManager* Get(const UObject* WorldContextObject);
+
+	/** Runtime-only, server-owned volume policies, recomputed after load. */
+	void RegisterActivationVolume(UPropActivationVolumeComponent* Volume);
+	void UnregisterActivationVolume(UPropActivationVolumeComponent* Volume);
+	UFUNCTION(BlueprintPure, Category="Prop Manager|Activation")
+	bool IsInstanceKeptActive(int32 ISID) const;
+
+private:
+	TSet<TWeakObjectPtr<UPropActivationVolumeComponent>> ActivationVolumes;
+
+public:
 
 protected:
 	virtual void PostInitProperties() override;

@@ -27,7 +27,8 @@ bool UBottleFillingComponent::ConnectionsInRange() const
 
 bool UBottleFillingComponent::StartFilling(int32 Source, int32 Target)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority() || bIsFilling || !FMath::IsFinite(PortionsPerSecond) || PortionsPerSecond <= 0) return false;
+	if (!GetOwner() || !GetOwner()->HasAuthority() || bIsFilling || !FMath::IsFinite(PortionsPerSecond) || PortionsPerSecond <= 0
+		|| !FMath::IsFinite(TargetContentLevel) || TargetContentLevel < 0) return false;
 	Manager = APropManager::Get(this); SourceISID = Source; TargetISID = Target;
 	if (!ConnectionsInRange()) return false;
 	SessionID = Manager->BeginLiquidTransfer(Source, Target);
@@ -54,7 +55,17 @@ void UBottleFillingComponent::TickComponent(float Dt, ELevelTick TickType, FActo
 	for (int32 I = 0; bIsFilling && I < 8 && AccumulatedSeconds >= Step; ++I)
 	{
 		AccumulatedSeconds -= Step;
-		if (Manager->TransferLiquid(SessionID, PortionsPerSecond * Step) <= 0) StopFilling();
+		float Requested = PortionsPerSecond * Step;
+		if (!FMath::IsFinite(TargetContentLevel) || TargetContentLevel < 0) { StopFilling(); break; }
+		if (TargetContentLevel > 0)
+		{
+			const auto* Record = Manager->FindISIDData(TargetISID);
+			const auto* Data = Manager->FindUniqueData(TargetISID);
+			const auto* Product = Record ? Manager->FindProductDefinition(Record->ProductID) : nullptr;
+			if (!Data || !Product) { StopFilling(); break; }
+			Requested = FMath::Min(Requested, FMath::Max(0.f, TargetContentLevel - Data->EventData.ContentLevel) * Product->ConsumableProfile.NumOfPortions);
+		}
+		if (Requested <= 0 || Manager->TransferLiquid(SessionID, Requested) <= 0) StopFilling();
 	}
 }
 

@@ -774,6 +774,9 @@ struct MARRYBYMIDNIGHT_API FPropContentDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.01"))
 	float PressureStrengthMultiplier = 1.0f;
+	/** g/ml; shared, replicated and saved once per content type. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Content Definition", meta=(ClampMin="0.001"))
+	float DensityGPerMl = 1.04f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content Definition", meta = (ClampMin = "0.0"))
 	float BasePortionPrice = 2.5f;
@@ -1368,6 +1371,13 @@ struct MARRYBYMIDNIGHT_API FPropProductDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition")
 	FPropPhysicsProfile PhysicsProfile;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Product Definition", meta=(ClampMin="0"))
+	float GameplayMassKg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Product Definition|Bottle", meta=(ClampMin="0.001", Units="kg"))
+	float BottleMass = .05f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Product Definition|Bottle", meta=(ClampMin="0.001"))
+	float PortionVolumeMl = 20.f;
+
 	/** Consumable portions and economy profile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Product Definition")
 	FPropConsumableProfile ConsumableProfile;
@@ -1517,6 +1527,8 @@ struct MARRYBYMIDNIGHT_API FPropProductDefinition
 	// -------------------------------------------------------------
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap", meta = (Bitmask, BitmaskEnum = "/Script/MarryByMidnight.EBottleCapMaskFlags"))
 	uint8 SupportedCapMask = 0xFF;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bottle|Cap") bool bIsBottleCap = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bottle|Cap") FTransform CapAttachmentTransform = FTransform(FVector(0,0,170));
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bottle|Cap")
 	EBottleCapType DefaultCapType = EBottleCapType::Twist;

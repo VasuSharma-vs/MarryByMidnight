@@ -8,6 +8,8 @@
 class UInteractablePropDataAsset;
 class ANPCCharacter;
 class APawn;
+class UMaterialInstanceDynamic;
+class UMaterialInterface;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnInstancePortionConsumed, int32, InstanceIndex, int32, RemainingPortions, AActor*, ConsumerActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnISMInstanceHit, int32, ISMI, int32, ISID, AActor*, OtherActor, FVector, NormalImpulse, const FHitResult&, Hit);
@@ -15,7 +17,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnISMInstanceHit, int32, ISMI, in
 /**
  * IISM Component (Sections 4, 23, 24, 31, 65).
  * Pure zero-copy ISM representation component: maintains only lightweight per-slot identity mappings
- * (ISID <-> ISMI), EmptyInstances, Compact PackedInstanceData, ResetTransform parking, and 4-float GPU Custom Data.
+ * (ISID <-> ISMI), EmptyInstances, Compact PackedInstanceData, ResetTransform parking,
+ * and four gameplay GPU floats plus two derived liquid-volume floats.
  * All Category 1 ProductDefinitions/ContentDefinitions and Category 2 UniqueData live centrally in APropManager.
  */
 UCLASS(ClassGroup = (Rendering, Common), meta = (BlueprintSpawnableComponent))
@@ -50,6 +53,12 @@ public:
 
 	/** Applies a Product Definition (StaticMesh, MaterialOverrides, IDs) to this component without duplicating shared DB state */
 	void ApplyProductDefinition(const FPropProductDefinition& InDefinition);
+
+	/** Reapply the shared runtime liquid source after authoritative material reconciliation. */
+	void RefreshBottleLiquidMaterial();
+
+	/** Shared product asset beneath the component-local liquid runtime wrapper. */
+	UMaterialInterface* GetProductMaterial(int32 MaterialIndex) const;
 
 	/** Self-reference / target ISM component pointer matching Section 31 layout */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "IISM Component")
@@ -279,8 +288,9 @@ public:
 	void SetInstanceSimulationState(int32 InstanceIndex, EPhysicsSimulationState NewState);
 
 	/**
-	 * Updates the 4 GPU Per-Instance Custom Data floats for an instance:
+	 * Updates core GPU data plus derived liquid clipping data for an instance:
 	 * 0 = ContentLevel, 1 = ExpiryAge [0..1], 2 = Temperature (°C), 3 = StrengthRatio [0..1].
+	 * 4 = cylindrical liquid plane offset, 5 = offset-valid marker (cosmetic, not replicated/saved).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "IISM Component|Custom Data")
 	void UpdateInstanceCustomData(int32 InISMI, bool bMarkRenderStateDirty = true);
@@ -360,6 +370,12 @@ public:
 	FInteractablePropData CreatePropDataFromAsset(const UInteractablePropDataAsset* InAsset, int32 InInstanceId = -1) const;
 
 protected:
+	/** One shared runtime liquid material per component, never per resting bottle. */
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> LiquidInstanceMaterial;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> LiquidInstanceMaterialSource;
+	bool bUsesBottleLiquidVolume = false;
+	float LiquidVolumeHeightCm = 150.f;
+	float LiquidVolumeRadiusCm = 35.f;
 	/** Cached last gameplay transform per ISID while an ISM slot is parked at ResetTransform */
 	UPROPERTY(Transient)
 	TMap<int32, FTransform> CachedGameplayTransformsByISID;

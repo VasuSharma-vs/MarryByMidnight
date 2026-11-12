@@ -82,9 +82,16 @@ struct FRocketFlightNetState
 
 	UPROPERTY()
 	float Speed = 2400.0f;
+	/** Opt-in bottle policy; generic projectile actors keep their legacy full plan. */
+	UPROPERTY() bool bHandoffAtApexOrDistance = false;
+	UPROPERTY() float Acceleration = 0;
 
 	UPROPERTY()
 	bool bPhysicsSimulating = false;
+
+	/** Opt-in Chaos flight. Existing waypoint rockets retain their original behavior. */
+	UPROPERTY()
+	bool bPressurePhysicsFlight = false;
 
 	UPROPERTY()
 	FVector_NetQuantize LaunchLocation = FVector::ZeroVector;
@@ -133,6 +140,7 @@ struct FRocketBatchLaunchItem
 
 // Delegates
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRocketLaunched);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRocketMovementStep, float);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRocketRicochet, const FHitResult&, HitResult, const FVector&, NewVelocity);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRocketHitTarget, AActor*, HitActor, const FHitResult&, HitResult);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRocketFuelDepleted);
@@ -839,9 +847,20 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Rocket")
 	ERocketSimulationState GetSimulationState() const { return CurrentState; }
 
+	/** Powered phases shared by original projectile flight and pressure-driven physics. */
+	UFUNCTION(BlueprintPure, Category="Rocket")
+	bool IsPoweredFlight() const
+	{
+		return CurrentState==ERocketSimulationState::TippingOver || CurrentState==ERocketSimulationState::Dragging
+			|| CurrentState==ERocketSimulationState::Rocketing || CurrentState==ERocketSimulationState::LowFuelSputter;
+	}
+
 	/** Gets the current linear velocity vector of the rocket. */
 	UFUNCTION(BlueprintPure, Category = "Rocket")
 	FVector GetRocketVelocity() const { return CurrentVelocity; }
+	FVector GetRocketAngularVelocityDegrees() const { return ProjectileAngularVelocityDegrees; }
+	void ConfigureBottleProjectile(float Acceleration) { FlightNetState.bHandoffAtApexOrDistance=true; FlightNetState.Acceleration=FMath::Max(0.f,Acceleration); }
+	FOnRocketMovementStep OnMovementStep;
 
 	/** Gets remaining fuel as a normalized ratio (1.0 = Full, 0.0 = Empty). */
 	UFUNCTION(BlueprintPure, Category = "Rocket")
@@ -870,6 +889,16 @@ public:
 	/** Resets all internal simulation variables, velocities, timers, and stops ticking so this component is clean when pooled or reused. */
 	UFUNCTION(BlueprintCallable, Category = "Rocket")
 	void ResetRocketSimulation();
+	const FRocketFlightNetState& GetReplicatedFlightState() const { return FlightNetState; }
+	void RestoreReplicatedFlightState(const FRocketFlightNetState& Received);
+	void ReapplyReplicatedFlightState();
+
+	bool StartPressurePhysicsFlight();
+	void ApplyPressureThrust(float Acceleration);
+	void FinishPressureThrust();
+	bool IsPressureThrustActive() const { return FlightNetState.bPressurePhysicsFlight && CurrentState == ERocketSimulationState::Rocketing; }
+	FVector GetPressureThrustDirection() const;
+	void ApplyPressurePhysicsNetState();
 
 	/** Prints comprehensive debug diagnostics to the Output Log and on-screen. */
 	UFUNCTION(BlueprintCallable, Category = "Rocket|Debug")
@@ -964,6 +993,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
 	FVector CurrentVelocity = FVector::ZeroVector;
+	FVector ProjectileAngularVelocityDegrees = FVector::ZeroVector;
+	bool bProjectileHasAscended = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket|State")
 	float ElapsedFlightTime = 0.0f;

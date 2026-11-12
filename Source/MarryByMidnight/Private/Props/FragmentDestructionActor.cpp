@@ -87,7 +87,7 @@ void AFragmentDestructionActor::CheckSettlement(float DeltaSeconds)
 	{
 		float& Age = Elapsed.FindChecked(Piece.Key); Age += DeltaSeconds;
 		float& RestTime = Stationary.FindChecked(Piece.Key);
-		RestTime = IsPieceSettled(Piece.Key) ? RestTime + DeltaSeconds : 0;
+		RestTime = !PropManager->IsInstanceKeptActive(Piece.Key) && IsPieceSettled(Piece.Key) ? RestTime + DeltaSeconds : 0;
 		if (Age >= SettlementProbes[Piece.Value]->DefaultUnsettledDelay && RestTime >= .2f) Settled.Add(Piece.Key);
 	}
 	for (int32 ISID : Settled) PropManager->SettleOriginalFragment(ISID);

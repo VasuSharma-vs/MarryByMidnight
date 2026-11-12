@@ -2,6 +2,7 @@
 #include "Shop/ShopCheckoutComponent.h"
 #include "Shop/ShopCashRegisterComponent.h"
 #include "Shop/ShopCustomerCashComponent.h"
+#include "Shop/ShopCustomerVisitComponent.h"
 #include "UObject/UObjectIterator.h"
 #include "Props/InteractablePropManager.h"
 #include "Components/PrimitiveComponent.h"
@@ -64,11 +65,12 @@ void UShopScannerComponent::BeginPlay()
 
 void UShopScannerComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
-	GetWorld()->GetTimerManager().ClearTimer(LiveUpdateTimer);
+	auto* ComponentWorld=GetWorld();
+	if (ComponentWorld) ComponentWorld->GetTimerManager().ClearTimer(LiveUpdateTimer);
 	if (BoundCheckout.IsValid())
 	{
 		BoundCheckout->OnCheckoutsChanged.RemoveDynamic(this, &UShopScannerComponent::SynchronizeCheckout);
-		if (IsServer() && ScannerState.Phase == EShopScannerPhase::Checkout) BoundCheckout->CancelCheckout(ScannerState.Checkout.CheckoutID);
+		if (ComponentWorld && IsServer() && ScannerState.Phase == EShopScannerPhase::Checkout) BoundCheckout->CancelCheckout(ScannerState.Checkout.CheckoutID);
 	}
 	Super::EndPlay(Reason);
 }
@@ -104,7 +106,7 @@ EShopCheckoutResult UShopScannerComponent::ScanProduct(int32 ISID)
 		return SetResult(EShopCheckoutResult::InvalidProduct);
 	}
 	ScannerState.LastScan = Scan;
-	const FVector ScannerLocation = GetOwner()->GetActorLocation();
+	const FVector ScannerLocation = IsValid(ScanVolume) ? ScanVolume->GetComponentLocation() : GetOwner()->GetActorLocation();
 	const FVector ProductLocation = CurrentManager->GetTransform(ISID).GetLocation();
 	if (ScannerLocation.ContainsNaN() || ProductLocation.ContainsNaN() || !FMath::IsFinite(MaxScanDistance) || MaxScanDistance <= 0 || FVector::DistSquared(ScannerLocation, ProductLocation) > FMath::Square(MaxScanDistance)) return SetResult(EShopCheckoutResult::Unavailable);
 	UShopCheckoutComponent* Checkout = ResolveCheckout();
@@ -161,6 +163,10 @@ EShopCheckoutResult UShopScannerComponent::BeginCheckout()
 	if (ScannerState.Phase == EShopScannerPhase::Checkout) return SetResult(EShopCheckoutResult::Success);
 	if (!ScannerState.Checkout.CustomerID.IsValid() || ScannerState.Checkout.Items.IsEmpty()) return SetResult(EShopCheckoutResult::InvalidRequest);
 	for (const auto& Item : ScannerState.Checkout.Items) if (!Item.bAvailable) return SetResult(EShopCheckoutResult::Unavailable);
+	for (TObjectIterator<UShopCustomerCashComponent> It; It; ++It)
+		if (It->GetWorld()==GetWorld() && It->CustomerID==ScannerState.Checkout.CustomerID)
+			if (const auto* Visit=It->GetOwner()->FindComponentByClass<UShopCustomerVisitComponent>())
+				if (!Visit->AcceptsInvoiceItems(ScannerState.Checkout.Items)) return SetResult(EShopCheckoutResult::InvalidRequest);
 	UShopCheckoutComponent* Checkout = ResolveCheckout();
 	if (!Checkout) return SetResult(EShopCheckoutResult::Unavailable);
 	TArray<int32> IDs;
@@ -231,6 +237,18 @@ EShopCheckoutResult UShopScannerComponent::ClearCart()
 	SuppressedISIDs.Append(LiveISIDs);
 	ScannerState.Checkout.CustomerID = Customer;
 	return SetResult(EShopCheckoutResult::Success);
+}
+
+EShopCheckoutResult UShopScannerComponent::ReleaseCustomer(FGuid CustomerID, FGuid ExpectedSession)
+{
+	if (!IsServer()) return EShopCheckoutResult::NotAuthority;
+	if (!CustomerID.IsValid() || ScannerState.Checkout.CustomerID != CustomerID || ScannerState.SessionID != ExpectedSession)
+		return EShopCheckoutResult::OperationConflict;
+	const auto Result = ClearCart();
+	if (Result != EShopCheckoutResult::Success) return Result;
+	ScannerState.Checkout.CustomerID.Invalidate();
+	PublishState();
+	return EShopCheckoutResult::Success;
 }
 
 void UShopScannerComponent::SynchronizeCheckout()

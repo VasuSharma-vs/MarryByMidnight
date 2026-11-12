@@ -10,7 +10,8 @@ const FPropContentDefinition* APropManager::FindContentDefinition(int32 ContentI
 
 bool APropManager::RegisterContentDefinition(const FPropContentDefinition& Definition)
 {
-	if (!HasAuthority() || !Definition.IsValidDefinition() || !FMath::IsFinite(Definition.BasePortionPrice) || Definition.BasePortionPrice < 0) return false;
+	if (!HasAuthority() || !Definition.IsValidDefinition() || !FMath::IsFinite(Definition.BasePortionPrice) || Definition.BasePortionPrice < 0
+		|| !FMath::IsFinite(Definition.DensityGPerMl) || Definition.DensityGPerMl<=0) return false;
 	ContentDefinitions.Add(Definition.ContentID, Definition);
 	Multicast_RegisterContentDefinition(Definition);
 	return true;

@@ -31,6 +31,7 @@ public:
 	EWalletOperationResult Debit(const FGuid& OperationID, int64 AmountCents, FName Reason);
 
 	FSharedWalletSaveData ExportCommittedState() const;
+	bool FindReceipt(const FGuid& OperationID, FWalletReceipt& OutReceipt) const { return Ledger.FindReceipt(OperationID, OutReceipt); }
 	bool RestoreCommittedState(const FSharedWalletSaveData& Saved);
 	static bool ValidateSaveData(const FSharedWalletSaveData& Saved);
 	/** Internal game-thread conversion boundary. Failed resources leave no bank receipt or published balance. */

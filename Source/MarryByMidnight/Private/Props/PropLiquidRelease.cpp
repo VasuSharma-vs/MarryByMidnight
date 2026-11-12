@@ -2,26 +2,48 @@
 
 bool APropManager::ReleaseBottleLiquid(int32 ISID)
 {
-	if (!HasAuthority() || GetNetMode() == NM_Client) return false;
+	if (!HasAuthority() || GetNetMode()==NM_Client) return false;
+	const auto* Unique=FindUniqueData(ISID);
+	if (!Unique) return false;
+	if (Unique->EventData.ContentLevel==0) return true;
+	return ReleaseBottleLiquidPortions(ISID,TNumericLimits<double>::Max(),FGuid::NewGuid());
+}
+
+bool APropManager::ReleaseBottleLiquidPortions(int32 ISID,double RequestedPortions,FGuid ReleaseEpisode)
+{
+	if (!HasAuthority() || GetNetMode() == NM_Client || !ReleaseEpisode.IsValid() || !FMath::IsFinite(RequestedPortions) || RequestedPortions<=0) return false;
 	const FISIDRuntimeIndex* Record = FindISIDData(ISID);
 	const FPropInstanceUniqueData* Unique = FindUniqueData(ISID);
 	const FPropProductDefinition* Product = Record ? FindProductDefinition(Record->ProductID) : nullptr;
 	if (!Record || !Unique || !Product || !FMath::IsFinite(Unique->EventData.ContentLevel) || Unique->EventData.ContentLevel < 0) return false;
 	if (Unique->EventData.ContentLevel == 0) return true;
 	if (!FindContentDefinition(Unique->EventData.ContentID) || Product->ConsumableProfile.NumOfPortions <= 0) return false;
-	FReleasedLiquid Liquid;
-	Liquid.ReleaseID = FGuid::NewGuid(); Liquid.SourceISID = ISID; Liquid.SourceProductID = Record->ProductID;
+	const double Available=double(Unique->EventData.ContentLevel)*Product->ConsumableProfile.NumOfPortions;
+	const double Requested=FMath::Min(Available,RequestedPortions);
+	const float Remaining=Requested>=Available ? 0.f : FMath::Max(0.f,Unique->EventData.ContentLevel-float(Requested/Product->ConsumableProfile.NumOfPortions));
+	const double Released=Available-double(Remaining)*Product->ConsumableProfile.NumOfPortions;
+	if (Released<=0) return false;
+	const int32 Existing=ReleasedLiquids.IndexOfByPredicate([&](const auto& Item){return Item.ReleaseID==ReleaseEpisode;});
+	if (Existing!=INDEX_NONE && (ReleasedLiquids[Existing].SourceISID!=ISID || ReleasedLiquids[Existing].ContentID!=Unique->EventData.ContentID || ReleasedLiquids[Existing].ContentCreationTime!=Unique->EventData.ContentCreationTime)) return false;
+	FReleasedLiquid Liquid=Existing!=INDEX_NONE ? ReleasedLiquids[Existing] : FReleasedLiquid();
+	Liquid.ReleaseID = ReleaseEpisode; Liquid.SourceISID = ISID; Liquid.SourceProductID = Record->ProductID;
 	Liquid.ContentID = Unique->EventData.ContentID;
-	Liquid.Portions = double(Unique->EventData.ContentLevel) * Product->ConsumableProfile.NumOfPortions;
+	Liquid.Portions += Released;
 	Liquid.Temperature = Unique->ContinuousData.Temperature;
 	Liquid.ContentCreationTime = Unique->EventData.ContentCreationTime; Liquid.ReleaseTime = WorldElapsedSeconds;
 	Liquid.Transform = GetTransform(ISID);
 	if (!ValidateReleasedLiquids({Liquid}, WorldElapsedSeconds)) return false;
-	FPropEventSyncDelta Empty; Empty.ISID = ISID; Empty.ContentLevel = 0; Empty.ContentID = 0;
-	Empty.DirtyMask = static_cast<uint8>(EPropEventDirtyMask::ContentLevel | EPropEventDirtyMask::ContentID);
+	FPropEventSyncDelta Empty; Empty.ISID = ISID; Empty.ContentLevel = Remaining; Empty.ContentID = Remaining>0 ? Unique->EventData.ContentID : 0;
+	Empty.DirtyMask = static_cast<uint8>(EPropEventDirtyMask::ContentLevel);
+	if (Remaining<=0) Empty.DirtyMask|=static_cast<uint8>(EPropEventDirtyMask::ContentID);
 	// Make both sides of the transfer visible to callbacks only after the canonical commit.
-	ReleasedLiquids.Add(Liquid);
-	if (!SubmitAtomicInstanceEventUpdates({Empty})) { ReleasedLiquids.Pop(); return false; }
+	const FReleasedLiquid Previous=Existing!=INDEX_NONE ? ReleasedLiquids[Existing] : FReleasedLiquid();
+	if (Existing!=INDEX_NONE) ReleasedLiquids[Existing]=Liquid; else ReleasedLiquids.Add(Liquid);
+	if (!SubmitAtomicInstanceEventUpdates({Empty}))
+	{
+		if (Existing!=INDEX_NONE) ReleasedLiquids[Existing]=Previous; else ReleasedLiquids.Pop();
+		return false;
+	}
 	OnLiquidReleasesChanged.Broadcast(); ForceNetUpdate();
 	return true;
 }

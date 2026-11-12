@@ -8,24 +8,52 @@
 
 bool AColaPropActor::CanDemoteToISM() const
 {
-	return Super::CanDemoteToISM() && !(GetContentLevel() > UE_SMALL_NUMBER && GetCapSealed() < 1.0f)
-		&& InteractionPressure <= UE_KINDA_SMALL_NUMBER && AcceptedFailureType == EContainmentFailureType::None;
+	return Super::CanDemoteToISM() && LiquidMotion.IsSettled() && !(GetContentLevel() > UE_SMALL_NUMBER && GetCapSealed() < 1.0f)
+		&& SmoothedPressureExpansion<=.001f
+		&& (UsesPlasticPressure() ? LocalUniqueData.ContinuousData.SealedPressure : InteractionPressure) <= UE_KINDA_SMALL_NUMBER
+		&& AcceptedFailureType == EContainmentFailureType::None;
 }
 void AColaPropActor::ResetTransientPoolState()
 {
 	Super::ResetTransientPoolState();
+	LiquidMotion.Reset(); LastLiquidLocalNormal=FVector::ZeroVector; LastLiquidFill=-1;
+	SmoothedPressureExpansion=0; bMorphInitialized=false; ContentMass=0;
+	RocketInitialContentLevel=RocketInitialPressure=0; RocketLaunchConfiguration=FColaRocketLaunchConfiguration();
 	InteractionPressure = FoamPressure = 0;
 	AcceptedFailureType = EContainmentFailureType::None;
 	ProcessedImpactIDs.Empty(); LastImpactTime = -1;
+	bDebugBottleImpacts=false;
 	DynamicMaterialInstance = nullptr;
 	if (CapMeshComponent) { CapMeshComponent->DestroyComponent(); CapMeshComponent = nullptr; }
 	if (RocketComp) RocketComp->ResetRocketSimulation();
+	CapHoldingStation.Reset(); PressureReleaseEpisode.Invalidate(); PressurePublishElapsed=0; LastPublishedPressure=0;
+}
+void AColaPropActor::OnApplyContinuousData(const FPropContinuousUpdateData& Data,float NewStrength,bool bStrengthChanged)
+{
+	Super::OnApplyContinuousData(Data,NewStrength,bStrengthChanged);
+	// Pressure arrives through the existing continuous-data channel. Morph targets
+	// interpolate locally on active actors; they do not create another network stream.
+	UpdateMorphTargets();
+}
+void AColaPropActor::ResetForInstanceBinding()
+{
+	if (HasAuthority() || !RocketComp) { ResetTransientPoolState(); return; }
+	// Initial component replication can precede the manager's ISID binding. Keep
+	// that received snapshot while clearing cosmetic residue. Actual pool return
+	// still calls ResetTransientPoolState directly and discards the old flight.
+	const FRocketFlightNetState Incoming=RocketComp->GetReplicatedFlightState();
+	ResetTransientPoolState();
+	RocketComp->RestoreReplicatedFlightState(Incoming);
 }
 void AColaPropActor::OnApplyEventData(const FPropEventUpdateData& Data, uint8 DirtyMask)
 {
 	Super::OnApplyEventData(Data, DirtyMask);
+	if (LocalUniqueData.EventData.AttachedCapISID>0 && CapMeshComponent)
+	{
+		CapMeshComponent->DestroyComponent(); CapMeshComponent=nullptr;
+	}
 	ColaLevel = GetContentLevel();
-	UpdateMorphTargets(); UpdateDynamicMaterial(false);
+	UpdateBottleMass(); UpdateMorphTargets(); UpdateDynamicMaterial(false);
 }
 bool AColaPropActor::SetBottleContentType(int32 NewContentID)
 {
@@ -76,6 +104,7 @@ void AColaPropActor::ApplyBottleImpact(const FVector& Impulse, int32 EventID)
 	if (Severity <= 0) return;
 	LocalUniqueData.EventData.Strength = FMath::Clamp(GetStrength() - Severity * Def->StrengthDamageRate, 0.0f, 1.0f);
 	EmitPropEventUpdate(EPropEventDirtyMask::Strength);
+	if (UsesPlasticPressure()) AddAgitationPressure(Severity*FMath::Max(0.f,ImpactPressureGain));
 	if (GetStrength() <= 0 && (Def->BottleMaterialType == EBottleMaterialType::Glass || Def->BottleMaterialType == EBottleMaterialType::Concrete))
 	{
 		FContainmentFailureRequest Failure; Failure.FailureType = EContainmentFailureType::BottleBreakage;
@@ -85,8 +114,8 @@ void AColaPropActor::ApplyBottleImpact(const FVector& Impulse, int32 EventID)
 }
 void AColaPropActor::ApplyInitialImpactFromPromotion(FVector Location, const FVector& Impulse, AActor* InstigatorActor, int32 EventID)
 {
-	// The manager applies the bounded physical kick separately; use original impulse only for damage.
-	ApplyBottleImpact(Impulse, EventID);
+	// Promotion uses momentum too; calibrate agitation to the same reference mass as body hits.
+	ApplyBottleImpact(NormalizePhysicalContactImpulse(Impulse), EventID);
 }
 bool AColaPropActor::SubmitFailureRequest(const FContainmentFailureRequest& Request)
 {

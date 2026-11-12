@@ -4,6 +4,36 @@ This document defines the seven core design decisions for the first playable ver
 
 The game uses a multiplayer-ready ISM ↔ ASM architecture for physical products, including bottles and caps.
 
+## Latest Equipment Specification — 11 November 2026
+
+The designer's [Equipment Design Specification](Equipment_Design_Specification.md) adds the **Manual Wheel Rotator** as the only demo machine from its five-type catalog. Two players cooperate to close the Normal manual twist cap on a plastic bottle: one repeatedly presses G for downward holding force; its effectiveness declines over time even with continued rapid pressing. The other progressively rotates the cap. Insufficient hold before closure causes cola escape through existing bottle pressure/leakage services; releasing hold after proper sealing does not reopen the cap. It is the cheapest cap-closing equipment, manual/no electricity, large and extremely difficult to relocate, requiring a carrier. Final weight, force/decay/rotation values and demo transport arrangement remain open. This does not restore a mandatory bottle-eruption countdown.
+
+Cap Gun, Automatic Fill and Cap Machine, Pressure Regulator and Automatic Bottle Cleaner stay full-game-only. Common machine data includes RequiredVoltage, PowerConsumption, OperatingPressureRange and applicable type/variant, price, mobility, size, players, energy/fuel, capacity and speed fields. This catalog restriction does not remove Normal bulk supply, hoses/dispenser or essential filling infrastructure. Preserve current sizes and mass policy. Resolve G-versus-grab input context, two-player/cancel/reset behavior and transport dependencies under [equipment integration/conflicts](Equipment_Design_Integration_2026-11-11.md); existing one-request close-cap tests do not establish cooperative station acceptance. No runtime implementation is claimed by this documentation update.
+
+## Latest Prototype Restriction and Pressure Reaction — 11 November 2026
+
+The designer's [plastic pressure-system update](Prototype_Plastic_Bottle_Pressure_2026-11-11.md) takes precedence: **Plastic Bottles, the five Normal Colas and Normal Caps (Manual Twist) only**. Other bottle materials, liquid categories and cap types are excluded from the prototype, with existing full-game systems/assets preserved. This resolves the earlier glass/twist-cap question; prototype material/settings and labels must align to plastic/manual twist while preserving current bottle/player/NPC sizes and stable identities.
+
+Hits, shaking, drops and physical impacts increase internal pressure. When `InternalPressure > MaximumPressureTolerance`, pressure release from escaping cola launches the plastic bottle as a physics-driven rocket, reusing compatible `BP_Cola` foundations. Orientation and applied forces influence translation/rotation. The server owns pressure, threshold decisions and authoritative motion, using existing Prop Manager state/pooling and synchronization. This is not an automatic-relief cap, glass fracture or a mandatory countdown. Gains/tolerance tuning, the sealed-cap escape mechanism and held/empty/uncapped/flight-termination cases remain open; implementation and multiplayer acceptance are still required.
+
+## Browser Chat Reconciliation — 11 November 2026
+
+Follow [the source decisions and conflict register](Chat_Design_Decisions_2026-11-11.md). The new demo source is the **Normal Bulk Cola Container**: very high-pressure valve discharge of hot Normal Cola, no destruction from its own pressure, no electricity requirement and no progressive container heating. Final capacity, pressure, flow, hot-output temperature and practical cooling are open. The four-stage filling path is container → hose/dispenser → separate filling equipment → bottle(s). Specific multi-bottle nozzles and pumps are later-design examples, not finalized demo requirements. Electricity, generator, additional liquid categories and raw mixing stay deferred.
+
+Keep the current player/NPC/bottle setup and the five Normal demo flavors. Glass pressure-release caps **do not auto-lock when full**; plastic auto-lock behavior must not be applied to them. Existing art/closure recaps do not authorize resizing or adding all material variants to the demo. Scanner and [ATM accounting](ATM_Cash_Accounting_Proposal.md) override earlier manual pricing, overfill value, expired-sale rejection and automatic bank-credit language below. The eleven excluded PSOs remain deferred.
+
+## Approved Scale and Mass Override — 11 November 2026
+
+- The current NPC, player and Cola sizes in `/Game/FirstPerson/Lvl_FirstPerson` are approved. Preserve their existing setup. Retain the default player size so existing movement, collision, camera and interaction mechanics remain compatible; do not apply the superseded 25 cm player target.
+- Most environmental props, coins, scanners, checkout equipment, counters, storage/display racks, furniture and structures are giant-scale. Use existing bottles and customers as the reference; do not shrink Cola meshes to fit undersized equipment.
+- Player vehicles, filling/cleaning equipment, specialized tools and direct-use machinery remain player-scale, with practical interfaces to the giant props.
+- NPCs and other movable actors must be lighter than the main player. Visual scale does not imply greater physics mass. Keep static structures fixed and configure gameplay mass separately from thermal properties, contents, capacity and handling restrictions.
+- [GDD Master Section 3](GDD_Master.md#3-the-scale-twist-tiny-people-giant-world) contains the authoritative reference measurements, category rules and implementation acceptance requirements. Earlier miniature-player dimensions and overweight-cylinder claims elsewhere are superseded.
+
+## Current Bottle-Contents Catalog and Demo Scope — 11 November 2026
+
+Follow [the designer's working catalog](Bottle_Contents_Catalog.md): 21 full-game types in five categories. Only the five Normal Colas are in the demo: Lemonade, Mint, Sweet, Spicy and Zero Calories. Their relative base prices are `Lemonade < Mint < Sweet < Spicy = Zero Calories`. Numeric content prices and type-specific properties/effects remain unapproved; older suggestions do not supply missing approval. Toxic, Black Magic, Radioactive and Explosive types stay outside the demo. Preserve all documented cross-category partial-order constraints without inventing unspecified comparisons.
+
 ---
 
 # 1. First Playable Scope
@@ -12,7 +42,7 @@ The first playable should demonstrate the complete cola shop business loop, from
 
 ## 1.1 Starting the Business
 
-The player begins with a limited amount of money and must establish a cola shop.
+The prototype retains the approved $0 shared bank, empty register and existing starter stock. The wider business-setup/loan/rent flow below is not a new starting-cash grant.
 
 The player can:
 
@@ -38,11 +68,11 @@ The preparation process:
 1. Select an empty bottle.
 2. Select a compatible cap.
 3. Place the bottle under filling equipment.
-4. Fill the bottle with cola from a large cola container.
+4. Fill through the Normal Bulk Cola Container → hose/dispenser → bottle-filling equipment → bottle path.
 5. Monitor Content Level, temperature, and pressure.
 6. Stop filling at the desired Content Level.
-7. Close or install the cap using the bottle's supported sealing mechanism.
-8. Optionally chill the cola to improve its selling price.
+7. In the prototype, two players use the Manual Wheel Rotator to hold and rotate the Normal twist cap closed; other material-specific sealing mechanisms remain full-game reference.
+8. Cool the hot output toward the cola's configured optimum as part of production. Exact cooling equipment and temperatures remain open; this does not introduce scanner rejection of warm bottles.
 9. Place the prepared bottle on a shop shelf.
 
 Bottle filling must support fractional Content Level values.
@@ -75,7 +105,7 @@ The shopping bucket must support multiple physical products and retain their ind
 
 The player operates the checkout counter.
 
-Two checkout methods are available.
+The active demo uses the approved automatic shared scanner, locked bill and physical-cash/change workflow. The historical manual-calculator method below is not permission to override configured prices or complete incorrectly priced transactions. See [current scanner rules](Scanner_Checkout_Design_Update_2026-11-10.md).
 
 ### Method A — Manual Calculator
 
@@ -130,7 +160,7 @@ A reusable bottle must satisfy its material-specific requirements before being r
 
 ## 1.6 First Playable Implementation Priority
 
-The full gameplay loop is the target, but development should begin with:
+**Historical minimum, superseded by the current plastic/Normal/manual-twist vertical slice:** the active demo includes Lemonade, Mint, Sweet, Spicy and Zero Calories, purchased pre-mixed supply, plastic bottles, Normal manual twist caps, pressure-triggered rocket behavior, shelves, NPC collection/queue, automatic scanner, finite physical payment/change and ATM reinvestment. Other bottle materials and cap types are excluded. Preserve bottle size and stable identity when aligning the prototype products to this restriction. The original staged-development list is retained for history:
 
 - One plastic bottle.
 - One normal plastic twist cap.
@@ -235,7 +265,7 @@ CurrentPortions = 140
 
 ```text
 BaseColaPrice =
-    CurrentPortions × PricePerPortion
+    Clamp(ContentLevel, 0, 1) × NumberOfPortions × PricePerPortion
 ```
 
 Example:
@@ -259,12 +289,12 @@ BaseColaPrice = $100
 | 0.5 | 12.5 | $50 |
 | 0.7 | 17.5 | $70 |
 | 1.0 | 25 | $100 |
-| 1.3 | 32.5 | $130 |
-| 1.7 | 42.5 | $170 |
+| 1.3 | 32.5 | $100 |
+| 1.7 | 42.5 | $100 |
 
 These examples use a 25-portion bottle and $4 per portion.
 
-The prices above are before temperature penalties.
+The prices above are before temperature discounts. Physical portions retain overflow, but billable portions are capped at nominal capacity. The approved scanner update supersedes the earlier extra-overfill value.
 
 The bottle's purchase cost and recycling refund are not automatically added to the cola selling price.
 
@@ -338,56 +368,19 @@ Temperature deviation should be calculated using actual temperature values rathe
 
 ## 2.6 Expired Cola Penalty
 
-Selling expired cola triggers a customer compensation penalty.
+The [approved scanner/checkout update](Scanner_Checkout_Design_Update_2026-11-10.md) supersedes the older zero-revenue/refund and extra-overfill penalty model. Expired products can be inspected and removed before billing, but are not automatically prohibited from sale.
 
-The player must compensate the customer through one of two methods:
+Lock the original invoice before final payment. For each expired bottle successfully sold:
 
-1. Provide a free, equivalent, non-expired cola.
-2. Provide a discount or credit equal to the expired cola penalty amount.
-
-The penalty is calculated using a minimum Content Level of 1.0.
-
-If the expired bottle contains less than 1.0 Content Level, calculate the penalty as though it contains 1.0.
-
-If the expired bottle contains more than 1.0 Content Level, use its actual Content Level.
+1. Apply one mandatory deduction equal to its **normal full-bottle base price**, unaffected by content/temperature discounts or overfill.
+2. Require either a **full, fresh replacement of the same cola and nominal capacity** at no charge, or another deduction equal to that same full-bottle base price.
+3. Keep the original invoice unchanged and record each adjustment separately with once-only identity/retry validation. Monetary deductions debit the shared bank or remain owed when funds are insufficient; original sale coins remain physical cash under approved ATM accounting.
 
 ```text
-PenaltyContentLevel =
-    Max(1.0, ExpiredBottleContentLevel)
+ExpiredBottleBasePenalty = NominalPortions × FixedPricePerPortion
 ```
 
-```text
-ExpiredColaPenalty =
-    PenaltyContentLevel
-    × NumberOfPortions
-    × PricePerPortion
-```
-
-The penalty is calculated before temperature discounts.
-
-### Example
-
-```text
-NumberOfPortions = 25
-PricePerPortion = $4
-```
-
-| Expired Content Level | Penalty Calculation Level | Penalty |
-|---|---:|---:|
-| 0.2 | 1.0 | $100 |
-| 0.5 | 1.0 | $100 |
-| 0.7 | 1.0 | $100 |
-| 1.0 | 1.0 | $100 |
-| 1.3 | 1.3 | $130 |
-| 1.7 | 1.7 | $170 |
-
-An expired cola sale generates no valid cola revenue.
-
-Any payment collected for the expired product must be refunded or voided.
-
-The replacement or discount penalty is additional compensation and must be applied once per affected product.
-
-The exact cash-flow implementation must prevent accidentally charging the same penalty multiple times.
+The additional compensation is separate from the mandatory penalty. Do not void/refund the original invoice and apply another copy of the same adjustment. For the designer's example, a $240 original bill containing one expired $100-base-price bottle has adjusted revenue $140 with a free replacement or $40 with monetary compensation. The receipt is an accounting record; this does not automatically deposit the $240 sale cash into the bank.
 
 ## 2.7 Expiry Detection Before Sale
 
@@ -435,6 +428,8 @@ Each bottle material defines its own pressure tolerance.
 
 ## 3.2 Initial Bottle Material Definitions
 
+**Full-game reference:** only plastic is enabled for the prototype. The other materials below remain deferred; their assets/systems are preserved.
+
 The game contains five bottle materials:
 
 1. Plastic
@@ -473,6 +468,7 @@ Compatible caps:
 - Low recycling refund.
 - Uses a wooden stopper.
 - Player seals the bottle by hammering the stopper into the opening.
+- A second glass closure is a pressure-release cap, without automatic locking when the bottle fills. This distinction is confirmed by the designer's browser chat.
 
 ### Metal Can
 
@@ -530,6 +526,8 @@ Temperature tolerances, melting thresholds, and optimum cola temperatures also r
 
 ## 3.4 Cap Types
 
+**Prototype restriction:** only the Normal manual twist cap is included. Auto Close, Pressure Discharge and all other closures below are full-game reference, not prototype acceptance requirements. Pressure-induced release/rocket behavior does not add an intentional pressure-relief feature to the Normal Cap.
+
 ### Normal Cap
 
 - Plastic twist cap.
@@ -558,6 +556,7 @@ Other closures:
 | Bottle | Closure | Mechanism |
 |---|---|---|
 | Glass | Wooden stopper | Hammer installation |
+| Glass | Pressure-release cap | Pressure relief; no full-bottle auto-lock; exact sealing/relief details remain open |
 | Metal Can | Metal lid | Welding |
 | Diamond | Diamond cap | Rotating twist |
 | Concrete | Concrete plug | Pouring and curing |

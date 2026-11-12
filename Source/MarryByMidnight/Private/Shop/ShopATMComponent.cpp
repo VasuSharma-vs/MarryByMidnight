@@ -41,5 +41,6 @@ void UShopATMComponent::CollectDeposits()
 }
 void UShopATMComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
-	GetWorld()->GetTimerManager().ClearTimer(DepositTimer); Super::EndPlay(Reason);
+	if (auto* ComponentWorld=GetWorld()) ComponentWorld->GetTimerManager().ClearTimer(DepositTimer);
+	Super::EndPlay(Reason);
 }

@@ -3,6 +3,10 @@
 **Project:** Midnight Fizz: Giant Thirst (*MarryByMidnight*)  
 **Document Purpose:** Dedicated specification for standard colas, supernatural/hazardous beverages, failure mechanics, sanitation tools, and fantasy customer archetypes.
 
+**Content authority — 11 November 2026:** Use [the current 21-type Bottle Contents Catalog](Bottle_Contents_Catalog.md). The demo contains only the five Normal Colas, with `Lemonade < Mint < Sweet < Spicy = Zero Calories`. This document's older formula names, numeric prices and type-specific effect descriptions are historical proposals, not approvals or additional demo requirements. Generic mechanics with separate approval remain governed by their approved specifications.
+
+**Scale/mass authority — 11 November 2026:** Preserve the current NPC, player and Cola setup in `Lvl_FirstPerson`. The player keeps the existing default size for mechanic compatibility and feels small because the world is giant-scale. NPCs and movable actors remain lighter than the player. [GDD Master Section 3](GDD_Master.md#3-the-scale-twist-tiny-people-giant-world) supersedes the previous 25 cm player and fixed archetype/player multipliers; future patron variants require separate art authoring, not automatic character rescaling.
+
 ---
 
 ## 1. Architectural Rules for Cola Volatility
@@ -36,7 +40,7 @@ These represent the everyday beverages ordered by common folk, travelers, and lo
  [ Classic Caramel ]     [ Sugar Crush ]     [ Dragon Pepper Fire ]     [ Frostbite Mint ]
 ```
 
-### 2.1 Formula Profiles
+### 2.1 Historical Formula Proposals — Not Approved Content Balance or Effects
 | Cola Name | Asset ID | Base Price | Agitation Multiplier | Ideal Temp | Failure Reaction & Shop Consequence |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Classic Midnight Fizz** | `DA_BasicCola` | $\$2.50$ | $1.0\times$ | $4.0^\circ\text{C}$ | **High-Velocity Rocket:** Cap shoots off; bottle launches into unguided ballistic flight, ricocheting off walls and knocking down nearby bottles. |
@@ -173,7 +177,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
     |                           PATRON PROFILE COMPARISON                             |
     +------------------+------------------+-------------------+-----------------------+
     | Mountain Giant   | Stone / Iron Golem| Lunar Werewolf   | Bog Witch             |
-    | 12x Scale (3m)   | 10x Scale (2.5m) | 6x Scale (1.8m)   | 8x Scale (2m)         |
+    | Authored giant   | Authored giant   | Authored patron   | Authored patron       |
     | High-Volume Metal| Cryo-Cold Metal  | Blood / Meat Cola | Poison & Spider Colas |
     | Counter Slam     | EMP Disruption   | Table Slash / Jump| Hexes & Curses        |
     +------------------+------------------+-------------------+-----------------------+
@@ -182,7 +186,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.1 The Stone & Iron Golem
-* **Physical Scale:** $10\times$ Player Height ($250\text{ cm}$).
+* **Physical Scale:** Authored giant proportions using `Lvl_FirstPerson` as the reference. Existing NPC size is preserved; no fixed player-height multiplier applies.
 * **Personality:** Slow, mechanical, emotionless speech. Requires heavy mineral beverages.
 * **Demands:** Heavy Metal Canisters filled with **Cryo-Frost Soda** or **Radioactive Neon Cola**. Cannot tolerate warm temperatures ($> 5^\circ\text{C}$).
 * **Wrath Event (Electromagnetic Shockwave):**
@@ -195,7 +199,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.2 The Lunar Werewolf
-* **Physical Scale:** $6\times$ Player Height ($180\text{ cm}$).
+* **Physical Scale:** Authored patron variant using the approved world proportions; no fixed player-height multiplier applies.
 * **Personality:** Feral, twitchy, snarls continuously. Extremely aggressive and impatient.
 * **Demands:** **Cursed Blood Cola** or **Dragon Pepper Fire Cola**. Demands drinks served quickly in heavy glass.
 * **Patience Meter:** The shortest in the game (drains $1.5\times$ faster than other customers).
@@ -207,7 +211,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.3 The Bog Witch
-* **Physical Scale:** $8\times$ Player Height ($200\text{ cm}$).
+* **Physical Scale:** Authored patron variant using the approved world proportions; no fixed player-height multiplier applies.
 * **Personality:** Hunched, sneering, speaks in rhyming riddles. Accompanied by a glowing familiar.
 * **Demands:** **Poison Swamp Cola** and **Spider Nest Cola**. Refuses clean pristine bottles—actually prefers dirty, slobber-stained bottles!
 * **Wrath Event (Witch's Hex):**
@@ -219,7 +223,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.4 The Vampire Aristocrat
-* **Physical Scale:** $7\times$ Player Height ($175\text{ cm}$).
+* **Physical Scale:** Authored patron variant using the approved world proportions; no fixed player-height multiplier applies.
 * **Personality:** Refined, arrogant, obsessed with cleanliness and etiquette.
 * **Demands:** **Cursed Blood Cola** or **Royal Golden Sparkler** served in **Pristine, Spotless Glass**.
 * **Special Condition:** If the bottle has even a speck of dirt or unwashed syrup (scanner cleanliness $< 100\%$), the Vampire refuses it with disdain.
@@ -229,7 +233,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.5 The Mountain Giant
-* **Physical Scale:** $12\times$ Player Height ($300\text{ cm}$).
+* **Physical Scale:** Authored giant proportions using `Lvl_FirstPerson` as the reference; preserve existing NPC size.
 * **Personality:** Boisterous, thunderous laughter, massive appetite.
 * **Demands:** Multi-bottle orders (3–4 large Metal Kegs of Classic or Fire Cola at once).
 * **Wrath Event (Colossal Table Slam):**
@@ -241,7 +245,7 @@ These colossal patrons visit the tavern bar counter. Each archetype possesses sp
 ---
 
 ### 4.6 The Phantom / Banshee
-* **Physical Scale:** Floats $50\text{ cm}$ above the counter ($220\text{ cm}$).
+* **Physical Scale:** Authored floating patron variant; counter clearance and dimensions follow the approved world reference rather than the obsolete miniature-player measurements.
 * **Personality:** Wailing, translucent, fades in and out of reality.
 * **Demands:** **Ghost / Phantom Ecto-Cola**.
 * **Wrath Event (Banshee Wail):**

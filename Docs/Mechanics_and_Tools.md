@@ -2,50 +2,64 @@
 
 This document provides technical design specifications for the interactive stations, player-operated tools, mathematical formulas, and physical interaction mechanics in **Midnight Fizz: Giant Thirst**.
 
+**Latest equipment authority — 11 November 2026:** The designer's complete [Equipment Design Specification](Equipment_Design_Specification.md) defines five categories and the shared electrical/pressure/variant properties. **Only the Manual Wheel Rotator is in the demo from that catalog:** two players, G-press downward holding force with declining effectiveness, progressive rotation by the second player, no electricity, carrier-required relocation. It works with plastic/Normal/manual twist caps and existing pressure/leakage/rocket services. Bulk container, hose/dispenser and essential filling infrastructure remain in scope. The other four catalog types are full-game-only; old station/gun/freezer/vehicle proposals below do not expand scope. See [equipment integration and conflicts](Equipment_Design_Integration_2026-11-11.md) for G input contention, carrier/mass questions, unspecified control/tuning and required multiplayer acceptance.
+
+**Latest prototype restriction — 11 November 2026:** [Plastic Bottle Pressure System](Prototype_Plastic_Bottle_Pressure_2026-11-11.md) limits the prototype to plastic bottles, the five Normal Colas and Normal manual twist caps. Hits/shaking/drops/impacts increase internal pressure; exceeding bottle tolerance causes pressure release and orientation/force-dependent physics rocket propulsion similar to `BP_Cola`. Other bottle materials, cap variants and fragmentation are future scope. Preserve current player/NPC/bottle sizes. Exact gains, tolerance, release/thrust tuning and special cap/held/empty cases remain open; this is not a claim of implementation or passing tests.
+
+**Current chat-derived requirements — 11 November 2026:** Follow [the decisions and conflict register](Chat_Design_Decisions_2026-11-11.md). Demo liquids are the five Normal Colas only. The source is the Normal Bulk Cola Container: hot, high-pressure discharge, no breakage from its own pressure, no electricity or progressive source heating in the demo. Keep all existing reference sizes. Numeric workstation examples below are historical tuning proposals unless separately approved; they do not establish implemented or tested behavior.
+
+**Current scale and mass policy:** [GDD Master, Section 3](GDD_Master.md#3-the-scale-twist-tiny-people-giant-world) supersedes earlier miniature-player and overweight-cylinder assumptions. Keep the current default player, existing NPCs and Cola sizes from `Lvl_FirstPerson`. Tools, vehicles, filling equipment and cleaning controls fit that player; interfaces and supports accommodate giant bottles. NPCs and movable props use gameplay masses below the player baseline.
+
 ---
 
-## 1. Station 1: Cola Cylinder & Gas-Pump Dispenser Nozzle
+## 1. Station 1: Normal Bulk Cola Container and Filling Equipment
 
-The Cola Cylinder is the primary bulk reservoir of pressurized carbonated syrup, and the Dispenser Nozzle is the physical hand-tool used by players to fill empty bottles.
+The **Normal Bulk Cola Container** is the demo's one bulk container type for pre-mixed Lemonade, Mint, Sweet, Spicy and Zero Calories. Existing Cylinder/Tank class and asset identifiers can remain for compatibility. Opening its valve produces immediate, powerful, fire-hose-like discharge of hot cola. Its own pressure does not break the source. Electricity and progressive container heating are disabled in the demo; liquid output is still hot.
 
 ```
- [ Large Pressurized Cylinder ] 
-           |  (Flexible Physics Hose)
+ [ Normal Bulk Cola Container ]
+           |
            v
-   [ Gas-Pump Nozzle ] ====> [ Empty Bottle Clamped on Base ]
+ [ Flexible Hose + Dispenser Nozzle ]
+           |
+           v
+ [ Compatible Bottle Filling Equipment ]
+           |
+           v
+ [ Individual Bottle(s) ]
 ```
 
 ### 1.1 Physical Components & Setup
-- **The Cola Cylinder:** A colossal, industrial pressurized keg containing bulk cola (50 to 200 portions). Because of the players' miniature size (25 cm), a full cylinder is a massive 100 kg industrial asset delivered at the cargo freight bay. **Players cannot carry cylinders by hand**; they must use the **Micro-Forklift** or **Fizz-Mule** to transport and hoist the cylinder onto the station's docking manifold.
-- **The Dispenser Nozzle:** A portable handheld nozzle modeled after a commercial fuel/gas pump handle with a mechanical squeeze-trigger. Connected to the cylinder dock via a simulated `UCableComponent` / Physics Constraint hose.
-- **Physics Hose Mechanics:** The hose has a maximum stretch radius (e.g., 350 Unreal Units). Pulling past this limit drags the nozzle out of the player's hands or trips running teammates. Cylinders can also be mounted on mobile vehicle flatbeds for mobile filling!
+- **Container:** Tracks liquid identity and remaining fractional supply. The existing 40 portions is prototype configuration; final capacity is open. Gameplay mass remains below the unchanged player's reference mass.
+- **Hose/dispenser:** Routes and controls supply before the separate filling-equipment stage. Specific hose implementation, reach, connection geometry and valve/control interaction still need definition; the earlier 350-unit example does not override giant-prop accessibility.
+- **Filling equipment:** An explicit interchangeable stage between dispenser and bottle. Glass-specific attachments, four-bottle heads and pressure-control pumps are designer examples for later design. Their exact compatibility, pressure behavior and throughput are not finalized demo requirements.
+- **Access:** Fit controls and tools to the current player, and supports/interfaces to the current giant bottles. Solve reach, collision, sight lines and placement without rescaling the player, NPCs or bottles.
 
 ### 1.2 Dispensing Flow & Fill Mechanics
-- **Interaction:** The player holds the nozzle with primary interaction (`E` or Gamepad `X`), inserts it into the bottle neck, and holds the secondary action (`Left Mouse Button` / `Right Trigger`) to depress the squeeze lever.
-- **Fill Rate:** Liquid fills at a rate of **25% volume per second**.
-- **Internal Pressure Curve:** As the bottle reaches capacity, carbonation pressure climbs exponentially:
+- Use the existing server-authoritative Prop Manager liquid-transfer and bottle-filling services; do not duplicate quantity or identity ownership in a nozzle Blueprint.
+- Preserve fractional content. Deduct the quantity actually accepted from the source, initialize the new liquid's expiry lifecycle and preserve the bottle's Strength, damage and other physical history.
+- Hot-output temperature, source pressure, valve flow, fill rate and cooling acceptance values remain open. Earlier 25%-per-second and PSI tables are superseded proposals, not new balance approval.
+- Standard full bottle Content Level is 1.0; configured overflow can extend to 1.7, subject to condition/containment rules. Extra fill has no extra selling value. Neither 100% nor 125% is an automatic detonation trigger; pressure/structural limits determine failure.
+- Full uncapped bottles remain active ASMs according to the existing core lifecycle; no mandatory eruption timer is introduced.
+- Define uncaptured spray/spill quantity handling before implementing free discharge. Cosmetic spray must not create or silently delete liquid.
 
-```mermaid
-graph LR
-    A["0% - 84%: Underfill Zone<br/>(Scanner Loss / Bottle Wasted)"] --> B["85% - 100%: Perfect Zone<br/>(Optimal Fill & Maximum Value)"]
-    B --> C["101% - 125%: Dangerous Overfill<br/>(Severe Pressure Spike)"]
-    C --> D[">125%: Instant Detonation<br/>(Immediate Rocket Launch / Pop)"]
-```
+### 1.3 Demo and Full-Game Boundary
 
-### 1.3 Fill Threshold Table
-| Fill Range | Status | Pressure ($PSI$) | Scanner Result | Consequence |
-| :--- | :--- | :--- | :--- | :--- |
-| **$0\% - 49\%$** | Severely Underfilled | $0 - 5$ | **0 Portions ($0 Value)** | Bottle cost completely wasted. Customer rejects drink outright. |
-| **$50\% - 84\%$** | Underfilled | $6 - 20$ | **1–3 Portions (Heavy Penalty)** | Payout is lower than the cost of buying the empty bottle! Net financial loss. |
-| **$85\% - 100\%$** | **Optimal Fill** | $21 - 32$ | **4 Full Portions (Full Value)** | Perfect pour. Yields bonus tip if capped properly. |
-| **$101\% - 125\%$** | Overfilled (Volatile) | $33 - 65$ | **Full (If Capped)** | Agitation accumulates $3\times$ faster. Capping timer reduced by 50%. |
-| **$> 125\%$** | Over-Pressurized Blowout | $> 65$ | **N/A (Destroyed)** | **Instant Rocket Launch!** The bottle launches off the counter without a cap, spraying liquid everywhere. |
+Cool filled bottles toward the selected cola's configured optimum. Warm bottles retain the separately approved temperature discount; cooling is not a new scanner rejection rule. Cooling equipment and numerical targets are not finalized by the browser conversation. Full-game electricity-dependent source cooling, low-voltage behavior, progressive heating, coal-fired steam generation and additional bulk-container types are deferred.
 
 ---
 
-## 2. Station 2: Capping Station & F1 Wheel-Nut Timing/Torque Mechanic
+## 2. Station 2: Manual Wheel Rotator — Cooperative Manual Cap Closure
 
-Once a bottle is filled, the unsealed carbonation creates a ticking time-bomb. Players have a narrow window to place a cap and torque it down using the specialized pneumatic capping wrench—modeled directly after the high-stress **Formula 1 wheel-nut pit-stop gun**.
+The prototype uses **Normal manual twist caps on plastic bottles only**, closed through the two-player **Manual Wheel Rotator**. Development name is confirmed; Twin-Hand Cap Crank is a suggested display name, not final. This is the cheapest cap-closing equipment, a large manual station with extremely low portability and carrier-required relocation. It consumes no electricity. Exact footprint, weight and demo transport arrangement remain open.
+
+**Player 1:** repeatedly press G to apply downward force holding the cap against the opening. Continued pressing maintains temporary hold, but its effectiveness gradually deteriorates even during rapid pressing. **Player 2:** operate the rotation mechanism and progressively close the cap before effective hold becomes insufficient. The rotation input, force/decay/turn values and reset/cancel behavior are not specified. Once sealed, releasing hold does not reopen the cap.
+
+Insufficient hold, stopping presses or slow rotation can allow pressurized cola to escape before closure. Reuse the existing bottle's pressure, cap and leakage/failure systems, with server-owned shared operator state and liquid accounting. Leakage is not itself an automatic rocket timer; the approved pressure-threshold reaction remains authoritative. G conflicts with existing grab gestures and needs an agreed station-input context. No solo bypass, new force conversion or vehicle-fleet dependency is assumed. See [the equipment specification](Equipment_Design_Specification.md#4-equipment-type-2--manual-wheel-rotator) and [integration/conflicts](Equipment_Design_Integration_2026-11-11.md).
+
+### Historical F1 Equipment Proposal — Full-Game Reference Only
+
+The pneumatic-gun diagram, torque windows and mobile rig below are historical proposals. The new full-game Cap Gun specification supersedes conflicting gun details; it is electrically powered despite F1 pneumatic-tool inspiration. These are not the demo rotator's controls or tuning. Other plastic cap variants, glass stoppers/pressure caps and welded lids remain outside the prototype. The overpressure escape mechanism for a fully sealed manual cap is still open in the [pressure specification](Prototype_Plastic_Bottle_Pressure_2026-11-11.md).
 
 ```
                 [ Pneumatic / Mechanical Torque Wrench ]
@@ -54,12 +68,9 @@ Once a bottle is filled, the unsealed carbonation creates a ticking time-bomb. P
              [ Cap ]  =======>  [ Bottle Neck ]
 ```
 
-### 2.1 The Urgent Timing Window
-- As soon as the dispenser nozzle is removed, a **Cap Urgency Countdown** begins:
-  - *Standard Cola:* $5.0\text{ seconds}$ to apply cap.
-  - *High-Fizz / Sugar-Crush Cola:* $3.0\text{ seconds}$.
-  - *Fire / Spicy Cola:* $2.5\text{ seconds}$.
-- **Delay Expiration:** If the countdown hits $0.0\text{s}$, the internal fizz bursts out of the neck, launching the bottle as an unguided rocket.
+### 2.1 Capping Timing Authority
+
+The former mandatory 2.5–5 second Cap Urgency Countdown is superseded. Uncapped orientation, leakage, pressure, sealing integrity and configured containment behavior determine what happens; nozzle removal alone does not start an inevitable rocket launch. Cap sealing integrity remains separate from bottle Strength.
 
 ### 2.2 The Torque Minigame
 When the player mounts the capping gun onto the bottle neck and activates it:
@@ -79,6 +90,8 @@ When the player mounts the capping gun onto the bottle neck and activates it:
 | **Over-Torqued** (Too Tight) | Red (76% – 100%) | Structural Failure ($> 60\text{ Nm}$) | **Cap snaps or bottle neck fractures!** Glass bottles shatter instantly, while metal caps strip their threads and leak violently. |
 
 ### 2.4 Cola-Specific Failure Reactions
+**Historical effect proposals only:** these named reactions and durations are not approved Normal-demo effects. A flavor name such as Spicy does not approve a fire hazard.
+
 If capping fails (blown off by delay, popped off by under-torquing, or broken by over-torquing), the bottle triggers its unique chemical reaction:
 - **Basic Cola:** High-speed foam rocket that bounces off walls.
 - **Spicy / Fire Cola:** Fiery backblast that leaves scorching flames on the workstation.
@@ -97,7 +110,7 @@ In addition to the stationary capping workbench, the team can deploy the **Mobil
 
 ## 3. Station 3: Chilling & Temperature Management
 
-Giant customers refuse to drink lukewarm soda. Coldness is a critical quality attribute synchronized with `UInteractablePropDataAsset::ConsumableTemperature`.
+The new demo source dispenses hot cola, so cooling is part of production. Use each cola's configured optimum and the approved temperature discount, capped at 20%. A warm bottle is not automatically rejected. Final hot-output temperature and practical cooling workflow remain open. The numerical thermal/equipment examples in Sections 3.1–3.2 are tuning proposals, not newly approved values.
 
 ### 3.1 Temperature Dynamics
 - **Ambient Shop Temperature:** $22.0^\circ\text{C}$.
@@ -117,6 +130,8 @@ Giant customers refuse to drink lukewarm soda. Coldness is a critical quality at
    - Risk: Leaving a bottle in the blast freezer for $> 10\text{ seconds}$ causes the liquid to freeze and expand, shattering the bottle!
 
 ### 3.3 Customer Temperature Multipliers
+**Superseded pricing proposal:** the multipliers/rejection below must not be used for the current scanner. Use the configured optimum and at most 20% discount; no frosty payout multiplier is approved by this chat update.
+
 - **Frosty ($\le 4.0^\circ\text{C}$):** $1.2\times$ Payout Multiplier + "Brain Freeze" Giant Tip.
 - **Chilled ($4.1^\circ\text{C} - 10.0^\circ\text{C}$):** $1.0\times$ Standard Payout.
 - **Lukewarm ($10.1^\circ\text{C} - 18.0^\circ\text{C}$):** $0.6\times$ Payout Penalty + Giant Grunts in Disgust.
@@ -139,50 +154,32 @@ The Checkout Scanner is an automated laser scanning scale mounted at the serving
 ```
 
 ### 4.1 The Underfill Economic Rule
-The user requirement dictates:
-> *"edit the scanner to check number of remaining portion and mult the price and add to total bill. So if cola is less, the bottle price will go to waste."*
 
-To achieve this, the scanner formula guarantees that **an underfilled bottle results in a net financial loss**, penalizing sloppy dispensing.
+Use the latest [scanner/checkout rules](Scanner_Checkout_Design_Update_2026-11-10.md). Underfill reduces liquid revenue proportionally. Bottle purchase cost, supply cost and recycling refund are separate values, so net profit depends on configured costs; the scanner does not guarantee a loss for every underfilled bottle or add a bottle-cost rebate.
 
 ### 4.2 Scanner Pricing Formulas
 
-Let:
-- $C_{bottle}$: Base purchase cost of the empty bottle (e.g., $\$4.00$ for glass).
-- $P_{portion}$: Retail price per portion of the cola liquid (e.g., $\$3.00$ per portion).
-- $N_{target}$: Target number of portions in a full bottle (e.g., $4\text{ portions}$).
-- $N_{actual}$: Detected portions currently inside the bottle ($0 \le N_{actual} \le N_{target}$).
-- $M_{temp}$: Temperature satisfaction multiplier ($1.2\times$ if cold, $0.5\times$ if warm).
+```text
+FullBottleBase = NominalPortions × FixedPricePerPortion
+ContentAdjusted = FullBottleBase × Clamp(ContentLevel, 0, 1)
+TemperatureDiscount = 0.20 × Clamp(Abs(CurrentTemperature - OptimumTemperature)
+                                  / ConfiguredTemperaturePenaltyRange, 0, 1)
+BottleQuote = ContentAdjusted × (1 - TemperatureDiscount)
+```
 
-#### The Bill Formula
-$$\text{PortionRevenue} = N_{actual} \times P_{portion} \times M_{temp}$$
+Optimum temperature and the positive deviation range are configured per cola. Apply content and temperature discounts sequentially, with no extra value for overfill. Base prices follow `Lemonade < Mint < Sweet < Spicy = Zero Calories` at matching nominal capacity. Detailed prices remain in cents; round only the aggregate payable bill to the nearest whole dollar, with half-dollar ties rounded up for nonnegative totals. Players cannot override configured selling prices.
 
-$$\text{BottleRebate} = 
-\begin{cases} 
-C_{bottle} & \text{if } N_{actual} = N_{target} \text{ (Full Bottle)} \\
-C_{bottle} \times \left(\frac{N_{actual}}{N_{target}}\right)^2 & \text{if } N_{actual} < N_{target} \text{ (Underfill Quadratic Penalty)} 
-\end{cases}$$
+### 4.3 Checkout, Expiry and Banking
 
-$$\text{TotalBill} = \text{PortionRevenue} + \text{BottleRebate}$$
+Live scans follow bottles entering/leaving the volume; saved entries retain unique ISIDs and can be cleared before billing. Lock the original invoice before final payment. Expired bottles are visible for player inspection but not automatically prohibited from sale. Each expired bottle sold triggers one full-base-price penalty plus a full fresh same-cola/same-capacity replacement, or another full-base-price deduction. Discounts/overfill do not alter that base penalty; preserve debt when funds are insufficient.
 
-#### The Net Profit / Loss Calculation
-$$\text{NetProfit} = \text{TotalBill} - (C_{bottle} + C_{cola\_cost})$$
-
-### 4.3 Practical Economic Example Table
-*Assumptions: Glass Bottle Cost $C_{bottle} = \$4.00$, Cola Cost = $\$2.00$ ($4\times \$0.50$). Full Value = 4 portions $\times \$3.00 = \$12.00$ liquid. Total full price = $\$16.00$.*
-
-| Fill Status | Portions ($N_{actual}$) | Portion Revenue ($M_{temp}=1.0$) | Bottle Value Returned | Total Bill to Customer | Total Cost Invested | **Net Profit / Loss** |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Full (Perfect)** | **4 / 4** | $\$12.00$ | $\$4.00$ | **$\$16.00$** | $\$6.00$ | **$+\$10.00$ (Big Profit)** |
-| **Slight Underfill**| **3 / 4** | $\$9.00$ | $\$2.25$ | **$\$11.25$** | $\$6.00$ | **$+\$5.25$ (Mediocre)** |
-| **Half Empty** | **2 / 4** | $\$6.00$ | $\$1.00$ | **$\$7.00$** | $\$6.00$ | **$+\$1.00$ (Barely Break-Even)** |
-| **Severe Underfill**| **1 / 4** | $\$3.00$ | $\$0.25$ | **$\$3.25$** | $\$6.00$ | **$-\$2.75$ (NET LOSS - Bottle Wasted)** |
-| **Empty / Dregs** | **0 / 4** | $\$0.00$ | $\$0.00$ | **$\$0.00$** | $\$6.00$ | **$-\$6.00$ (TOTAL LOSS)** |
-
-> **Design Takeaway:** If a player fills only 1 portion out of 4, the bottle price goes completely to waste, generating an outright loss of $-\$2.75$ on that order!
+Payment and exact change transfer finite physical $1/$2/$5/$10/$20/$50/$100 coin identities. Any teammate may continue the transaction, subject to server validation. The register starts empty; the bank starts $0 with existing starter stock preserved. Sale cash stays in the register until ATM deposit. Do not also credit the bank at sale completion. See [ATM accounting](ATM_Cash_Accounting_Proposal.md).
 
 ---
 
 ## 5. Station 5: Bottle Cleaning & Decontamination Station
+
+**Scope and reuse authority:** this is later station-design work; it does not reactivate the excluded PSO_Sink or PSO_FoodContainer assets. The approved prototype recycles NPCs and retires purchased goods after departure. Reuse requires Strength > 70%, clean and completely empty. The contamination discounts/effects and numerical brush timing below are historical proposals, not additional approved scanner penalties or Normal-demo hazards.
 
 When giant customers finish their beverages, they slam the empties onto the return conveyor chute. Empty bottles can be recycled and reused, but they are returned dirty and unfit for immediate refilling.
 
@@ -209,11 +206,11 @@ When giant customers finish their beverages, they slam the empties onto the retu
 
 ## 6. Station 6: Shop Vehicles & Material Handling Machines
 
-Because the tavern workshop is gigantic and the player characters are knee-high ($25\text{ cm}$), traversing the counters on foot while carrying bulky objects is too slow. The shop features a fleet of drivable micro-vehicles and material handling machines.
+The giant-scale workshop creates long transport routes for the unchanged default-sized player. The full game includes player-sized vehicles and handling machines to improve traversal and throughput. Their design does not require a 25 cm player or cargo heavier than the player.
 
 ```
        [ Micro-Forklift ]                   [ Fizz-Mule Flatbed ]
-    Hoists 100kg Cylinders               Transports Crates & Bottles
+    Hoists Bulky Cylinders               Transports Crates & Bottles
     Docks into Manifolds                  2-Player Co-op Drivable
               \                                     /
                +-----------------------------------+
@@ -230,7 +227,7 @@ Because the tavern workshop is gigantic and the player characters are knee-high 
 - **Cargo Clamping:** Features a magnetic lock switch (`F` key) that prevents crates from sliding off during turns. If the player forgets to engage the magnet, sharp turns fling cargo off the bed!
 
 ### 6.2 The Micro-Forklift (Heavy Cylinder Hoist)
-- **Role:** Material handling for the colossal $50 - 200\text{ kg}$ Cola Cylinders.
+- **Role:** Material handling for bulky Cola cylinders, with configured gameplay mass below the player baseline.
 - **Hydraulic Lift:** Uses dedicated controls (`Q` to lower forks, `E` to raise forks).
 - **Cylinder Manifold Docking:** 
   1. Driver approaches the freight delivery bay and slides forks beneath the cylinder pallet.

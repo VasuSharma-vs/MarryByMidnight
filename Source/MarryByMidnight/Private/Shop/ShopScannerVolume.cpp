@@ -1,5 +1,6 @@
 #include "Shop/ShopScannerComponent.h"
 #include "Shop/ShopCheckoutComponent.h"
+#include "Shop/ShopInstanceVolumeQuery.h"
 #include "Props/InteractablePropManager.h"
 #include "Components/BoxComponent.h"
 #include "Engine/OverlapResult.h"
@@ -120,19 +121,7 @@ TSet<int32> UShopScannerComponent::QueryVolumeISIDs() const
 {
 	TSet<int32> Inside;
 	if (!IsServer() || !IsValid(ScanVolume) || ScanVolume->GetWorld() != GetWorld()) return Inside;
-	APropManager* CurrentManager = APropManager::Get(this);
-	if (!CurrentManager) return Inside;
-	TArray<FOverlapResult> Overlaps;
-	FCollisionObjectQueryParams Objects; Objects.AddObjectTypesToQuery(ECC_WorldStatic); Objects.AddObjectTypesToQuery(ECC_WorldDynamic); Objects.AddObjectTypesToQuery(ECC_PhysicsBody);
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(ShopScanner), false, GetOwner());
-	GetWorld()->OverlapMultiByObjectType(Overlaps, ScanVolume->GetComponentLocation(), ScanVolume->GetComponentQuat(), Objects,
-		FCollisionShape::MakeBox(ScanVolume->GetScaledBoxExtent()), Params);
-	for (const auto& Hit : Overlaps)
-	{
-		const int32 ISID = CurrentManager->GetISID(Hit.GetComponent(), Hit.GetItemIndex());
-		if (ISID > 0) Inside.Add(ISID);
-	}
-	return Inside;
+	return ShopInstanceVolumeQuery::Query(ScanVolume);
 }
 
 bool UShopScannerComponent::IsProductPhysicallyInside(int32 ISID) const { return QueryVolumeISIDs().Contains(ISID); }

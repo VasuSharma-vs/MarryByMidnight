@@ -1,6 +1,27 @@
 #include "Shop/ShopCheckoutComponent.h"
 #include "Shop/ShopCustomerCashComponent.h"
+#include "Shop/ShopProcurementComponent.h"
 #include "Props/InteractablePropManager.h"
+
+TArray<int32> UShopCheckoutComponent::GetCustomerOwnedStockISIDs(FGuid Customer) const
+{
+	TArray<int32> Result;
+	if (IsServer() && Customer.IsValid()) for (const auto& Pair:Stock) if (Pair.Value.CustomerOwner==Customer) Result.Add(Pair.Key);
+	Result.Sort(); return Result;
+}
+
+bool UShopCheckoutComponent::IsAvailableColaStockISID(int32 ISID) const
+{
+	const auto* Manager=Cast<APropManager>(GetOwner());
+	if (!IsServer() || !Manager || !IsAvailableShopStock(ISID)) return false;
+	FShopProductScanData Scan;
+	if (!Manager->GetProductScanData(ISID,Scan) || Scan.ContentLevel<=0) return false;
+	if (Manager->ShopSupplies && Manager->ShopSupplies->IsNormalPrototypeActive()
+		&& (!Manager->ShopSupplies->IsNormalContent(Scan.ContentID) || Scan.CapSealed<1)) return false;
+	const auto* Product=Manager->FindProductDefinition(Scan.ProductID);
+	return Product && Product->InteractionProfile.bCanConsume && Product->ConsumableProfile.ConsumableType==EConsumablePropType::Drink
+		&& Product->ConsumableProfile.NumOfPortions>0;
+}
 
 TArray<int32> UShopCheckoutComponent::GetAvailableColaStockISIDs() const
 {
@@ -9,12 +30,7 @@ TArray<int32> UShopCheckoutComponent::GetAvailableColaStockISIDs() const
 	if (!IsServer() || !Manager) return Result;
 	for (const auto& Pair : Stock)
 	{
-		if (!IsAvailableShopStock(Pair.Key)) continue;
-		FShopProductScanData Scan;
-		if (!Manager->GetProductScanData(Pair.Key, Scan) || Scan.ContentLevel <= 0) continue;
-		const auto* Product = Manager->FindProductDefinition(Scan.ProductID);
-		if (Product && Product->InteractionProfile.bCanConsume && Product->ConsumableProfile.ConsumableType == EConsumablePropType::Drink
-			&& Product->ConsumableProfile.NumOfPortions > 0) Result.Add(Pair.Key);
+		if (IsAvailableColaStockISID(Pair.Key)) Result.Add(Pair.Key);
 	}
 	Result.Sort(); return Result;
 }
