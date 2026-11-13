@@ -1,7 +1,7 @@
 {
   "engine": "UE 5.8",
   "configuration": "Win64 Development Editor",
-  "module": "UnrealEditor-MarryByMidnight-11016.dll",
+  "module": "UnrealEditor-ColossalFizzCo-11016.dll",
   "build": "Succeeded",
   "automation": {
     "succeeded": 11,
@@ -9,47 +9,47 @@
     "warnings": 0,
     "tests": [
       {
-        "name": "MarryByMidnight.Props.DeltaSchema",
+        "name": "ColossalFizzCo.Props.DeltaSchema",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Props.DemotionPolicy",
+        "name": "ColossalFizzCo.Props.DemotionPolicy",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Props.PersistentSchema",
+        "name": "ColossalFizzCo.Props.PersistentSchema",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Props.PoolGrowth",
+        "name": "ColossalFizzCo.Props.PoolGrowth",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Props.StateRoundTrip",
+        "name": "ColossalFizzCo.Props.StateRoundTrip",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.BottleReuse",
+        "name": "ColossalFizzCo.Shop.BottleReuse",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.CheckoutCancellation",
+        "name": "ColossalFizzCo.Shop.CheckoutCancellation",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.CheckoutCommit",
+        "name": "ColossalFizzCo.Shop.CheckoutCommit",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.LiquidTransfer",
+        "name": "ColossalFizzCo.Shop.LiquidTransfer",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.PricingRules",
+        "name": "ColossalFizzCo.Shop.PricingRules",
         "state": "Success"
       },
       {
-        "name": "MarryByMidnight.Shop.SharedWallet",
+        "name": "ColossalFizzCo.Shop.SharedWallet",
         "state": "Success"
       }
     ]

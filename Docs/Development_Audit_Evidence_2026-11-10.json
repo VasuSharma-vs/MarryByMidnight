@@ -5,649 +5,649 @@
   "scope_note": "Current saved disk state, including asset changes relative to checkpoint; no gameplay source or asset edits by this audit.",
   "source_files": [
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.Build.cs",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.Build.cs",
       "sha256": "015dc8b615936be8470b45778d977f340637aacbc97ff8795c17315ed777c9d1",
       "bytes": 926,
       "lines": 23
     },
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.cpp",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.cpp",
       "sha256": "876adbec2be8e0c2a6fa13952a181735346d9e260bb1a585dca9140b4b25281c",
       "bytes": 244,
       "lines": 6
     },
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.h",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.h",
       "sha256": "f0bca18ab7f0c16bb22f4d9c9116b988bca3ecc94bd0d1a77224886677634dfe",
       "bytes": 126,
       "lines": 6
     },
     {
-      "path": "Source/MarryByMidnight/Private/AI/NPCAIController.cpp",
+      "path": "Source/ColossalFizzCo/Private/AI/NPCAIController.cpp",
       "sha256": "eab3e1f3ff86d139347b336c3b910d34397178d319fd3beea75f1ec784e97b7d",
       "bytes": 47516,
       "lines": 1487
     },
     {
-      "path": "Source/MarryByMidnight/Private/BlankActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/BlankActor.cpp",
       "sha256": "af7b4b2e4f97ed88f99257d84b988749d06ff87c5a004c0234f9f909fdc9a52b",
       "bytes": 542,
       "lines": 27
     },
     {
-      "path": "Source/MarryByMidnight/Private/Characters/NPCCharacter.cpp",
+      "path": "Source/ColossalFizzCo/Private/Characters/NPCCharacter.cpp",
       "sha256": "29350554c082f61137b2e0e9dec847d734b6e69e851f2f0160548bd23974a298",
       "bytes": 28321,
       "lines": 991
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/ASMComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/ASMComponent.cpp",
       "sha256": "fd26f0b995e42419ca9ed2884605dfa4b2f9485dc57c6342765a2279ed482c0b",
       "bytes": 43415,
       "lines": 1556
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
       "sha256": "6e4eaf230c40a4dc3ff3ba8df91657830d0a317b54d8015dbd00000597712759",
       "bytes": 50597,
       "lines": 1635
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/InteractablePropSenseSightComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/InteractablePropSenseSightComponent.cpp",
       "sha256": "1607a695c59b2c47d513e198f97abe34bf5e689fe4c11824c2d9cc6d9f2c8aab",
       "bytes": 120278,
       "lines": 4254
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/MeshFormationComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/MeshFormationComponent.cpp",
       "sha256": "6cb431e679575dc876e6940ee53a5bd2adcbbb18b098166f47c316c127eafbf3",
       "bytes": 61400,
       "lines": 1823
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCAffordanceComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCAffordanceComponent.cpp",
       "sha256": "d0f49f247a861c542ab58ca5a8502f9fb89b20da3bbfedf9ca83e08237ad29f8",
       "bytes": 1281,
       "lines": 55
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCDecisionComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCDecisionComponent.cpp",
       "sha256": "98fab047a4b3b95ab25ea74abc8786e2bb80a986048cf95dd10c56fe0b93f79d",
       "bytes": 20529,
       "lines": 611
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCMentalStateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCMentalStateComponent.cpp",
       "sha256": "7607ee1c422ed28edea12410a3572fac1cb33e569a67c59d8c76a4781e709e16",
       "bytes": 6537,
       "lines": 240
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCNeedsComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCNeedsComponent.cpp",
       "sha256": "6d3960861309d2069cfe8e2ede770cd1e24b08d5a0fd44749fa17e541306a820",
       "bytes": 6661,
       "lines": 247
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCPersonalityComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCPersonalityComponent.cpp",
       "sha256": "c379b781ae7eee56c2a7223c28343dcfff2161cf42bcf3f613242d8b7a91c9c9",
       "bytes": 13597,
       "lines": 406
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCPlannerComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCPlannerComponent.cpp",
       "sha256": "e494c28939b71ff72451a7bef41fcd3afedb18f9bdcda8a0400adfb94b0e0ec8",
       "bytes": 7913,
       "lines": 282
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCRagdollComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCRagdollComponent.cpp",
       "sha256": "3405afb487462d9703c5561ac419d6ea4404fd5091edc3eb6ce5a932f27f505b",
       "bytes": 11411,
       "lines": 422
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCStateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCStateComponent.cpp",
       "sha256": "9466931237320ee4eaf0fbed1f87ce29f08c4e276619d9b0af1d76f357e2e7de",
       "bytes": 9172,
       "lines": 289
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCStrategyComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCStrategyComponent.cpp",
       "sha256": "cf4acb281ba6788b7e30d7ac7c3e5bcdd784ec2b3d69a5e1972b05b36fb45501",
       "bytes": 4719,
       "lines": 173
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCWorldModelComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCWorldModelComponent.cpp",
       "sha256": "03a27131092eae63da44cb4e817155ef958097c281e2f508fd1ece7b2d30e8e9",
       "bytes": 7521,
       "lines": 264
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/PropBatchUpdateComponent.cpp",
       "sha256": "4f8b8164a861e1f88318ac235c28994833a7d84c9bf5d850204fa3cd4301856e",
       "bytes": 23491,
       "lines": 685
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/RocketProjectileComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/RocketProjectileComponent.cpp",
       "sha256": "41b783f7835eb0bef3e97b5e90f74921794de672c3c21f91017f8cd93f14ae47",
       "bytes": 189572,
       "lines": 4944
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
       "sha256": "6279150535a85819431bf0da01eb52af4917254e2eefebd01535a9d5880d86af",
       "bytes": 24451,
       "lines": 818
     },
     {
-      "path": "Source/MarryByMidnight/Private/Environment/NPCOperableObject.cpp",
+      "path": "Source/ColossalFizzCo/Private/Environment/NPCOperableObject.cpp",
       "sha256": "1d6fc43dd65aed1921639f6b76504b102965ac2ca6376536637b707e92629218",
       "bytes": 14287,
       "lines": 489
     },
     {
-      "path": "Source/MarryByMidnight/Private/Environment/NPCSimulationTestZone.cpp",
+      "path": "Source/ColossalFizzCo/Private/Environment/NPCSimulationTestZone.cpp",
       "sha256": "9078be151fe5fcb00973293a280abd458bc352553e52ab8a64ed1f8478df5ba6",
       "bytes": 11876,
       "lines": 416
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ActivePropState.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ActivePropState.cpp",
       "sha256": "f2cc348c322db21fed736e1606ad9b67975b87f64dd61dd5b90fc26fb66bce9a",
       "bytes": 13042,
       "lines": 259
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaContainment.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaContainment.cpp",
       "sha256": "4d076864438bb8df71dd4e50356b6c2b514ca0995c330a2e191deade979009cc",
       "bytes": 8975,
       "lines": 149
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaPricingLibrary.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaPricingLibrary.cpp",
       "sha256": "ba342a227c967b410784f1485383282b1c975534ef3f4fe85c105967411f0e14",
       "bytes": 1690,
       "lines": 25
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaPropActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp",
       "sha256": "9a867a60faf2222dbd8f35da49fce85b431471728f1550741d82e257b09a747d",
       "bytes": 20917,
       "lines": 639
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/FragmentAssemblyDataAsset.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/FragmentAssemblyDataAsset.cpp",
       "sha256": "14e2f80cf453e6c944deb0e111577c6c2aa3300416c96d4a6f9bb4dcbe1894a5",
       "bytes": 1842,
       "lines": 32
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/FragmentDestructionActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/FragmentDestructionActor.cpp",
       "sha256": "bb836989922c278f6b905f2659bc1c6331895f8e4638d0e29500c9d64816ea4b",
       "bytes": 6851,
       "lines": 139
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractableProp.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractableProp.cpp",
       "sha256": "0d5c67632888b75b0503beeee58ad4a7fa9a0778570f83bd3577642af619dc39",
       "bytes": 72012,
       "lines": 2427
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDataAsset.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropDataAsset.cpp",
       "sha256": "7a854e8e62a16e63c68eb9450b1bfe86f5847fddd2d63819714aad2a4310365d",
       "bytes": 2875,
       "lines": 78
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropDatabase.cpp",
       "sha256": "103c69e1c230e8b56f8ec43308b54c1660529ae804c15c0d70fca459f2f32c2c",
       "bytes": 24126,
       "lines": 587
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp",
       "sha256": "cf43c48bb6c86e6647dcecd0b236d40d0f277e6692880d3b0d53aa8d0e0a726e",
       "bytes": 270046,
       "lines": 8619
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropFragmentLifecycle.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropFragmentLifecycle.cpp",
       "sha256": "e816ba0b071aac6b6f2fbd651a1e5fcca3d2e5e9bf2c9493bea9c3e531ae3b9a",
       "bytes": 11082,
       "lines": 202
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropLiquidRelease.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropLiquidRelease.cpp",
       "sha256": "8d08d239eccce86e5d43069778e78d5e26df8d74e1815b6865d8af94f5e7bbcd",
       "bytes": 2650,
       "lines": 44
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropLiquidTransfer.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropLiquidTransfer.cpp",
       "sha256": "936c99113e0da67e7bf823d47b3adaaad1dbb6ec77cd7e111b8cd77f5fe1c8d8",
       "bytes": 7349,
       "lines": 104
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropManagerState.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropManagerState.cpp",
       "sha256": "2b74d3c680d4f003b9a9c94fc4cd74c643f6c39d7bd7d6086b8a4b3842dae762",
       "bytes": 11513,
       "lines": 223
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/BottleFillingComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/BottleFillingComponent.cpp",
       "sha256": "776a2d86b4027a4adecdc29b09b6cea20634b346850d97a1f53d44d8cf80c23b",
       "bytes": 2834,
       "lines": 61
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/SharedTeamWalletComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/SharedTeamWalletComponent.cpp",
       "sha256": "6a46b89f66fb4e7f971e91efb71683762217d1dcb79197c265405415eceb80a5",
       "bytes": 2163,
       "lines": 62
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/SharedWalletTypes.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/SharedWalletTypes.cpp",
       "sha256": "18dbef64358544093cfc39346588e9ffaf91aa7c6de05617b581f780f7d7d0de",
       "bytes": 1796,
       "lines": 42
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopAutosave.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopAutosave.cpp",
       "sha256": "3adf985cf8ee6b6af3f442b161ebb4b639d23f82fe03874d1a355c02c1e827fe",
       "bytes": 307,
       "lines": 8
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopCheckoutComponent.cpp",
       "sha256": "79fb83a155fdd7b3430cfb9a5bfad64e5b871fdd85107b3ed26afc6fb9d7a9bc",
       "bytes": 11193,
       "lines": 229
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopProductQuery.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopProductQuery.cpp",
       "sha256": "56ad20593f2469510fb7917dce5260dba59945a883b6f8adfbf2fbfe853cf0d5",
       "bytes": 2727,
       "lines": 41
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopScannerComponent.cpp",
       "sha256": "2eb3fcadb983d5cde72e1fd54f5f2f1d687625b8388f22ee51edf428646da38f",
       "bytes": 9906,
       "lines": 219
     },
     {
-      "path": "Source/MarryByMidnight/Private/Subsystems/NPCKnowledgeSubsystem.cpp",
+      "path": "Source/ColossalFizzCo/Private/Subsystems/NPCKnowledgeSubsystem.cpp",
       "sha256": "c215b59d038783e34159288af44c4227d0a7b922f7e563385b217598d29e9203",
       "bytes": 7501,
       "lines": 274
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ColaPricingTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ColaPricingTests.cpp",
       "sha256": "f9f1d23e311dd30a969cc5d2a9611d1b95e45c9a5eee0972ef824c51cddb5569",
       "bytes": 2457,
       "lines": 34
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ConfiguredBottleAssetTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ConfiguredBottleAssetTests.cpp",
       "sha256": "ce10fff0e95857a142657667805acb2b1fb4b21d25aae7c3c97db6d4614d65d9",
       "bytes": 3662,
       "lines": 47
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/FragmentLifecycleTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/FragmentLifecycleTests.cpp",
       "sha256": "9bc7cd69bd14fd6bcc34c59aeb8aa48e5cda37131ce278e16ef9b7d704fd3539",
       "bytes": 13006,
       "lines": 168
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/FragmentNetworkTestActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/FragmentNetworkTestActor.cpp",
       "sha256": "ee307531a57fe62be21a4d01b94156dc0faa2aef4fad083a0d6ece38154f283f",
       "bytes": 5614,
       "lines": 105
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/LiquidTransferTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/LiquidTransferTests.cpp",
       "sha256": "d313acac3ebd689a69a52c280e7e979a34ffece31e37dd1b5507a72641140e80",
       "bytes": 4428,
       "lines": 56
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropPersistenceTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropPersistenceTests.cpp",
       "sha256": "d8959178e0acb752c89c325f73adad39096fb936a66995cd2c3d909326d0a037",
       "bytes": 5189,
       "lines": 82
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropPoolTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropPoolTests.cpp",
       "sha256": "7bc6ca3573f2b8035027b4e9ea884799d8ec7ed4fcf81bd6b91a721372469ccc",
       "bytes": 2346,
       "lines": 41
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropStateTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropStateTests.cpp",
       "sha256": "8295e4c38e01c7cec9ff9efbb12b2429f6a4c0483f6daaaa7f5f8f4182c96d32",
       "bytes": 3980,
       "lines": 68
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/SharedWalletTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/SharedWalletTests.cpp",
       "sha256": "86a05477a6bea285dfe9df91f25171381b45d48b12970e4ba39807fb49344be3",
       "bytes": 2506,
       "lines": 33
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopCheckoutTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopCheckoutTests.cpp",
       "sha256": "c2c113d5fd66ae571ef4fffe75f6e753e7e9d5ba13e618314aacf8a0ddf33b8f",
       "bytes": 6760,
       "lines": 84
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopProductQueryTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopProductQueryTests.cpp",
       "sha256": "ea81d4578e33b0049789a0fe00c90224e90a13109b8a9e2e25e47bba22e07aa3",
       "bytes": 5114,
       "lines": 70
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopScannerTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopScannerTests.cpp",
       "sha256": "b6ca479cb247457e2d509d8aa238a8ee78cf2bb0751bb4be756008cdd64a09b1",
       "bytes": 5968,
       "lines": 83
     },
     {
-      "path": "Source/MarryByMidnight/Private/TexturePaintComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/TexturePaintComponent.cpp",
       "sha256": "40a477b07da2a427b3284eadb9cefc7351cf09e2daa874c4520c14f57d3c86ee",
       "bytes": 75819,
       "lines": 2146
     },
     {
-      "path": "Source/MarryByMidnight/Private/UI/NPCDebugWidget.cpp",
+      "path": "Source/ColossalFizzCo/Private/UI/NPCDebugWidget.cpp",
       "sha256": "ecaafee913ae4e05a9ec18443caea4c45c4e4a7f0feebef5d486b560d676b0f4",
       "bytes": 1527,
       "lines": 57
     },
     {
-      "path": "Source/MarryByMidnight/Public/AI/NPCAIController.h",
+      "path": "Source/ColossalFizzCo/Public/AI/NPCAIController.h",
       "sha256": "34aa87dcb3e1afc94061b91b9fcd18efa33b225deceb4a050e3b94c65f8653a4",
       "bytes": 8428,
       "lines": 221
     },
     {
-      "path": "Source/MarryByMidnight/Public/BlankActor.h",
+      "path": "Source/ColossalFizzCo/Public/BlankActor.h",
       "sha256": "c1f3f0362cdfcc7195a332cd33eba174e11264b2a33ff9ad41fa8c699021e3a7",
       "bytes": 554,
       "lines": 26
     },
     {
-      "path": "Source/MarryByMidnight/Public/Characters/NPCCharacter.h",
+      "path": "Source/ColossalFizzCo/Public/Characters/NPCCharacter.h",
       "sha256": "a66f9c74a9ff4e533e44fdd62d64fc12b13acb0ffb0e1aa256f2a84631dbbe4d",
       "bytes": 11431,
       "lines": 273
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/ASMComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/ASMComponent.h",
       "sha256": "815fb640b465175681dcc9cdc11f65b029ec34fa8bb0fed465afaf37d9451fca",
       "bytes": 16051,
       "lines": 323
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h",
       "sha256": "219cec4fe78db4ed2f016d24841294dc071adf96c2b938e290f7d19a90aba931",
       "bytes": 20701,
       "lines": 371
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/InteractablePropSenseSightComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractablePropSenseSightComponent.h",
       "sha256": "d4b49027226867d99f0b7e0714e2bf464b79814e81e23833877e7021dd63f320",
       "bytes": 42518,
       "lines": 963
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/MeshFormationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/MeshFormationComponent.h",
       "sha256": "3ebc857323a4b3df75cd084edbec8610290f806c9d78f54baadfe9a75344cd16",
       "bytes": 41457,
       "lines": 976
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCAffordanceComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCAffordanceComponent.h",
       "sha256": "824e290f787737b6051d3996f078962ed88de05d3e8ee14260b3e37515ee4dcb",
       "bytes": 1891,
       "lines": 48
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCDecisionComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCDecisionComponent.h",
       "sha256": "0f8240d07ad73985b2c9476588e53ad006c00b066a039dbcaa1d45c584b63344",
       "bytes": 4487,
       "lines": 103
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCMentalStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCMentalStateComponent.h",
       "sha256": "80bbd3950242c97a171013dd3beb2821a32e91fc6ab2e60cbf4a800977d5e991",
       "bytes": 4095,
       "lines": 107
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCNeedsComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCNeedsComponent.h",
       "sha256": "3a0f71cc9e9d856a2a77d06200f66749157f363cbc65faa6aa890fd4b9e78b73",
       "bytes": 4331,
       "lines": 118
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCPersonalityComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPersonalityComponent.h",
       "sha256": "fa3a447f3e7e63b55a83aab4542b498776ac38c0db8e3cf325aa0dd0efb81ded",
       "bytes": 2841,
       "lines": 76
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCPlannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPlannerComponent.h",
       "sha256": "2b53dce637781aca915e0131688bb0ad0d26b10c8a5226291d8094727d88e019",
       "bytes": 2074,
       "lines": 63
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCRagdollComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCRagdollComponent.h",
       "sha256": "b7aa4a68f0dfc20ab4e9d51d697e34e39b504ec7579b0c9442512f9f3dc9f15b",
       "bytes": 5626,
       "lines": 141
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStateComponent.h",
       "sha256": "9e93b6afc29522691a21d0b66a51a833e77ac95c234844be492ae5c0bf824f55",
       "bytes": 4564,
       "lines": 129
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCStrategyComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStrategyComponent.h",
       "sha256": "a7ec3cc6f4ffe3827be7c592c4e817d851e9ab0393effea0f46cb62d24160b7b",
       "bytes": 2177,
       "lines": 59
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCWorldModelComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCWorldModelComponent.h",
       "sha256": "f503e5df0aff5e5d334ded2d1b4b25261234c2e303b2e0de3bc551ae6030d783",
       "bytes": 3996,
       "lines": 94
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/PropBatchUpdateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/PropBatchUpdateComponent.h",
       "sha256": "21a7ae6a3b61ac98af8919ca806012bacca67e56c1adf047ff1feef44666c455",
       "bytes": 7366,
       "lines": 181
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/RocketProjectileComponent.h",
       "sha256": "b38c05da5b0473f7a690adffb6326e8e2fad86e6482e6e5f2211facd4387a7e9",
       "bytes": 63694,
       "lines": 1270
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/StaticMeshPhysicsSimulationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/StaticMeshPhysicsSimulationComponent.h",
       "sha256": "354b3763e40ffff6112792f1aef146aef3cb492f3177c8545d0516791ad3c75f",
       "bytes": 9511,
       "lines": 208
     },
     {
-      "path": "Source/MarryByMidnight/Public/Environment/NPCOperableObject.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCOperableObject.h",
       "sha256": "bb34bba3fcd5bb6da1f44645168e7f7b6b3e50f03c170153d059e3fa5182d8fa",
       "bytes": 7691,
       "lines": 177
     },
     {
-      "path": "Source/MarryByMidnight/Public/Environment/NPCSimulationTestZone.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCSimulationTestZone.h",
       "sha256": "3cfc2f6b07d1fe145db5c1e60ecc355273ae79b49100b6cba24eaaa24ab1326c",
       "bytes": 5812,
       "lines": 142
     },
     {
-      "path": "Source/MarryByMidnight/Public/Interfaces/WorldAffordanceInterface.h",
+      "path": "Source/ColossalFizzCo/Public/Interfaces/WorldAffordanceInterface.h",
       "sha256": "df11c2adfd811c31412844f25fa85f5c530028ae2ecf1adc8e672efe2c6c5608",
       "bytes": 1236,
       "lines": 41
     },
     {
-      "path": "Source/MarryByMidnight/Public/NPCEnumsAndTypes.h",
+      "path": "Source/ColossalFizzCo/Public/NPCEnumsAndTypes.h",
       "sha256": "f96ded2a6bf62487e9f141acd86f7a1da05cd165dd08b26114df5c5a295c923a",
       "bytes": 31247,
       "lines": 937
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/ColaPricingLibrary.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPricingLibrary.h",
       "sha256": "8ee708ddb873b4a1271217b1d265920ba85ff47eb0afb92d2cb5fbcdab6c73c4",
       "bytes": 1146,
       "lines": 29
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/ColaPropActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPropActor.h",
       "sha256": "0e06f88613e9a79eae433f47d8001463ff3b544289a12dac3b4356fe8b8c477f",
       "bytes": 8343,
       "lines": 186
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentAssemblyDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentAssemblyDataAsset.h",
       "sha256": "cd40a35faad3379ad52b1ff870bce978e9a7a9228d58d51015f0f9c2b7009882",
       "bytes": 1363,
       "lines": 32
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentDestructionActor.h",
       "sha256": "e6b0cbe26c0eb075b7742f20a4fcbba7b914772ae03a11d0a066e336b3c3d3bd",
       "bytes": 1827,
       "lines": 47
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentTypes.h",
       "sha256": "f9309450480d76ea773b696b8b38e04d5563849daaa08bc822b974b8c9551569",
       "bytes": 390,
       "lines": 16
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractableProp.h",
       "sha256": "8a80c77bca08d8fbd5dec7a667dee99e2a959be7610a8b5bc76ffe8be3b51709",
       "bytes": 45021,
       "lines": 909
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h",
       "sha256": "92112cf0d29469f4cc0749728e9a14116edce33123edcf8e896dfa843750ddc7",
       "bytes": 16278,
       "lines": 362
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h",
       "sha256": "208eeaff60b693215b7a309bdfc6896e2b4d24e2d996b737ffa87e9418ccc087",
       "bytes": 84810,
       "lines": 2281
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropManager.h",
       "sha256": "f705f9ca0288d301e2a7be20dc0cb956806e97d5b3423eb526ac472f5eea8816",
       "bytes": 86357,
       "lines": 1664
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/LiquidReleaseTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Props/LiquidReleaseTypes.h",
       "sha256": "464b727a9ae49ed5044fb5f33a50c1fdb9c1abba4df2a11a612a5505128b6639",
       "bytes": 840,
       "lines": 19
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/BottleFillingComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/BottleFillingComponent.h",
       "sha256": "24425eb25e2d312950e4fa97e574a42614e12265dd1479145a8feab197a79687",
       "bytes": 1593,
       "lines": 31
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/SharedTeamWalletComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/SharedTeamWalletComponent.h",
       "sha256": "8adc40123e92f9a2b0efd6a1eb06a27bf43ecf62867289b30fb51604df11e2f2",
       "bytes": 1748,
       "lines": 46
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/SharedWalletTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/SharedWalletTypes.h",
       "sha256": "b55c763d2aef1c9301e8f9b476e45c450addd7ede60adb5590d92d7882603281",
       "bytes": 1700,
       "lines": 73
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCheckoutComponent.h",
       "sha256": "a21c1110f023fd091a6a2593fb050f06510c0b06b1268484e9b82c254151b91e",
       "bytes": 3382,
       "lines": 64
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCheckoutTypes.h",
       "sha256": "5e27ffbd8b42046396a267048431ef2522eb799781845b8303bb987c69531f32",
       "bytes": 4541,
       "lines": 102
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopScannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopScannerComponent.h",
       "sha256": "c4a58ab6d3911c9c0c830b02cadb8abc3126d58f1f54bf6a012d2a979ed6e50f",
       "bytes": 3094,
       "lines": 53
     },
     {
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSaveGame.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSaveGame.h",
       "sha256": "e5a73ee25f246395a4fb307447614de0bda70e99c7fd0fac88d3fa52c96cf93c",
       "bytes": 1009,
       "lines": 32
     },
     {
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSubsystem.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSubsystem.h",
       "sha256": "2b15211c0b44e0fa3e066964841ad7b2d86f23b107c06e3d29d73b44448d416d",
       "bytes": 3923,
       "lines": 92
     },
     {
-      "path": "Source/MarryByMidnight/Public/Tests/FragmentNetworkTestActor.h",
+      "path": "Source/ColossalFizzCo/Public/Tests/FragmentNetworkTestActor.h",
       "sha256": "3f4fa5326fdfd86f2f138770750d5be90e26ba82c886fa6cd78b0eb4d82537c7",
       "bytes": 2413,
       "lines": 42
     },
     {
-      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "path": "Source/ColossalFizzCo/Public/TexturePaintComponent.h",
       "sha256": "2cbb43addd3994b54d8a5e0e719b900176724adf2b08fdd94743b964c178519c",
       "bytes": 23586,
       "lines": 505
     },
     {
-      "path": "Source/MarryByMidnight/Public/UI/NPCDebugWidget.h",
+      "path": "Source/ColossalFizzCo/Public/UI/NPCDebugWidget.h",
       "sha256": "034df3f3682bc1be0001ea851c22d6e2a682df017b25006472fc463813f4c0a4",
       "bytes": 1641,
       "lines": 58
     },
     {
-      "path": "Source/MarryByMidnight.Target.cs",
+      "path": "Source/ColossalFizzCo.Target.cs",
       "sha256": "658bb542dad42ef61681dddccbc8846ae4fe2d3e74a0ece6542faf0336a306e5",
       "bytes": 420,
       "lines": 15
     },
     {
-      "path": "Source/MarryByMidnightEditor.Target.cs",
+      "path": "Source/ColossalFizzCoEditor.Target.cs",
       "sha256": "5d4b13dfa6bda78085b0c16198efb816b6f1a53022327d39f460a4e4ff330a56",
       "bytes": 434,
       "lines": 15
@@ -741,8 +741,8 @@
         "## 7. Other Product Transformations & Property Inheritance Matrix",
         "### Exact Property Transfer Matrix",
         "## 8. Proposed C++ Contracts (`[Needs Approval]` vs `[Pre-Authorized]`)",
-        "### 8.1 Database & Product Transformation Structs (`[Needs Approval]` \u2014 [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h))",
-        "### 8.2 Prop Manager Transformation API (`[Needs Approval]` \u2014 [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropManager.h))",
+        "### 8.1 Database & Product Transformation Structs (`[Needs Approval]` \u2014 [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h))",
+        "### 8.2 Prop Manager Transformation API (`[Needs Approval]` \u2014 [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropManager.h))",
         "### 8.3 Active Orchestrator & Bottle Caller (`[Pre-Authorized]` \u2014 `AActivePropActor` Subclass Hierarchy)",
         "## 9. Open Edge-Case Decisions (Added to Pre-Phase-B Sign-Off)",
         "## 10. Document Revision History"
@@ -1238,277 +1238,277 @@
     {
       "name": "ANPCAIController",
       "bases": "public AAIController",
-      "path": "Source/MarryByMidnight/Public/AI/NPCAIController.h",
+      "path": "Source/ColossalFizzCo/Public/AI/NPCAIController.h",
       "line": 21
     },
     {
       "name": "ABlankActor",
       "bases": "public AActor",
-      "path": "Source/MarryByMidnight/Public/BlankActor.h",
+      "path": "Source/ColossalFizzCo/Public/BlankActor.h",
       "line": 10
     },
     {
       "name": "ANPCCharacter",
       "bases": "public ACharacter, public IWorldAffordanceInterface",
-      "path": "Source/MarryByMidnight/Public/Characters/NPCCharacter.h",
+      "path": "Source/ColossalFizzCo/Public/Characters/NPCCharacter.h",
       "line": 33
     },
     {
       "name": "UASMComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/ASMComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/ASMComponent.h",
       "line": 21
     },
     {
       "name": "UInteractableISMComponent",
       "bases": "public UInstancedStaticMeshComponent",
-      "path": "Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h",
       "line": 22
     },
     {
       "name": "UInteractablePropSenseSightComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/InteractablePropSenseSightComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractablePropSenseSightComponent.h",
       "line": 299
     },
     {
       "name": "UMeshFormationComponent",
       "bases": "public USceneComponent",
-      "path": "Source/MarryByMidnight/Public/Components/MeshFormationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/MeshFormationComponent.h",
       "line": 210
     },
     {
       "name": "UGenerateMeshFormationAsyncAction",
       "bases": "public UBlueprintAsyncActionBase",
-      "path": "Source/MarryByMidnight/Public/Components/MeshFormationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/MeshFormationComponent.h",
       "line": 812
     },
     {
       "name": "UNPCAffordanceComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCAffordanceComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCAffordanceComponent.h",
       "line": 14
     },
     {
       "name": "UNPCDecisionComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCDecisionComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCDecisionComponent.h",
       "line": 19
     },
     {
       "name": "UNPCMentalStateComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCMentalStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCMentalStateComponent.h",
       "line": 17
     },
     {
       "name": "UNPCNeedsComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCNeedsComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCNeedsComponent.h",
       "line": 17
     },
     {
       "name": "UNPCPersonalityComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCPersonalityComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPersonalityComponent.h",
       "line": 13
     },
     {
       "name": "UNPCPlannerComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCPlannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPlannerComponent.h",
       "line": 28
     },
     {
       "name": "UNPCRagdollComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCRagdollComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCRagdollComponent.h",
       "line": 29
     },
     {
       "name": "UNPCStateComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStateComponent.h",
       "line": 17
     },
     {
       "name": "UNPCStrategyComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCStrategyComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStrategyComponent.h",
       "line": 15
     },
     {
       "name": "UNPCWorldModelComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/NPCWorldModelComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCWorldModelComponent.h",
       "line": 19
     },
     {
       "name": "UPropBatchUpdateComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/PropBatchUpdateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/PropBatchUpdateComponent.h",
       "line": 50
     },
     {
       "name": "URocketProjectileComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/RocketProjectileComponent.h",
       "line": 497
     },
     {
       "name": "UStaticMeshPhysicsSimulationComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Components/StaticMeshPhysicsSimulationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/StaticMeshPhysicsSimulationComponent.h",
       "line": 35
     },
     {
       "name": "ANPCOperableObject",
       "bases": "public AActor, public IWorldAffordanceInterface",
-      "path": "Source/MarryByMidnight/Public/Environment/NPCOperableObject.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCOperableObject.h",
       "line": 24
     },
     {
       "name": "ANPCSimulationTestZone",
       "bases": "public AActor",
-      "path": "Source/MarryByMidnight/Public/Environment/NPCSimulationTestZone.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCSimulationTestZone.h",
       "line": 23
     },
     {
       "name": "UWorldAffordanceInterface",
       "bases": "public UInterface",
-      "path": "Source/MarryByMidnight/Public/Interfaces/WorldAffordanceInterface.h",
+      "path": "Source/ColossalFizzCo/Public/Interfaces/WorldAffordanceInterface.h",
       "line": 9
     },
     {
       "name": "UColaPricingLibrary",
       "bases": "public UBlueprintFunctionLibrary",
-      "path": "Source/MarryByMidnight/Public/Props/ColaPricingLibrary.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPricingLibrary.h",
       "line": 20
     },
     {
       "name": "AColaPropActor",
       "bases": "public AActivePropActor",
-      "path": "Source/MarryByMidnight/Public/Props/ColaPropActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPropActor.h",
       "line": 27
     },
     {
       "name": "UFragmentAssemblyDataAsset",
       "bases": "public UPrimaryDataAsset",
-      "path": "Source/MarryByMidnight/Public/Props/FragmentAssemblyDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentAssemblyDataAsset.h",
       "line": 25
     },
     {
       "name": "AFragmentPropActor",
       "bases": "public AActivePropActor",
-      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentDestructionActor.h",
       "line": 13
     },
     {
       "name": "AFragmentDestructionActor",
       "bases": "public AActor",
-      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentDestructionActor.h",
       "line": 20
     },
     {
       "name": "AActivePropActor",
       "bases": "public AActor, public IWorldAffordanceInterface",
-      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractableProp.h",
       "line": 39
     },
     {
       "name": "UInteractablePropDataAsset",
       "bases": "public UPrimaryDataAsset",
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h",
       "line": 55
     },
     {
       "name": "UPropDatabaseSaveGame",
       "bases": "public USaveGame",
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h",
       "line": 2075
     },
     {
       "name": "UIISMDB",
       "bases": "public UPrimaryDataAsset",
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h",
       "line": 2090
     },
     {
       "name": "UPIIDB",
       "bases": "public UPrimaryDataAsset",
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h",
       "line": 2105
     },
     {
       "name": "APropManager",
       "bases": "public AActor",
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropManager.h",
       "line": 46
     },
     {
       "name": "UBottleFillingComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Shop/BottleFillingComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/BottleFillingComponent.h",
       "line": 8
     },
     {
       "name": "USharedTeamWalletComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Shop/SharedTeamWalletComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/SharedTeamWalletComponent.h",
       "line": 12
     },
     {
       "name": "UShopCheckoutComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCheckoutComponent.h",
       "line": 12
     },
     {
       "name": "UShopScannerComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/Shop/ShopScannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopScannerComponent.h",
       "line": 16
     },
     {
       "name": "UNPCKnowledgeSaveGame",
       "bases": "public USaveGame",
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSaveGame.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSaveGame.h",
       "line": 12
     },
     {
       "name": "UNPCKnowledgeSubsystem",
       "bases": "public UWorldSubsystem",
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSubsystem.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSubsystem.h",
       "line": 18
     },
     {
       "name": "AFragmentNetworkTestActor",
       "bases": "public AActor",
-      "path": "Source/MarryByMidnight/Public/Tests/FragmentNetworkTestActor.h",
+      "path": "Source/ColossalFizzCo/Public/Tests/FragmentNetworkTestActor.h",
       "line": 10
     },
     {
       "name": "UTexturePaintComponent",
       "bases": "public UActorComponent",
-      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "path": "Source/ColossalFizzCo/Public/TexturePaintComponent.h",
       "line": 39
     },
     {
       "name": "UAsyncCalculatePaintedPercentage",
       "bases": "public UBlueprintAsyncActionBase",
-      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "path": "Source/ColossalFizzCo/Public/TexturePaintComponent.h",
       "line": 440
     },
     {
       "name": "UAsyncGetCanvasPixels",
       "bases": "public UBlueprintAsyncActionBase",
-      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "path": "Source/ColossalFizzCo/Public/TexturePaintComponent.h",
       "line": 478
     },
     {
       "name": "UNPCDebugWidget",
       "bases": "public UUserWidget",
-      "path": "Source/MarryByMidnight/Public/UI/NPCDebugWidget.h",
+      "path": "Source/ColossalFizzCo/Public/UI/NPCDebugWidget.h",
       "line": 15
     }
   ],
@@ -2060,35 +2060,35 @@
           },
           {
             "name": "NPCStateComponent",
-            "class": "/Script/MarryByMidnight.NPCStateComponent"
+            "class": "/Script/ColossalFizzCo.NPCStateComponent"
           },
           {
             "name": "NPCAffordanceComponent",
-            "class": "/Script/MarryByMidnight.NPCAffordanceComponent"
+            "class": "/Script/ColossalFizzCo.NPCAffordanceComponent"
           },
           {
             "name": "NPCMentalStateComponent",
-            "class": "/Script/MarryByMidnight.NPCMentalStateComponent"
+            "class": "/Script/ColossalFizzCo.NPCMentalStateComponent"
           },
           {
             "name": "NPCNeedsComponent",
-            "class": "/Script/MarryByMidnight.NPCNeedsComponent"
+            "class": "/Script/ColossalFizzCo.NPCNeedsComponent"
           },
           {
             "name": "NPCPlannerComponent",
-            "class": "/Script/MarryByMidnight.NPCPlannerComponent"
+            "class": "/Script/ColossalFizzCo.NPCPlannerComponent"
           },
           {
             "name": "NPCRagdollComponent",
-            "class": "/Script/MarryByMidnight.NPCRagdollComponent"
+            "class": "/Script/ColossalFizzCo.NPCRagdollComponent"
           },
           {
             "name": "NPCPersonalityComponent",
-            "class": "/Script/MarryByMidnight.NPCPersonalityComponent"
+            "class": "/Script/ColossalFizzCo.NPCPersonalityComponent"
           },
           {
             "name": "NPCStrategyComponent",
-            "class": "/Script/MarryByMidnight.NPCStrategyComponent"
+            "class": "/Script/ColossalFizzCo.NPCStrategyComponent"
           },
           {
             "name": "CharMoveComp",
@@ -2096,15 +2096,15 @@
           },
           {
             "name": "NPCDecisionComponent",
-            "class": "/Script/MarryByMidnight.NPCDecisionComponent"
+            "class": "/Script/ColossalFizzCo.NPCDecisionComponent"
           },
           {
             "name": "NPCWorldModelComponent",
-            "class": "/Script/MarryByMidnight.NPCWorldModelComponent"
+            "class": "/Script/ColossalFizzCo.NPCWorldModelComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.NPCCharacter'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.NPCCharacter'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.NPCCharacter'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.NPCCharacter'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/AI/BP_NPC.BP_NPC_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -3210,11 +3210,11 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.InteractableProp'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.InteractableProp'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.InteractableProp'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.InteractableProp'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/BP_BaseInteractableProp.BP_BaseInteractableProp_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [],
@@ -3751,11 +3751,11 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/BP_BaseInteractableProp.BP_BaseInteractableProp_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.InteractableProp'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.InteractableProp'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/BP_IPA_FoodContainer.BP_IPA_FoodContainer_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [],
@@ -4021,11 +4021,11 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -4203,7 +4203,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4263,7 +4263,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4321,7 +4321,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4388,7 +4388,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4451,7 +4451,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4509,7 +4509,7 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
@@ -4576,11 +4576,11 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_Stove.PSO_Stove_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -4644,15 +4644,15 @@
           },
           {
             "name": "TexturePaint_GEN_VARIABLE",
-            "class": "/Script/MarryByMidnight.TexturePaintComponent"
+            "class": "/Script/ColossalFizzCo.TexturePaintComponent"
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_BaseMesh.PSO_BaseMesh_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Assest/Blueprints/PSO_StovePlate.PSO_StovePlate_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -6593,11 +6593,11 @@
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/BP_ASM_Actor.BP_ASM_Actor_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -6689,27 +6689,27 @@
           },
           {
             "name": "ASMComponent",
-            "class": "/Script/MarryByMidnight.ASMComponent"
+            "class": "/Script/ColossalFizzCo.ASMComponent"
           },
           {
             "name": "BatchUpdateComponent",
-            "class": "/Script/MarryByMidnight.PropBatchUpdateComponent"
+            "class": "/Script/ColossalFizzCo.PropBatchUpdateComponent"
           },
           {
             "name": "SenseSightComponent",
-            "class": "/Script/MarryByMidnight.InteractablePropSenseSightComponent"
+            "class": "/Script/ColossalFizzCo.InteractablePropSenseSightComponent"
           },
           {
             "name": "ShopCheckout",
-            "class": "/Script/MarryByMidnight.ShopCheckoutComponent"
+            "class": "/Script/ColossalFizzCo.ShopCheckoutComponent"
           },
           {
             "name": "SharedTeamWallet",
-            "class": "/Script/MarryByMidnight.SharedTeamWalletComponent"
+            "class": "/Script/ColossalFizzCo.SharedTeamWalletComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.PropManager'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.PropManager'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.PropManager'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.PropManager'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/BP_PropManager.BP_PropManager_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [],
@@ -6806,15 +6806,15 @@
           },
           {
             "name": "Default__RocketProjectileComponent",
-            "class": "/Script/MarryByMidnight.RocketProjectileComponent"
+            "class": "/Script/ColossalFizzCo.RocketProjectileComponent"
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
-        "ParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ColaPropActor'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ColaPropActor'",
+        "ParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ColaPropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ColaPropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_Cola.BP_Cola_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -6885,15 +6885,15 @@
           },
           {
             "name": "Default__RocketProjectileComponent",
-            "class": "/Script/MarryByMidnight.RocketProjectileComponent"
+            "class": "/Script/ColossalFizzCo.RocketProjectileComponent"
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_Cola.BP_Cola_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ColaPropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ColaPropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_PlastickBottel.BP_PlastickBottel_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [
@@ -6937,15 +6937,15 @@
           },
           {
             "name": "Default__RocketProjectileComponent",
-            "class": "/Script/MarryByMidnight.RocketProjectileComponent"
+            "class": "/Script/ColossalFizzCo.RocketProjectileComponent"
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_Cola.BP_Cola_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_SpicyCola.BP_SpicyCola_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [],
@@ -6987,15 +6987,15 @@
           },
           {
             "name": "Default__RocketProjectileComponent",
-            "class": "/Script/MarryByMidnight.RocketProjectileComponent"
+            "class": "/Script/ColossalFizzCo.RocketProjectileComponent"
           },
           {
             "name": "PhysicsSimComponent",
-            "class": "/Script/MarryByMidnight.StaticMeshPhysicsSimulationComponent"
+            "class": "/Script/ColossalFizzCo.StaticMeshPhysicsSimulationComponent"
           }
         ],
         "ParentClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_Cola.BP_Cola_C'",
-        "NativeParentClass": "/Script/CoreUObject.Class'/Script/MarryByMidnight.ActivePropActor'",
+        "NativeParentClass": "/Script/CoreUObject.Class'/Script/ColossalFizzCo.ActivePropActor'",
         "GeneratedClass": "/Script/Engine.BlueprintGeneratedClass'/Game/Props/Colas/BP_SugerCrushCola.BP_SugerCrushCola_C'",
         "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
         "variables": [],
@@ -7078,7 +7078,7 @@
           },
           {
             "name": "MeshFormation_GEN_VARIABLE",
-            "class": "/Script/MarryByMidnight.MeshFormationComponent"
+            "class": "/Script/ColossalFizzCo.MeshFormationComponent"
           },
           {
             "name": "InstancedStaticMesh_GEN_VARIABLE",
@@ -7124,7 +7124,7 @@
           },
           {
             "name": "MeshFormation_GEN_VARIABLE",
-            "class": "/Script/MarryByMidnight.MeshFormationComponent"
+            "class": "/Script/ColossalFizzCo.MeshFormationComponent"
           }
         ],
         "ParentClass": "/Script/CoreUObject.Class'/Script/Engine.Actor'",
@@ -7321,7 +7321,7 @@
           },
           {
             "name": "TexturePaint_GEN_VARIABLE",
-            "class": "/Script/MarryByMidnight.TexturePaintComponent"
+            "class": "/Script/ColossalFizzCo.TexturePaintComponent"
           }
         ],
         "ParentClass": "/Script/CoreUObject.Class'/Script/Engine.Actor'",
@@ -8490,7 +8490,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_001.SM_Fragments_001",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8520,7 +8520,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_002.SM_Fragments_002",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8550,7 +8550,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_003.SM_Fragments_003",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8580,7 +8580,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_004.SM_Fragments_004",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8610,7 +8610,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_005.SM_Fragments_005",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8640,7 +8640,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_006.SM_Fragments_006",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8670,7 +8670,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.SM_Fragments_007",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8700,7 +8700,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.SM_Fragments_008",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8730,7 +8730,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.SM_Fragments_010",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8760,7 +8760,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.SM_Fragments_011",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -8790,7 +8790,7 @@
           "bEnableInstanceUniqueData": false,
           "bEnableContinuousUpdateData": false,
           "StaticMesh": "/Game/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_09.SM_Fragments_09",
-          "CustomActiveActorClass": "/Script/MarryByMidnight.FragmentPropActor",
+          "CustomActiveActorClass": "/Script/ColossalFizzCo.FragmentPropActor",
           "BottleMaterialType": "<BottleMaterialType.GLASS: 0>",
           "FragmentAssembly": null,
           "ConsumableType": "<ConsumablePropType.DRINK: 0>",
@@ -9024,7 +9024,7 @@
     "other_visual_script_types_not_compiled": [
       "ControlRigBlueprint"
     ],
-    "raw_inventory": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Saved\\ProjectAudit_2026-11-10\\AssetAudit.json",
+    "raw_inventory": "C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo\\Saved\\ProjectAudit_2026-11-10\\AssetAudit.json",
     "raw_inventory_sha256": "2940842302a34e50c0e7af279396c11f98917664a6c6bce44098bf6fbb11dc6f",
     "commandlet_exit_code": 1,
     "exit_note": "Known orphan Blueprint compile errors/ensures; full inventory and hash comparisons were written.",
@@ -9036,12 +9036,12 @@
       "TransferLiquid": [],
       "SetSharedTeamWallet": [
         {
-          "file": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Saved\\ProjectAudit_2026-11-10\\BlueprintGraphs\\DirtyActors_BP_ProductSceaner__EventGraph.dsl",
+          "file": "C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo\\Saved\\ProjectAudit_2026-11-10\\BlueprintGraphs\\DirtyActors_BP_ProductSceaner__EventGraph.dsl",
           "line": 38,
           "text": "(bind _output_get_1 (|SetSharedTeamWallet (+ (|GetSharedTeamWallet _asbp_shop_game_state) _valuepin) _asbp_shop_game_state))"
         },
         {
-          "file": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Saved\\ProjectAudit_2026-11-10\\BlueprintGraphs\\FirstPerson_Blueprints_BP_ShopGameState__EventGraph.dsl",
+          "file": "C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo\\Saved\\ProjectAudit_2026-11-10\\BlueprintGraphs\\FirstPerson_Blueprints_BP_ShopGameState__EventGraph.dsl",
           "line": 12,
           "text": "(|SetSharedTeamWallet (/ (Math|Conversions|ToFloat(Integer64) (Utilities|Struct|BreakSharedWalletState (Wallet|GetWalletState _sharedwallet))) 100.0))))))))"
         }
@@ -9349,8 +9349,8 @@
     ]
   },
   "native_tests": {
-    "module": "UnrealEditor-MarryByMidnight-11111.dll",
-    "module_log_evidence": "Saved/Logs/ProjectAuditNativeTests.runner.log: InternalLoadLibrary MarryByMidnight-11111.dll",
+    "module": "UnrealEditor-ColossalFizzCo-11111.dll",
+    "module_log_evidence": "Saved/Logs/ProjectAuditNativeTests.runner.log: InternalLoadLibrary ColossalFizzCo-11111.dll",
     "succeeded": 15,
     "succeededWithWarnings": 0,
     "failed": 0,
@@ -9358,98 +9358,98 @@
     "totalDuration": 0.7191203832626343,
     "tests": [
       {
-        "name": "MarryByMidnight.Props.DeltaSchema",
+        "name": "ColossalFizzCo.Props.DeltaSchema",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Props.DemotionPolicy",
+        "name": "ColossalFizzCo.Props.DemotionPolicy",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Props.FragmentLifecycle",
+        "name": "ColossalFizzCo.Props.FragmentLifecycle",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Props.PersistentSchema",
+        "name": "ColossalFizzCo.Props.PersistentSchema",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Props.PoolGrowth",
+        "name": "ColossalFizzCo.Props.PoolGrowth",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Props.StateRoundTrip",
+        "name": "ColossalFizzCo.Props.StateRoundTrip",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.BottleReuse",
+        "name": "ColossalFizzCo.Shop.BottleReuse",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.CheckoutCancellation",
+        "name": "ColossalFizzCo.Shop.CheckoutCancellation",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.CheckoutCommit",
+        "name": "ColossalFizzCo.Shop.CheckoutCommit",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.ConfiguredBottleRefill",
+        "name": "ColossalFizzCo.Shop.ConfiguredBottleRefill",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.LiquidTransfer",
+        "name": "ColossalFizzCo.Shop.LiquidTransfer",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.PricingRules",
+        "name": "ColossalFizzCo.Shop.PricingRules",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.ProductScanQuery",
+        "name": "ColossalFizzCo.Shop.ProductScanQuery",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.ScannerLifecycle",
+        "name": "ColossalFizzCo.Shop.ScannerLifecycle",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       },
       {
-        "name": "MarryByMidnight.Shop.SharedWallet",
+        "name": "ColossalFizzCo.Shop.SharedWallet",
         "state": "Success",
         "warnings": 0,
         "errors": 0
       }
     ],
     "log_warning_outside_tests": "ABP_Unarmed Get Punching State thread-safety warning emitted before individual test scopes; zero per-test warnings does not mean a warning-free process.",
-    "report": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Saved\\Automation\\ProjectAudit_2026-11-10\\index.json",
+    "report": "C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo\\Saved\\Automation\\ProjectAudit_2026-11-10\\index.json",
     "report_sha256": "be5ce5dcdddc2d133552e5a8e7bf9520b333a40807248d00fc506e01b3fb3c4d",
     "exit_code": 0
   },

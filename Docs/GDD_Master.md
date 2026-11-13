@@ -21,7 +21,7 @@ managed caps, liquid/pressure accounting and stable ISIDs remain. The physics
 mode is retained as an option. See [the implementation/validation record](Original_Bottle_Rocket_2026-11-12.md);
 the older physical-flight tests do not accept the new default.
 
-**Legacy Working Title:** Midnight Fizz: Giant Thirst (*MarryByMidnight Engine Build*)
+**Legacy Working Title:** Midnight Fizz: Giant Thirst (*ColossalFizzCo Engine Build*)
 
 **Genre:** Multiplayer Co-op / Physics-Based Factory Simulation / Time Management Comedy  
 **Target Platform:** PC (Steam), Console  

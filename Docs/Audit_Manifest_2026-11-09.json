@@ -61,275 +61,275 @@
   ],
   "sourceAndConfig": [
     {
-      "path": "Source\\MarryByMidnight.Target.cs",
+      "path": "Source\\ColossalFizzCo.Target.cs",
       "sha256": "658BB542DAD42EF61681DDDCCBC8846AE4FE2D3E74A0ECE6542FAF0336A306E5"
     },
     {
-      "path": "Source\\MarryByMidnightEditor.Target.cs",
+      "path": "Source\\ColossalFizzCoEditor.Target.cs",
       "sha256": "5D4B13DFA6BDA78085B0C16198EFB816B6F1A53022327D39F460A4E4FF330A56"
     },
     {
-      "path": "Source\\MarryByMidnight\\MarryByMidnight.Build.cs",
+      "path": "Source\\ColossalFizzCo\\ColossalFizzCo.Build.cs",
       "sha256": "015DC8B615936BE8470B45778D977F340637AACBC97FF8795C17315ED777C9D1"
     },
     {
-      "path": "Source\\MarryByMidnight\\MarryByMidnight.cpp",
+      "path": "Source\\ColossalFizzCo\\ColossalFizzCo.cpp",
       "sha256": "876ADBEC2BE8E0C2A6FA13952A181735346D9E260BB1A585DCA9140B4B25281C"
     },
     {
-      "path": "Source\\MarryByMidnight\\MarryByMidnight.h",
+      "path": "Source\\ColossalFizzCo\\ColossalFizzCo.h",
       "sha256": "F0BCA18AB7F0C16BB22F4D9C9116B988BCA3ECC94BD0D1A77224886677634DFE"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\BlankActor.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\BlankActor.cpp",
       "sha256": "AF7B4B2E4F97ED88F99257D84B988749D06FF87C5A004C0234F9F909FDC9A52B"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\TexturePaintComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\TexturePaintComponent.cpp",
       "sha256": "40A477B07DA2A427B3284EADB9CEFC7351CF09E2DAA874C4520C14F57D3C86EE"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\AI\\NPCAIController.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\AI\\NPCAIController.cpp",
       "sha256": "EAB3E1F3FF86D139347B336C3B910D34397178D319FD3BEEA75F1EC784E97B7D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Characters\\NPCCharacter.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Characters\\NPCCharacter.cpp",
       "sha256": "29350554C082F61137B2E0E9DEC847D734B6E69E851F2F0160548BD23974A298"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\ASMComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\ASMComponent.cpp",
       "sha256": "14AD82133962A110AF0E084B6702274CB179A9FAA390BAE72D9B33B78C7C1803"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\InteractableInstancedStaticMeshComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\InteractableInstancedStaticMeshComponent.cpp",
       "sha256": "FA94B59E9A959AC904A1B43269C9A68C7B362FEFCDEF8F5941FECF209F4407C0"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\InteractablePropSenseSightComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\InteractablePropSenseSightComponent.cpp",
       "sha256": "1607A695C59B2C47D513E198F97ABE34BF5E689FE4C11824C2D9CC6D9F2C8AAB"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\MeshFormationComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\MeshFormationComponent.cpp",
       "sha256": "6CB431E679575DC876E6940EE53A5BD2ADCBBB18B098166F47C316C127EAFBF3"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCAffordanceComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCAffordanceComponent.cpp",
       "sha256": "D0F49F247A861C542AB58CA5A8502F9FB89B20DA3BBFEDF9CA83E08237AD29F8"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCDecisionComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCDecisionComponent.cpp",
       "sha256": "98FAB047A4B3B95AB25EA74ABC8786E2BB80A986048CF95DD10C56FE0B93F79D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCMentalStateComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCMentalStateComponent.cpp",
       "sha256": "7607EE1C422ED28EDEA12410A3572FAC1CB33E569A67C59D8C76A4781E709E16"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCNeedsComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCNeedsComponent.cpp",
       "sha256": "6D3960861309D2069CFE8E2EDE770CD1E24B08D5A0FD44749FA17E541306A820"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCPersonalityComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCPersonalityComponent.cpp",
       "sha256": "C379B781AE7EEE56C2A7223C28343DCFFF2161CF42BCF3F613242D8B7A91C9C9"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCPlannerComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCPlannerComponent.cpp",
       "sha256": "E494C28939B71FF72451A7BEF41FCD3AFEDB18F9BDCDA8A0400ADFB94B0E0EC8"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCRagdollComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCRagdollComponent.cpp",
       "sha256": "3405AFB487462D9703C5561AC419D6EA4404FD5091EDC3EB6CE5A932F27F505B"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCStateComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCStateComponent.cpp",
       "sha256": "9466931237320EE4EAF0FBED1F87CE29F08C4E276619D9B0AF1D76F357E2E7DE"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCStrategyComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCStrategyComponent.cpp",
       "sha256": "CF4ACB281BA6788B7E30D7AC7C3E5BCDD784EC2B3D69A5E1972B05B36FB45501"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\NPCWorldModelComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\NPCWorldModelComponent.cpp",
       "sha256": "03A27131092EAE63DA44CB4E817155EF958097C281E2F508FD1ECE7B2D30E8E9"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\PropBatchUpdateComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\PropBatchUpdateComponent.cpp",
       "sha256": "82F39F1A93E2C7964CAC9CBC79C3CB26F434145018A83D08C46C5F56C8AC1367"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\RocketProjectileComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\RocketProjectileComponent.cpp",
       "sha256": "41B783F7835EB0BEF3E97B5E90F74921794DE672C3C21F91017F8CD93F14AE47"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Components\\StaticMeshPhysicsSimulationComponent.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Components\\StaticMeshPhysicsSimulationComponent.cpp",
       "sha256": "0FAAB9A5EE3461AFF463CBA5AC68C8D954EB408C85200FE3D2576C2B890D8E78"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Environment\\NPCOperableObject.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Environment\\NPCOperableObject.cpp",
       "sha256": "1D6FC43DD65AED1921639F6B76504B102965AC2CA6376536637B707E92629218"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Environment\\NPCSimulationTestZone.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Environment\\NPCSimulationTestZone.cpp",
       "sha256": "9078BE151FE5FCB00973293A280ABD458BC352553E52AB8A64ED1F8478DF5BA6"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Props\\ColaPropActor.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Props\\ColaPropActor.cpp",
       "sha256": "D54819991E351A0B4BB36ED5D2E4DE3027781044D523FD12BF06F9AA3A28AE67"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Props\\InteractableProp.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Props\\InteractableProp.cpp",
       "sha256": "A555DF7B3E7C0BE1151C30F39C111731D07AAB253890E4EC33DB36347247BB0D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Props\\InteractablePropDataAsset.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Props\\InteractablePropDataAsset.cpp",
       "sha256": "7A854E8E62A16E63C68EB9450B1BFE86F5847FDDD2D63819714AAD2A4310365D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Props\\InteractablePropDatabase.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Props\\InteractablePropDatabase.cpp",
       "sha256": "A4C20BCD9D0040F01282AA1DFB47675DE1D965DB4743A06460FCCA3FF6A2E25B"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Props\\InteractablePropManager.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Props\\InteractablePropManager.cpp",
       "sha256": "3C6400E130D9D503CEAAA31A2D56BB97219BB40BBC7E2218F582F7CAEDF5A980"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\Subsystems\\NPCKnowledgeSubsystem.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\Subsystems\\NPCKnowledgeSubsystem.cpp",
       "sha256": "C215B59D038783E34159288AF44C4227D0A7B922F7E563385B217598D29E9203"
     },
     {
-      "path": "Source\\MarryByMidnight\\Private\\UI\\NPCDebugWidget.cpp",
+      "path": "Source\\ColossalFizzCo\\Private\\UI\\NPCDebugWidget.cpp",
       "sha256": "ECAAFEE913AE4E05A9EC18443CAEA4C45C4E4A7F0FEEBEF5D486B560D676B0F4"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\BlankActor.h",
+      "path": "Source\\ColossalFizzCo\\Public\\BlankActor.h",
       "sha256": "C1F3F0362CDFCC7195A332CD33EBA174E11264B2A33FF9AD41FA8C699021E3A7"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\NPCEnumsAndTypes.h",
+      "path": "Source\\ColossalFizzCo\\Public\\NPCEnumsAndTypes.h",
       "sha256": "F96DED2A6BF62487E9F141ACD86F7A1DA05CD165DD08B26114DF5C5A295C923A"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\TexturePaintComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\TexturePaintComponent.h",
       "sha256": "2CBB43ADDD3994B54D8A5E0E719B900176724ADF2B08FDD94743B964C178519C"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\AI\\NPCAIController.h",
+      "path": "Source\\ColossalFizzCo\\Public\\AI\\NPCAIController.h",
       "sha256": "34AA87DCB3E1AFC94061B91B9FCD18EFA33B225DECEB4A050E3B94C65F8653A4"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Characters\\NPCCharacter.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Characters\\NPCCharacter.h",
       "sha256": "A66F9C74A9FF4E533E44FDD62D64FC12B13ACB0FFB0E1AA256F2A84631DBBE4D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\ASMComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\ASMComponent.h",
       "sha256": "EAA791D8F58150D255A87D5E85FE90D7E4A9610CB6EF39BCDA850BC76C2F1DCB"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\InteractableInstancedStaticMeshComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\InteractableInstancedStaticMeshComponent.h",
       "sha256": "219CEC4FE78DB4ED2F016D24841294DC071ADF96C2B938E290F7D19A90ABA931"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\InteractablePropSenseSightComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\InteractablePropSenseSightComponent.h",
       "sha256": "D4B49027226867D99F0B7E0714E2BF464B79814E81E23833877E7021DD63F320"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\MeshFormationComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\MeshFormationComponent.h",
       "sha256": "3EBC857323A4B3DF75CD084EDBEC8610290F806C9D78F54BAADFE9A75344CD16"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCAffordanceComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCAffordanceComponent.h",
       "sha256": "824E290F787737B6051D3996F078962ED88DE05D3E8EE14260B3E37515EE4DCB"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCDecisionComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCDecisionComponent.h",
       "sha256": "0F8240D07AD73985B2C9476588E53AD006C00B066A039DBCAA1D45C584B63344"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCMentalStateComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCMentalStateComponent.h",
       "sha256": "80BBD3950242C97A171013DD3BEB2821A32E91FC6AB2E60CBF4A800977D5E991"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCNeedsComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCNeedsComponent.h",
       "sha256": "3A0F71CC9E9D856A2A77D06200F66749157F363CBC65FAA6AA890FD4B9E78B73"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCPersonalityComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCPersonalityComponent.h",
       "sha256": "FA3A447F3E7E63B55A83AAB4542B498776AC38C0DB8E3CF325AA0DD0EFB81DED"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCPlannerComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCPlannerComponent.h",
       "sha256": "2B53DCE637781ACA915E0131688BB0AD0D26B10C8A5226291D8094727D88E019"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCRagdollComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCRagdollComponent.h",
       "sha256": "B7AA4A68F0DFC20AB4E9D51D697E34E39B504EC7579B0C9442512F9F3DC9F15B"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCStateComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCStateComponent.h",
       "sha256": "9E93B6AFC29522691A21D0B66A51A833E77AC95C234844BE492AE5C0BF824F55"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCStrategyComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCStrategyComponent.h",
       "sha256": "A7EC3CC6F4FFE3827BE7C592C4E817D851E9AB0393EFFEA0F46CB62D24160B7B"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\NPCWorldModelComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\NPCWorldModelComponent.h",
       "sha256": "F503E5DF0AFF5E5D334DED2D1B4B25261234C2E303B2E0DE3BC551AE6030D783"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\PropBatchUpdateComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\PropBatchUpdateComponent.h",
       "sha256": "21A7AE6A3B61AC98AF8919CA806012BACCA67E56C1ADF047FF1FEEF44666C455"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\RocketProjectileComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\RocketProjectileComponent.h",
       "sha256": "B38C05DA5B0473F7A690ADFFB6326E8E2FAD86E6482E6E5F2211FACD4387A7E9"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Components\\StaticMeshPhysicsSimulationComponent.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Components\\StaticMeshPhysicsSimulationComponent.h",
       "sha256": "354B3763E40FFFF6112792F1AEF146AEF3CB492F3177C8545D0516791AD3C75F"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Environment\\NPCOperableObject.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Environment\\NPCOperableObject.h",
       "sha256": "BB34BBA3FCD5BB6DA1F44645168E7F7B6B3E50F03C170153D059E3FA5182D8FA"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Environment\\NPCSimulationTestZone.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Environment\\NPCSimulationTestZone.h",
       "sha256": "3CFC2F6B07D1FE145DB5C1E60ECC355273AE79B49100B6CBA24EAAA24AB1326C"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Interfaces\\WorldAffordanceInterface.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Interfaces\\WorldAffordanceInterface.h",
       "sha256": "DF11C2ADFD811C31412844F25FA85F5C530028AE2ECF1ADC8E672EFE2C6C5608"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Props\\ColaPropActor.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Props\\ColaPropActor.h",
       "sha256": "7555198A571CD3AD6BFF790BC55859CF9E888875509EBB329ADC4F75736DA4CF"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Props\\InteractableProp.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Props\\InteractableProp.h",
       "sha256": "A7C0DBF4EEB424C120A1ADE7EE6DB843137CD97184AD53D449320A24023CD5A4"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Props\\InteractablePropDataAsset.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Props\\InteractablePropDataAsset.h",
       "sha256": "B80C8045AAAB0FFF6F81A0F257275B9460AE94CAB66651080393E4FBEE7E29D7"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Props\\InteractablePropDatabase.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Props\\InteractablePropDatabase.h",
       "sha256": "0FD4D475FDAFA5F9B00D12D4D6C5471B9B0B73640DED137759737BBCF3B2B27A"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Props\\InteractablePropManager.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Props\\InteractablePropManager.h",
       "sha256": "BDCA96F1AA9B433DE8A323F1EFCD4CACE460BE965EBB00DC38E07A158CDF99BD"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Subsystems\\NPCKnowledgeSaveGame.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Subsystems\\NPCKnowledgeSaveGame.h",
       "sha256": "E5A73EE25F246395A4FB307447614DE0BDA70E99C7FD0FAC88D3FA52C96CF93C"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\Subsystems\\NPCKnowledgeSubsystem.h",
+      "path": "Source\\ColossalFizzCo\\Public\\Subsystems\\NPCKnowledgeSubsystem.h",
       "sha256": "2B15211C0B44E0FA3E066964841AD7B2D86F23B107C06E3D29D73B44448D416D"
     },
     {
-      "path": "Source\\MarryByMidnight\\Public\\UI\\NPCDebugWidget.h",
+      "path": "Source\\ColossalFizzCo\\Public\\UI\\NPCDebugWidget.h",
       "sha256": "034DF3F3682BC1BE0001EA851C22D6E2A682DF017B25006472FC463813F4C0A4"
     },
     {

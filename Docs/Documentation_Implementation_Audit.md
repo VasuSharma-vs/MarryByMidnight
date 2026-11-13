@@ -1,6 +1,6 @@
 # Documentation-to-Implementation Audit
 
-Audit date: **9 November 2026 (Asia/Calcutta)**. Project: **MarryByMidnight / Midnight Fizz: Giant Thirst**, Unreal Engine association **5.8**.
+Audit date: **9 November 2026 (Asia/Calcutta)**. Project: **ColossalFizzCo / Midnight Fizz: Giant Thirst**, Unreal Engine association **5.8**.
 
 ## Assessment
 
@@ -26,15 +26,15 @@ Baseline Git HEAD: `f133d1d6c60e765c2c8dfd63c245143ddf15fcec`. The working tree 
 
 | Key | Source / evidence |
 |---|---|
-| DB | [InteractablePropDatabase.h](../Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h), [InteractablePropDatabase.cpp](../Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp) |
-| DA | [InteractablePropDataAsset.h](../Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h), [InteractablePropDataAsset.cpp](../Source/MarryByMidnight/Private/Props/InteractablePropDataAsset.cpp) |
-| PM | [InteractablePropManager.h](../Source/MarryByMidnight/Public/Props/InteractablePropManager.h), [InteractablePropManager.cpp](../Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp) |
-| BASE | [InteractableProp.h](../Source/MarryByMidnight/Public/Props/InteractableProp.h), [InteractableProp.cpp](../Source/MarryByMidnight/Private/Props/InteractableProp.cpp) |
-| COLA | [ColaPropActor.h](../Source/MarryByMidnight/Public/Props/ColaPropActor.h), [ColaPropActor.cpp](../Source/MarryByMidnight/Private/Props/ColaPropActor.cpp) |
-| ISM | [InteractableInstancedStaticMeshComponent.h](../Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h), [implementation](../Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp) |
-| POOL | [ASMComponent.h](../Source/MarryByMidnight/Public/Components/ASMComponent.h), [ASMComponent.cpp](../Source/MarryByMidnight/Private/Components/ASMComponent.cpp) |
-| BATCH | [PropBatchUpdateComponent.cpp](../Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp) |
-| ROCKET | [RocketProjectileComponent.h](../Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h), [implementation](../Source/MarryByMidnight/Private/Components/RocketProjectileComponent.cpp) |
+| DB | [InteractablePropDatabase.h](../Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h), [InteractablePropDatabase.cpp](../Source/ColossalFizzCo/Private/Props/InteractablePropDatabase.cpp) |
+| DA | [InteractablePropDataAsset.h](../Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h), [InteractablePropDataAsset.cpp](../Source/ColossalFizzCo/Private/Props/InteractablePropDataAsset.cpp) |
+| PM | [InteractablePropManager.h](../Source/ColossalFizzCo/Public/Props/InteractablePropManager.h), [InteractablePropManager.cpp](../Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp) |
+| BASE | [InteractableProp.h](../Source/ColossalFizzCo/Public/Props/InteractableProp.h), [InteractableProp.cpp](../Source/ColossalFizzCo/Private/Props/InteractableProp.cpp) |
+| COLA | [ColaPropActor.h](../Source/ColossalFizzCo/Public/Props/ColaPropActor.h), [ColaPropActor.cpp](../Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp) |
+| ISM | [InteractableInstancedStaticMeshComponent.h](../Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h), [implementation](../Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp) |
+| POOL | [ASMComponent.h](../Source/ColossalFizzCo/Public/Components/ASMComponent.h), [ASMComponent.cpp](../Source/ColossalFizzCo/Private/Components/ASMComponent.cpp) |
+| BATCH | [PropBatchUpdateComponent.cpp](../Source/ColossalFizzCo/Private/Components/PropBatchUpdateComponent.cpp) |
+| ROCKET | [RocketProjectileComponent.h](../Source/ColossalFizzCo/Public/Components/RocketProjectileComponent.h), [implementation](../Source/ColossalFizzCo/Private/Components/RocketProjectileComponent.cpp) |
 | BP | [Audit_Evidence_2026-11-09.json](Audit_Evidence_2026-11-09.json): exact Unreal object/graph paths, node identifiers, pins, defaults, and material channel properties |
 | INVENTORY | [Audit_Manifest_2026-11-09.json](Audit_Manifest_2026-11-09.json): original Docs/source/config hashes and Content asset paths |
 

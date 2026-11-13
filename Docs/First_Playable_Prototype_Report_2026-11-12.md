@@ -6,7 +6,7 @@ Updated 12 November 2026. The **core-loop candidate works in instrumented packag
 
 - Game build: **11193**, Win64 Development, Unreal Engine 5.8. Both Editor and Game targets build; the coherent cook/archive succeeds.
 - Latest Editor module: **11194**. Its only addition after the Game build is an editor-only five-flavor filling integration test.
-- Package: `Saved/PrototypeResume_20261112/Packaged_11193/PackageArchive/Windows/MarryByMidnight.exe`.
+- Package: `Saved/PrototypeResume_20261112/Packaged_11193/PackageArchive/Windows/ColossalFizzCo.exe`.
 - Start the player-facing map through [the play guide](Normal_Cola_Prototype_Play_Guide.md) and `Scripts/StartNormalColaPrototype.ps1`. Close the earlier smoke-test window before launching this candidate.
 - Plastic bottles, Lemonade/Mint/Sweet/Spicy/Zero Calories, Normal manual twist caps, premixed bulk supplies and two distinct cap operators. Existing player, giant customer and bottle dimensions are preserved.
 - No Toxic, Black Magic, radioactive/explosive cola, other bottle materials, advanced caps, powered equipment or raw-ingredient mixing was added to demo scope.

@@ -49,7 +49,7 @@ The remaining three live physics warnings were narrowed to the inactive branch o
 | Integration/regression coverage | `Public/Tests/NormalColaPrototypeTestActor.h`, `Private/Tests/NormalColaPrototypeTestActor.cpp`, new `Private/Tests/NormalColaPrototypeProduction.cpp`, `Private/Tests/NormalColaLoopTests.cpp`, `Private/Tests/PropGrabTests.cpp` |
 | Documentation | This record, active prototype record, play guide, README/handoff status |
 
-C++ paths above are relative to `Source/MarryByMidnight`. The overall Git worktree also contains user/Gemini work and earlier implementation; this table does not attribute every repository change to this resume.
+C++ paths above are relative to `Source/ColossalFizzCo`. The overall Git worktree also contains user/Gemini work and earlier implementation; this table does not attribute every repository change to this resume.
 
 ## Acceptance limits and next checks
 

@@ -13,7 +13,7 @@ if (-not [IO.Path]::IsPathRooted($SaveRoot)) { $SaveRoot = Join-Path $prototypeR
 $SaveRoot = [IO.Path]::GetFullPath($SaveRoot)
 $prototypeSaved = [IO.Path]::GetFullPath((Join-Path $prototypeRoot 'Saved/'))
 if (-not $SaveRoot.StartsWith($prototypeSaved,[StringComparison]::OrdinalIgnoreCase)) { throw 'Prototype play saves must stay under this project Saved directory.' }
-$prototypeExe = Join-Path $ArchiveRoot 'Windows/MarryByMidnight.exe'
+$prototypeExe = Join-Path $ArchiveRoot 'Windows/ColossalFizzCo.exe'
 if (-not (Test-Path -LiteralPath $prototypeExe)) { throw 'Packaged game missing; provide the PackageArchive directory.' }
 $prototypePlans = @()
 if ($Mode -in @('LocalPair','Host')) {
@@ -23,7 +23,7 @@ if ($Mode -in @('LocalPair','Client')) {
     $prototypePlans += [pscustomobject]@{Name='Client';URL=($ServerAddress+':'+$Port);X=810}
 }
 # Preflight all save locations before starting either half of a local pair.
-$prototypeProcesses = Get-CimInstance Win32_Process -Filter "Name='MarryByMidnight.exe'"
+$prototypeProcesses = Get-CimInstance Win32_Process -Filter "Name='ColossalFizzCo.exe'"
 foreach ($prototypePlan in $prototypePlans) {
     $prototypeUserDir = Join-Path $SaveRoot $prototypePlan.Name
     if ($prototypeProcesses | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($prototypeUserDir) }) {

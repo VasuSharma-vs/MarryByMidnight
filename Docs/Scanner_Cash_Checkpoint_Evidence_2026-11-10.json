@@ -1,7 +1,7 @@
 {
   "checkpoint": "PAUSED by explicit user instruction; do not resume without a new user request",
   "recorded_utc": "2026-11-10T13:54:17.351491+00:00",
-  "workspace": "C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight",
+  "workspace": "C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo",
   "branch": "codex/shop-checkout-integration",
   "head": "e99fdb3b9c09ed29994ac591e15429df2a124ed5",
   "committed_or_pushed_this_checkpoint": false,
@@ -12,7 +12,7 @@
     "module_manifest": {
       "BuildId": "55116800",
       "Modules": {
-        "MarryByMidnight": "UnrealEditor-MarryByMidnight-11119.dll"
+        "ColossalFizzCo": "UnrealEditor-ColossalFizzCo-11119.dll"
       }
     },
     "tests_run_for_this_module": false
@@ -51,7 +51,7 @@
       "notRun": 0,
       "failures": [
         {
-          "name": "MarryByMidnight.Shop.CoinPhysicalVolume",
+          "name": "ColossalFizzCo.Shop.CoinPhysicalVolume",
           "errors": [
             "Expected 'Coin returns to preserved ISM' to be true."
           ]
@@ -69,7 +69,7 @@
       "notRun": 0,
       "failures": [
         {
-          "name": "MarryByMidnight.Shop.CoinPhysicalVolume",
+          "name": "ColossalFizzCo.Shop.CoinPhysicalVolume",
           "errors": [
             "Expected 'Coin returns to preserved ISM' to be true."
           ]
@@ -649,7 +649,7 @@
       "sha256": "7ac43688383f2ff587c7147e48cfd0974efd3c205ae91e70f6d729afe8ef7da5"
     },
     {
-      "path": "MarryByMidnight.uproject",
+      "path": "ColossalFizzCo.uproject",
       "bytes": 825,
       "sha256": "f7708e58643e3f9ac770b7a9aa604c7588aa384ce7c9ac0d47a45a3a089e4d87"
     },
@@ -754,642 +754,642 @@
       "sha256": "b5810d47207721fc5ffe57147a2477edb265badcb6d52432c63f2275be4ca8ea"
     },
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.Build.cs",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.Build.cs",
       "bytes": 926,
       "sha256": "015dc8b615936be8470b45778d977f340637aacbc97ff8795c17315ed777c9d1"
     },
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.cpp",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.cpp",
       "bytes": 244,
       "sha256": "876adbec2be8e0c2a6fa13952a181735346d9e260bb1a585dca9140b4b25281c"
     },
     {
-      "path": "Source/MarryByMidnight/MarryByMidnight.h",
+      "path": "Source/ColossalFizzCo/ColossalFizzCo.h",
       "bytes": 126,
       "sha256": "f0bca18ab7f0c16bb22f4d9c9116b988bca3ecc94bd0d1a77224886677634dfe"
     },
     {
-      "path": "Source/MarryByMidnight/Private/AI/NPCAIController.cpp",
+      "path": "Source/ColossalFizzCo/Private/AI/NPCAIController.cpp",
       "bytes": 47516,
       "sha256": "eab3e1f3ff86d139347b336c3b910d34397178d319fd3beea75f1ec784e97b7d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/BlankActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/BlankActor.cpp",
       "bytes": 542,
       "sha256": "af7b4b2e4f97ed88f99257d84b988749d06ff87c5a004c0234f9f909fdc9a52b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Characters/NPCCharacter.cpp",
+      "path": "Source/ColossalFizzCo/Private/Characters/NPCCharacter.cpp",
       "bytes": 28321,
       "sha256": "29350554c082f61137b2e0e9dec847d734b6e69e851f2f0160548bd23974a298"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/ASMComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/ASMComponent.cpp",
       "bytes": 43415,
       "sha256": "fd26f0b995e42419ca9ed2884605dfa4b2f9485dc57c6342765a2279ed482c0b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp",
       "bytes": 50597,
       "sha256": "6e4eaf230c40a4dc3ff3ba8df91657830d0a317b54d8015dbd00000597712759"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/InteractablePropSenseSightComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/InteractablePropSenseSightComponent.cpp",
       "bytes": 120278,
       "sha256": "1607a695c59b2c47d513e198f97abe34bf5e689fe4c11824c2d9cc6d9f2c8aab"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/MeshFormationComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/MeshFormationComponent.cpp",
       "bytes": 61400,
       "sha256": "6cb431e679575dc876e6940ee53a5bd2adcbbb18b098166f47c316c127eafbf3"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCAffordanceComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCAffordanceComponent.cpp",
       "bytes": 1281,
       "sha256": "d0f49f247a861c542ab58ca5a8502f9fb89b20da3bbfedf9ca83e08237ad29f8"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCDecisionComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCDecisionComponent.cpp",
       "bytes": 20529,
       "sha256": "98fab047a4b3b95ab25ea74abc8786e2bb80a986048cf95dd10c56fe0b93f79d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCMentalStateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCMentalStateComponent.cpp",
       "bytes": 6537,
       "sha256": "7607ee1c422ed28edea12410a3572fac1cb33e569a67c59d8c76a4781e709e16"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCNeedsComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCNeedsComponent.cpp",
       "bytes": 6661,
       "sha256": "6d3960861309d2069cfe8e2ede770cd1e24b08d5a0fd44749fa17e541306a820"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCPersonalityComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCPersonalityComponent.cpp",
       "bytes": 13597,
       "sha256": "c379b781ae7eee56c2a7223c28343dcfff2161cf42bcf3f613242d8b7a91c9c9"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCPlannerComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCPlannerComponent.cpp",
       "bytes": 7913,
       "sha256": "e494c28939b71ff72451a7bef41fcd3afedb18f9bdcda8a0400adfb94b0e0ec8"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCRagdollComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCRagdollComponent.cpp",
       "bytes": 11411,
       "sha256": "3405afb487462d9703c5561ac419d6ea4404fd5091edc3eb6ce5a932f27f505b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCStateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCStateComponent.cpp",
       "bytes": 9172,
       "sha256": "9466931237320ee4eaf0fbed1f87ce29f08c4e276619d9b0af1d76f357e2e7de"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCStrategyComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCStrategyComponent.cpp",
       "bytes": 4719,
       "sha256": "cf4acb281ba6788b7e30d7ac7c3e5bcdd784ec2b3d69a5e1972b05b36fb45501"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/NPCWorldModelComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/NPCWorldModelComponent.cpp",
       "bytes": 7521,
       "sha256": "03a27131092eae63da44cb4e817155ef958097c281e2f508fd1ece7b2d30e8e9"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/PropBatchUpdateComponent.cpp",
       "bytes": 23491,
       "sha256": "4f8b8164a861e1f88318ac235c28994833a7d84c9bf5d850204fa3cd4301856e"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/RocketProjectileComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/RocketProjectileComponent.cpp",
       "bytes": 189572,
       "sha256": "41b783f7835eb0bef3e97b5e90f74921794de672c3c21f91017f8cd93f14ae47"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/StaticMeshPhysicsSimulationComponent.cpp",
       "bytes": 24451,
       "sha256": "6279150535a85819431bf0da01eb52af4917254e2eefebd01535a9d5880d86af"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Environment/NPCOperableObject.cpp",
+      "path": "Source/ColossalFizzCo/Private/Environment/NPCOperableObject.cpp",
       "bytes": 14287,
       "sha256": "1d6fc43dd65aed1921639f6b76504b102965ac2ca6376536637b707e92629218"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Environment/NPCSimulationTestZone.cpp",
+      "path": "Source/ColossalFizzCo/Private/Environment/NPCSimulationTestZone.cpp",
       "bytes": 11876,
       "sha256": "9078be151fe5fcb00973293a280abd458bc352553e52ab8a64ed1f8478df5ba6"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ActivePropState.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ActivePropState.cpp",
       "bytes": 13042,
       "sha256": "f2cc348c322db21fed736e1606ad9b67975b87f64dd61dd5b90fc26fb66bce9a"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaContainment.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaContainment.cpp",
       "bytes": 8975,
       "sha256": "4d076864438bb8df71dd4e50356b6c2b514ca0995c330a2e191deade979009cc"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaPricingLibrary.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaPricingLibrary.cpp",
       "bytes": 2365,
       "sha256": "b18c71502469c1c155b84eb545d619bab051fe2f0a175eda6d9920c565f18751"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/ColaPropActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp",
       "bytes": 20917,
       "sha256": "9a867a60faf2222dbd8f35da49fce85b431471728f1550741d82e257b09a747d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/FragmentAssemblyDataAsset.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/FragmentAssemblyDataAsset.cpp",
       "bytes": 1842,
       "sha256": "14e2f80cf453e6c944deb0e111577c6c2aa3300416c96d4a6f9bb4dcbe1894a5"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/FragmentDestructionActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/FragmentDestructionActor.cpp",
       "bytes": 6851,
       "sha256": "bb836989922c278f6b905f2659bc1c6331895f8e4638d0e29500c9d64816ea4b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractableProp.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractableProp.cpp",
       "bytes": 72012,
       "sha256": "0d5c67632888b75b0503beeee58ad4a7fa9a0778570f83bd3577642af619dc39"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDataAsset.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropDataAsset.cpp",
       "bytes": 2875,
       "sha256": "7a854e8e62a16e63c68eb9450b1bfe86f5847fddd2d63819714aad2a4310365d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropDatabase.cpp",
       "bytes": 24126,
       "sha256": "103c69e1c230e8b56f8ec43308b54c1660529ae804c15c0d70fca459f2f32c2c"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp",
       "bytes": 270440,
       "sha256": "1b44d2394c04a090d9cbf538448bb658ed3efc0b3ee87c8f04e7180459eef97c"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropFragmentLifecycle.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropFragmentLifecycle.cpp",
       "bytes": 11082,
       "sha256": "e816ba0b071aac6b6f2fbd651a1e5fcca3d2e5e9bf2c9493bea9c3e531ae3b9a"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropLiquidRelease.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropLiquidRelease.cpp",
       "bytes": 2650,
       "sha256": "8d08d239eccce86e5d43069778e78d5e26df8d74e1815b6865d8af94f5e7bbcd"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropLiquidTransfer.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropLiquidTransfer.cpp",
       "bytes": 7349,
       "sha256": "936c99113e0da67e7bf823d47b3adaaad1dbb6ec77cd7e111b8cd77f5fe1c8d8"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/PropManagerState.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/PropManagerState.cpp",
       "bytes": 11513,
       "sha256": "2b74d3c680d4f003b9a9c94fc4cd74c643f6c39d7bd7d6086b8a4b3842dae762"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/BottleFillingComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/BottleFillingComponent.cpp",
       "bytes": 2834,
       "sha256": "776a2d86b4027a4adecdc29b09b6cea20634b346850d97a1f53d44d8cf80c23b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/SharedTeamWalletComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/SharedTeamWalletComponent.cpp",
       "bytes": 2824,
       "sha256": "c6d538bf40f339edfe28e9e9d447a20c009381560b905ba7818c8b9f042cf613"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/SharedWalletTypes.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/SharedWalletTypes.cpp",
       "bytes": 2081,
       "sha256": "bca064579dfa2d84666b8df3042de00620c7cbee98a78ad83872510248216336"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopATMComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopATMComponent.cpp",
       "bytes": 2790,
       "sha256": "29d8f01559a0c189f76dc82bb6b0fc4c411a00d8b5ed59ae551397f369e2b8db"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopAutosave.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopAutosave.cpp",
       "bytes": 307,
       "sha256": "3adf985cf8ee6b6af3f442b161ebb4b639d23f82fe03874d1a355c02c1e827fe"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopCashRegisterComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopCashRegisterComponent.cpp",
       "bytes": 4563,
       "sha256": "7cd3155b2d6bbcd2475c90f71db17ee498e752d72f4659379790fd346b107d5d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopCheckoutComponent.cpp",
       "bytes": 19614,
       "sha256": "ba23a566b82aed5ec5a2a0b8eb44a0a43c2dbcccd716fb4e19c3ef8e957eda06"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopCustomerCashComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopCustomerCashComponent.cpp",
       "bytes": 3479,
       "sha256": "7e35c8c6ddcdf7667d223ba5ce54b7b9ff5a2db75450f4fa6f4f060ad916bb5d"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopInteractionLibrary.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopInteractionLibrary.cpp",
       "bytes": 1265,
       "sha256": "f7adf3086636215415d47d5b30e7a407b32e990ad796e9be180e7b69e0450be8"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopPhysicalCash.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopPhysicalCash.cpp",
       "bytes": 17677,
       "sha256": "62de4eab24cd4568a76189120472eceace04d0a90be8e080aeec6d9106d09ca0"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopPlayerInteractionComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopPlayerInteractionComponent.cpp",
       "bytes": 7379,
       "sha256": "a2ab9fa82129696cb9015b5e7e30c3a35f75927a4afcdffbc2b02ec5a27f73d5"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopPostSaleAdjustments.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopPostSaleAdjustments.cpp",
       "bytes": 8225,
       "sha256": "2eb96c5b422b479081a7b04afd852153d9da5ef977eb0c18109e0fd94c0df83e"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopProductQuery.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopProductQuery.cpp",
       "bytes": 2726,
       "sha256": "a880d7b4b00e6f2e25da2038896bb6150ae68dbbdda046cd6a2e61e51ad82b59"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopScannerComponent.cpp",
       "bytes": 11505,
       "sha256": "f7726919201d9e4a80c54090ac96a59710f1af91947b656e9a8bc008a998a635"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Shop/ShopScannerVolume.cpp",
+      "path": "Source/ColossalFizzCo/Private/Shop/ShopScannerVolume.cpp",
       "bytes": 6943,
       "sha256": "07907c5a74a843c4013a27873c8b8a146e51d80970db81a8238b4269ff8a9981"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Subsystems/NPCKnowledgeSubsystem.cpp",
+      "path": "Source/ColossalFizzCo/Private/Subsystems/NPCKnowledgeSubsystem.cpp",
       "bytes": 7501,
       "sha256": "c215b59d038783e34159288af44c4227d0a7b922f7e563385b217598d29e9203"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ColaPricingTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ColaPricingTests.cpp",
       "bytes": 3352,
       "sha256": "52fb95587b188170be8415f5fe85d10d7d8de9d9d5923290d3a5c40b1b866c3f"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ConfiguredBottleAssetTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ConfiguredBottleAssetTests.cpp",
       "bytes": 3662,
       "sha256": "ce10fff0e95857a142657667805acb2b1fb4b21d25aae7c3c97db6d4614d65d9"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/FragmentLifecycleTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/FragmentLifecycleTests.cpp",
       "bytes": 13006,
       "sha256": "9bc7cd69bd14fd6bcc34c59aeb8aa48e5cda37131ce278e16ef9b7d704fd3539"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/FragmentNetworkTestActor.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/FragmentNetworkTestActor.cpp",
       "bytes": 5614,
       "sha256": "ee307531a57fe62be21a4d01b94156dc0faa2aef4fad083a0d6ece38154f283f"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/LiquidTransferTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/LiquidTransferTests.cpp",
       "bytes": 4428,
       "sha256": "d313acac3ebd689a69a52c280e7e979a34ffece31e37dd1b5507a72641140e80"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropPersistenceTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropPersistenceTests.cpp",
       "bytes": 5189,
       "sha256": "d8959178e0acb752c89c325f73adad39096fb936a66995cd2c3d909326d0a037"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropPoolTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropPoolTests.cpp",
       "bytes": 2346,
       "sha256": "7bc6ca3573f2b8035027b4e9ea884799d8ec7ed4fcf81bd6b91a721372469ccc"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropStateTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropStateTests.cpp",
       "bytes": 3980,
       "sha256": "8295e4c38e01c7cec9ff9efbb12b2429f6a4c0483f6daaaa7f5f8f4182c96d32"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/SharedWalletTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/SharedWalletTests.cpp",
       "bytes": 2506,
       "sha256": "86a05477a6bea285dfe9df91f25171381b45d48b12970e4ba39807fb49344be3"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopCashTestHelpers.h",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopCashTestHelpers.h",
       "bytes": 1450,
       "sha256": "298620fd17202a4735e5b228595d4e168aab55f5866b14f6ccf800e6bb0f4f6c"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopCheckoutTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopCheckoutTests.cpp",
       "bytes": 6963,
       "sha256": "4dd25cd6bbba4c741f51ee88032bcef31d47e0c3c59b5e79e8e8e2774d46bfd0"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopExpiryAdjustmentTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopExpiryAdjustmentTests.cpp",
       "bytes": 14550,
       "sha256": "99090705ad7eb6056db732da8b96a06989cb50cda2f543cc38aaa803814c7897"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopPhysicalCashTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopPhysicalCashTests.cpp",
       "bytes": 15109,
       "sha256": "c65c16bf68e2610562b586a7d4a0d58077c58e925c31f735071cf49a98e37b65"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopPlayerInteractionTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopPlayerInteractionTests.cpp",
       "bytes": 4466,
       "sha256": "9cc59d8430f52d9fc24b277ab1d362a174dc3d266184c188546975f6dc4509d6"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopProductQueryTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopProductQueryTests.cpp",
       "bytes": 5145,
       "sha256": "ae13f744d7900f61d6d99fe6fb7a4487729385dd397cee6374ce7b7ed0a5d2db"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/ShopScannerTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/ShopScannerTests.cpp",
       "bytes": 6014,
       "sha256": "84820fc9223d03f986df1f1ae4666c073f72cea4d7e2823dd1258d3f3d6c1b5b"
     },
     {
-      "path": "Source/MarryByMidnight/Private/TexturePaintComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/TexturePaintComponent.cpp",
       "bytes": 75819,
       "sha256": "40a477b07da2a427b3284eadb9cefc7351cf09e2daa874c4520c14f57d3c86ee"
     },
     {
-      "path": "Source/MarryByMidnight/Private/UI/NPCDebugWidget.cpp",
+      "path": "Source/ColossalFizzCo/Private/UI/NPCDebugWidget.cpp",
       "bytes": 1527,
       "sha256": "ecaafee913ae4e05a9ec18443caea4c45c4e4a7f0feebef5d486b560d676b0f4"
     },
     {
-      "path": "Source/MarryByMidnight/Private/UI/ShopTerminalWidget.cpp",
+      "path": "Source/ColossalFizzCo/Private/UI/ShopTerminalWidget.cpp",
       "bytes": 9954,
       "sha256": "42140a6e1b6ebaa91ee9dc4b3341a8023f72cb7ffde46a792592e96cc8ec92e8"
     },
     {
-      "path": "Source/MarryByMidnight/Public/AI/NPCAIController.h",
+      "path": "Source/ColossalFizzCo/Public/AI/NPCAIController.h",
       "bytes": 8428,
       "sha256": "34aa87dcb3e1afc94061b91b9fcd18efa33b225deceb4a050e3b94c65f8653a4"
     },
     {
-      "path": "Source/MarryByMidnight/Public/BlankActor.h",
+      "path": "Source/ColossalFizzCo/Public/BlankActor.h",
       "bytes": 554,
       "sha256": "c1f3f0362cdfcc7195a332cd33eba174e11264b2a33ff9ad41fa8c699021e3a7"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Characters/NPCCharacter.h",
+      "path": "Source/ColossalFizzCo/Public/Characters/NPCCharacter.h",
       "bytes": 11431,
       "sha256": "a66f9c74a9ff4e533e44fdd62d64fc12b13acb0ffb0e1aa256f2a84631dbbe4d"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/ASMComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/ASMComponent.h",
       "bytes": 16051,
       "sha256": "815fb640b465175681dcc9cdc11f65b029ec34fa8bb0fed465afaf37d9451fca"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h",
       "bytes": 20701,
       "sha256": "219cec4fe78db4ed2f016d24841294dc071adf96c2b938e290f7d19a90aba931"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/InteractablePropSenseSightComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/InteractablePropSenseSightComponent.h",
       "bytes": 42518,
       "sha256": "d4b49027226867d99f0b7e0714e2bf464b79814e81e23833877e7021dd63f320"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/MeshFormationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/MeshFormationComponent.h",
       "bytes": 41457,
       "sha256": "3ebc857323a4b3df75cd084edbec8610290f806c9d78f54baadfe9a75344cd16"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCAffordanceComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCAffordanceComponent.h",
       "bytes": 1891,
       "sha256": "824e290f787737b6051d3996f078962ed88de05d3e8ee14260b3e37515ee4dcb"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCDecisionComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCDecisionComponent.h",
       "bytes": 4487,
       "sha256": "0f8240d07ad73985b2c9476588e53ad006c00b066a039dbcaa1d45c584b63344"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCMentalStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCMentalStateComponent.h",
       "bytes": 4095,
       "sha256": "80bbd3950242c97a171013dd3beb2821a32e91fc6ab2e60cbf4a800977d5e991"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCNeedsComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCNeedsComponent.h",
       "bytes": 4331,
       "sha256": "3a0f71cc9e9d856a2a77d06200f66749157f363cbc65faa6aa890fd4b9e78b73"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCPersonalityComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPersonalityComponent.h",
       "bytes": 2841,
       "sha256": "fa3a447f3e7e63b55a83aab4542b498776ac38c0db8e3cf325aa0dd0efb81ded"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCPlannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCPlannerComponent.h",
       "bytes": 2074,
       "sha256": "2b53dce637781aca915e0131688bb0ad0d26b10c8a5226291d8094727d88e019"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCRagdollComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCRagdollComponent.h",
       "bytes": 5626,
       "sha256": "b7aa4a68f0dfc20ab4e9d51d697e34e39b504ec7579b0c9442512f9f3dc9f15b"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCStateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStateComponent.h",
       "bytes": 4564,
       "sha256": "9e93b6afc29522691a21d0b66a51a833e77ac95c234844be492ae5c0bf824f55"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCStrategyComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCStrategyComponent.h",
       "bytes": 2177,
       "sha256": "a7ec3cc6f4ffe3827be7c592c4e817d851e9ab0393effea0f46cb62d24160b7b"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/NPCWorldModelComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/NPCWorldModelComponent.h",
       "bytes": 3996,
       "sha256": "f503e5df0aff5e5d334ded2d1b4b25261234c2e303b2e0de3bc551ae6030d783"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/PropBatchUpdateComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/PropBatchUpdateComponent.h",
       "bytes": 7366,
       "sha256": "21a7ae6a3b61ac98af8919ca806012bacca67e56c1adf047ff1feef44666c455"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/RocketProjectileComponent.h",
       "bytes": 63694,
       "sha256": "b38c05da5b0473f7a690adffb6326e8e2fad86e6482e6e5f2211facd4387a7e9"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Components/StaticMeshPhysicsSimulationComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/StaticMeshPhysicsSimulationComponent.h",
       "bytes": 9511,
       "sha256": "354b3763e40ffff6112792f1aef146aef3cb492f3177c8545d0516791ad3c75f"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Environment/NPCOperableObject.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCOperableObject.h",
       "bytes": 7691,
       "sha256": "bb34bba3fcd5bb6da1f44645168e7f7b6b3e50f03c170153d059e3fa5182d8fa"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Environment/NPCSimulationTestZone.h",
+      "path": "Source/ColossalFizzCo/Public/Environment/NPCSimulationTestZone.h",
       "bytes": 5812,
       "sha256": "3cfc2f6b07d1fe145db5c1e60ecc355273ae79b49100b6cba24eaaa24ab1326c"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Interfaces/WorldAffordanceInterface.h",
+      "path": "Source/ColossalFizzCo/Public/Interfaces/WorldAffordanceInterface.h",
       "bytes": 1236,
       "sha256": "df11c2adfd811c31412844f25fa85f5c530028ae2ecf1adc8e672efe2c6c5608"
     },
     {
-      "path": "Source/MarryByMidnight/Public/NPCEnumsAndTypes.h",
+      "path": "Source/ColossalFizzCo/Public/NPCEnumsAndTypes.h",
       "bytes": 31247,
       "sha256": "f96ded2a6bf62487e9f141acd86f7a1da05cd165dd08b26114df5c5a295c923a"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/ColaPricingLibrary.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPricingLibrary.h",
       "bytes": 1774,
       "sha256": "031afdf37fff4fc5d4c0caa51faae9847434f6e8cb7cc170a4f61135937e28bd"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/ColaPropActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/ColaPropActor.h",
       "bytes": 8343,
       "sha256": "0e06f88613e9a79eae433f47d8001463ff3b544289a12dac3b4356fe8b8c477f"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentAssemblyDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentAssemblyDataAsset.h",
       "bytes": 1363,
       "sha256": "cd40a35faad3379ad52b1ff870bce978e9a7a9228d58d51015f0f9c2b7009882"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentDestructionActor.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentDestructionActor.h",
       "bytes": 1827,
       "sha256": "e6b0cbe26c0eb075b7742f20a4fcbba7b914772ae03a11d0a066e336b3c3d3bd"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/FragmentTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Props/FragmentTypes.h",
       "bytes": 390,
       "sha256": "f9309450480d76ea773b696b8b38e04d5563849daaa08bc822b974b8c9551569"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractableProp.h",
       "bytes": 45021,
       "sha256": "8a80c77bca08d8fbd5dec7a667dee99e2a959be7610a8b5bc76ffe8be3b51709"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h",
       "bytes": 16278,
       "sha256": "92112cf0d29469f4cc0749728e9a14116edce33123edcf8e896dfa843750ddc7"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h",
       "bytes": 84810,
       "sha256": "183fbfa9b3b08b6790e6a16d5906913205d4ac2da92530f9ac48310ca15c1286"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractablePropManager.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractablePropManager.h",
       "bytes": 86357,
       "sha256": "83afb82abb1f2d5c6a199ea37e94d8f190c06932d986ba2e1a9d701c329d1db4"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/LiquidReleaseTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Props/LiquidReleaseTypes.h",
       "bytes": 840,
       "sha256": "464b727a9ae49ed5044fb5f33a50c1fdb9c1abba4df2a11a612a5505128b6639"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/BottleFillingComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/BottleFillingComponent.h",
       "bytes": 1593,
       "sha256": "24425eb25e2d312950e4fa97e574a42614e12265dd1479145a8feab197a79687"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/SharedTeamWalletComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/SharedTeamWalletComponent.h",
       "bytes": 2036,
       "sha256": "1e89a3ca12959a04b297eb57f12828333c7791ba20d1725520dabd26449606e4"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/SharedWalletTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/SharedWalletTypes.h",
       "bytes": 1849,
       "sha256": "39941e82b4345747a1616f1b3b6a7eb905fdad0e690cf5713ff9520ba92dac2d"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopATMComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopATMComponent.h",
       "bytes": 986,
       "sha256": "cb41a9ec5297c10ab6e2cb1d37eef8876fc7ef56d24bd45ff00277ca2e0cb9bb"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCashRegisterComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCashRegisterComponent.h",
       "bytes": 1320,
       "sha256": "02e4e7bb2d6d0f420190f3e70a06cac336b69e129fa0e5f8dbdfeedb81ef878e"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCashTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCashTypes.h",
       "bytes": 2489,
       "sha256": "fa898142052f00f0c31e42ad482cb8e533215eb7778200ce8fb8a1209353bd18"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCheckoutComponent.h",
       "bytes": 7480,
       "sha256": "250091e525716418e1e57f6af4e2d00d3de729e028896a9250a7cd449876931c"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCheckoutTypes.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCheckoutTypes.h",
       "bytes": 11051,
       "sha256": "7eb6ca63134ddb62067a1a0fb6e9f82160bf8ce1cad4e8a74559a9d5a9d1d950"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopCustomerCashComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopCustomerCashComponent.h",
       "bytes": 1213,
       "sha256": "39cac2eaa857a82677648513e012b1abb5ceff94df4483baa8109f82ff7eb4a2"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopInteractionLibrary.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopInteractionLibrary.h",
       "bytes": 514,
       "sha256": "fc1a4d25db96d89eb0ae7bc9c0d6e52e65f1e60f75ca21ae6151df55468d93cb"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopPlayerInteractionComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopPlayerInteractionComponent.h",
       "bytes": 2544,
       "sha256": "fe57f3d4d33aeb43ec00e83658a16b02782e000829109588aa906256516ad752"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Shop/ShopScannerComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Shop/ShopScannerComponent.h",
       "bytes": 3896,
       "sha256": "cb334457fbd49a431667c917369f45a896d250a3d7836e47bab667f49c90229b"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSaveGame.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSaveGame.h",
       "bytes": 1009,
       "sha256": "e5a73ee25f246395a4fb307447614de0bda70e99c7fd0fac88d3fa52c96cf93c"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Subsystems/NPCKnowledgeSubsystem.h",
+      "path": "Source/ColossalFizzCo/Public/Subsystems/NPCKnowledgeSubsystem.h",
       "bytes": 3923,
       "sha256": "2b15211c0b44e0fa3e066964841ad7b2d86f23b107c06e3d29d73b44448d416d"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Tests/FragmentNetworkTestActor.h",
+      "path": "Source/ColossalFizzCo/Public/Tests/FragmentNetworkTestActor.h",
       "bytes": 2413,
       "sha256": "3f4fa5326fdfd86f2f138770750d5be90e26ba82c886fa6cd78b0eb4d82537c7"
     },
     {
-      "path": "Source/MarryByMidnight/Public/TexturePaintComponent.h",
+      "path": "Source/ColossalFizzCo/Public/TexturePaintComponent.h",
       "bytes": 23586,
       "sha256": "2cbb43addd3994b54d8a5e0e719b900176724adf2b08fdd94743b964c178519c"
     },
     {
-      "path": "Source/MarryByMidnight/Public/UI/NPCDebugWidget.h",
+      "path": "Source/ColossalFizzCo/Public/UI/NPCDebugWidget.h",
       "bytes": 1641,
       "sha256": "034df3f3682bc1be0001ea851c22d6e2a682df017b25006472fc463813f4c0a4"
     },
     {
-      "path": "Source/MarryByMidnight/Public/UI/ShopTerminalWidget.h",
+      "path": "Source/ColossalFizzCo/Public/UI/ShopTerminalWidget.h",
       "bytes": 1777,
       "sha256": "5aaf52a6f046991e046bf828c3a18f18b0ee27b6e03db4356c8ce5b50d53cd0b"
     },
     {
-      "path": "Source/MarryByMidnight.Target.cs",
+      "path": "Source/ColossalFizzCo.Target.cs",
       "bytes": 420,
       "sha256": "658bb542dad42ef61681dddccbc8846ae4fe2d3e74a0ece6542faf0336a306e5"
     },
     {
-      "path": "Source/MarryByMidnightEditor.Target.cs",
+      "path": "Source/ColossalFizzCoEditor.Target.cs",
       "bytes": 434,
       "sha256": "5d4b13dfa6bda78085b0c16198efb816b6f1a53022327d39f460a4e4ff330a56"
     }

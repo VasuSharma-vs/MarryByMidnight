@@ -12,7 +12,7 @@ This repair is not in the older packaged 11193 candidate described below.
 
 ## Open the playable world
 
-The latest packaged candidate is `Saved/PrototypeResume_20261112/Packaged_11193/PackageArchive/Windows/MarryByMidnight.exe`. It opens the player-facing prototype map. The native Game runtime is 11193; the newer 11194 Editor build adds editor-only five-flavor filling coverage. This candidate passes instrumented packaged multiplayer and settled late join with both no emulation and verified 75 ms outgoing lag / 2% packet loss per peer. Human input and the hot hose/cooling workflow remain pending.
+The latest packaged candidate is `Saved/PrototypeResume_20261112/Packaged_11193/PackageArchive/Windows/ColossalFizzCo.exe`. It opens the player-facing prototype map. The native Game runtime is 11193; the newer 11194 Editor build adds editor-only five-flavor filling coverage. This candidate passes instrumented packaged multiplayer and settled late join with both no emulation and verified 75 ms outgoing lag / 2% packet loss per peer. Human input and the hot hose/cooling workflow remain pending.
 
 From the project directory, start two local game windows with:
 

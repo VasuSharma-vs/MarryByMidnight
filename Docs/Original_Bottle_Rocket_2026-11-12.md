@@ -104,7 +104,7 @@ this setting does not directly trigger a launch.
 - `Private/Tests/PlasticPressureTests.cpp`: retained physical-mode coverage.
 - `Private/Tests/NormalColaPrototypePressure.cpp`: mode-aware optional test driver.
 
-Source paths above are relative to `Source/MarryByMidnight`. Documentation is
+Source paths above are relative to `Source/ColossalFizzCo`. Documentation is
 updated in this record, `GDD_Master.md`,
 `Prototype_Plastic_Bottle_Pressure_2026-11-11.md`,
 `Normal_Cola_Prototype_Play_Guide.md`, `IMPLEMENTATION_HANDOFF.md` and `README.md`.

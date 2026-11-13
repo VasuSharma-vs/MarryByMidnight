@@ -124,7 +124,7 @@ No Blueprint graph or liquid material asset edit was made by this task.
 
 ## Files changed
 
-Paths below are relative to `Source/MarryByMidnight`:
+Paths below are relative to `Source/ColossalFizzCo`:
 
 - `Public/Props/InteractablePropDataAsset.h`, `Public/Props/InteractablePropDatabase.h`,
   `Private/Props/InteractablePropDatabase.cpp`: physical product/content fields.

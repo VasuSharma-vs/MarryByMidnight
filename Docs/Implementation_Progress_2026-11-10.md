@@ -63,7 +63,7 @@ Main native areas: Private/Props/{ActivePropState,PropManagerState,PropLiquidTra
 
 Stopped at the user’s explicit request near the context limit. Resume only when asked. See IMPLEMENTATION_HANDOFF.md for the exact next steps.
 
-The user saved/closed the old editor. The assistant reopened UE5 (process 29128 at launch) and reconnected MCP to the actual interactive editor. The active module is UnrealEditor-MarryByMidnight-11016.dll. An earlier reflection observation had come from a separate validation process; it was corrected in the conversation.
+The user saved/closed the old editor. The assistant reopened UE5 (process 29128 at launch) and reconnected MCP to the actual interactive editor. The active module is UnrealEditor-ColossalFizzCo-11016.dll. An earlier reflection observation had come from a separate validation process; it was corrected in the conversation.
 
 BP_ShopGameState now mirrors the native server wallet into its replicated legacy display variable every 0.25 seconds, with floating-point conversion before dividing cents by 100. It compiled with warnings treated as errors and was saved. The old scanner still contains direct writes to that display variable and has NOT been migrated to native checkout; its legacy credit path must not be treated as committed business income.
 

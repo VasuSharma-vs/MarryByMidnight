@@ -8,7 +8,7 @@ The Normal Cola foundation and an isolated prototype world are implemented. **Th
 
 | Area | Verified status |
 | --- | --- |
-| Latest native build | **11144 succeeded**, `BuildId 55116800`; `Binaries/Win64/UnrealEditor.modules` selects `UnrealEditor-MarryByMidnight-11144.dll`. Build log: `Saved/Logs/NormalColaBuild_11144.log`. |
+| Latest native build | **11144 succeeded**, `BuildId 55116800`; `Binaries/Win64/UnrealEditor.modules` selects `UnrealEditor-ColossalFizzCo-11144.dll`. Build log: `Saved/Logs/NormalColaBuild_11144.log`. |
 | Last complete automation | **11140: 38 passed — 37 clean, one existing ABP_Unarmed warning, zero failed/unrun**, `Saved/Automation/NormalColaCustomers_11140/index.json`. |
 | Newer source validation | 11141–11144 compile successfully. **The full suite has not been rerun after these changes.** Rounded-tender assertions were added after the last passing suite. |
 | Live multiplayer | Two real listen-server/client players connected on **11142**, with $0 bank and $0 cash. Customer routing failed before the first sale. No remote checkout/departure pass was obtained. |
@@ -65,7 +65,7 @@ AttributeError: module 'unreal' has no attribute 'NormalColaNavigationConfig'
 already_applied=isinstance(settings.get_editor_property('NavigationSystemConfig'),unreal.NormalColaNavigationConfig)
 ```
 
-Log: `Saved/Logs/ConfigureNormalGiantNavigation.log`; runner: `Saved/NormalColaPrototype_20261111/GiantNavigationRunner.log`. **No `NORMAL_COLA_GIANT_PROFILE_SAVED` marker or `GiantNavigationProfile.json` was produced.** Do not infer that the C++ class failed to compile: build 11144 succeeded. On resume, verify the reflected class by its `/Script/MarryByMidnight.NormalColaNavigationConfig` path and inspect Python export/type metadata; decide whether to load by reflected class path or expose the type appropriately. This remains a diagnosis task, not a verified cause.
+Log: `Saved/Logs/ConfigureNormalGiantNavigation.log`; runner: `Saved/NormalColaPrototype_20261111/GiantNavigationRunner.log`. **No `NORMAL_COLA_GIANT_PROFILE_SAVED` marker or `GiantNavigationProfile.json` was produced.** Do not infer that the C++ class failed to compile: build 11144 succeeded. On resume, verify the reflected class by its `/Script/ColossalFizzCo.NormalColaNavigationConfig` path and inspect Python export/type metadata; decide whether to load by reflected class path or expose the type appropriately. This remains a diagnosis task, not a verified cause.
 
 Before failing, the script **saved** the prototype customer asset with `TenderRoundUpDollars=10` and RVO avoidance enabled. Neither map received the intended navigation config, raised bounds, route marker heights or widened shelf layout. A manual earlier editor change made the validation Recast actor Dynamic/force-rebuild, but runtime agent dimensions still reset to 35/144 from the default supported-agent profile. The main map's navigation remains the original inadequate setup. The script is guarded against shifting bottle X coordinates twice once the custom config exists; review idempotence before rerunning after a partial application.
 
@@ -115,7 +115,7 @@ Native `NormalColaPrototypeTestActor` is placed **only in the validation map**. 
 1. Wait for the user's explicit resume. Read this checkpoint, active prototype record, approvals/architecture and current Git state. Preserve all work.
 2. Inspect `NormalColaNavigationConfig.h/.cpp`, script failure, module selection and class reflection; fix the authoring access problem. Avoid blindly rerunning `ConfigureNormalColaPrototype.py`: its Blueprint node creation is not fully idempotent. Map creation scripts intentionally refuse to overwrite existing worlds.
 3. Apply `ConfigureNormalColaNavigation.py` and validate exact saved metadata. It should configure only prototype copies. Record any partial save before retrying.
-4. Build with a fresh unused suffix if C++ changes; keep UE closed for reflected changes. Never edit reflected headers while UBT runs. Run the full `MarryByMidnight` suite with MCP auto-start disabled in the test process.
+4. Build with a fresh unused suffix if C++ changes; keep UE closed for reflected changes. Never edit reflected headers while UBT runs. Run the full `ColossalFizzCo` suite with MCP auto-start disabled in the test process.
 5. Back up both save slots. Reopen the validation map, initialize local UE MCP, capture settings, configure two-client listen-server PIE and observe fixture states in both worlds. Reconnect tools via fresh initialize/notifications; do not reuse a stale MCP session. Existing tool schemas/client helper are in the evidence folder.
 6. Resolve live failures using specific phase/proximity/path evidence, then complete production, physical input, late-join and save/load checks. Restore saves/settings and stop PIE after testing. Update implementation/test claims only from observed evidence.
 

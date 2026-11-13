@@ -1,11 +1,11 @@
 # Bottle Damage, Product Transformation & Fragment Lifecycle Architecture
 
-**Project:** Midnight Fizz: Giant Thirst (*MarryByMidnight*)  
+**Project:** Midnight Fizz: Giant Thirst (*ColossalFizzCo*)  
 **Primary C++ References (Read-Only Pending Phase B Sign-Off):**  
-- [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h) — Product Definitions, Category 2 Unique Data, Save Schema  
-- [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropManager.h) & [`InteractablePropManager.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp) — ISID Lifecycle, Hit Promotion, Product Conversion & Retirement  
-- [`InteractableProp.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractableProp.h) & [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/ColaPropActor.h) — Active Prop Base & Volatile Cola Implementation  
-- **Companion Docs:** [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md) | [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md) | [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md) | [`BP_Cola_Technical_Documentation.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/BP_Cola_Technical_Documentation.md)
+- [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h) — Product Definitions, Category 2 Unique Data, Save Schema  
+- [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropManager.h) & [`InteractablePropManager.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp) — ISID Lifecycle, Hit Promotion, Product Conversion & Retirement  
+- [`InteractableProp.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractableProp.h) & [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/ColaPropActor.h) — Active Prop Base & Volatile Cola Implementation  
+- **Companion Docs:** [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md) | [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ActivePropActor_ASM_Architecture.md) | [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/PropManager_ISM_ASM_Architecture.md) | [`BP_Cola_Technical_Documentation.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/BP_Cola_Technical_Documentation.md)
 
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 Whenever a player interacts with a resting bottle or an external physical impact hits it, the bottle transitions from resting **ISM** to active **ASM** while preserving its permanent **`ISID`**:
 
 1. **Interaction Trigger:** `RequestGrab`, `RequestUse`, `RequestConsume`, or `SetMeshInstanceToHeld` promotes the bottle into ASM (`EPropActivationReason::Grab` / `Interaction`).
-2. **External Hit / Impact Trigger:** Projectile hits, character collisions, or thrown objects invoking [`APropManager::SendISMHitResultToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L214-L294) route through `SendISMHitByICIDToPropManager` -> `SetMeshInstanceToUnsettled`, promoting the exact `ISID` into ASM (`EPropActivationReason::PhysicsImpulse` / `Drop`) and applying the impact impulse.
+2. **External Hit / Impact Trigger:** Projectile hits, character collisions, or thrown objects invoking [`APropManager::SendISMHitResultToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L214-L294) route through `SendISMHitByICIDToPropManager` -> `SetMeshInstanceToUnsettled`, promoting the exact `ISID` into ASM (`EPropActivationReason::PhysicsImpulse` / `Drop`) and applying the impact impulse.
 3. **State Hydration:** `APropManager` retrieves the bottle's persistent Category 2 data (`ContinuousData` + `EventData`) and Category 1 definitions (`ProductDef`, `ContentDef`) and initializes the pooled ASM actor (`InitializeFromISIDRecord`), restoring its exact resting `Strength`, `Temperature`, `CreationTime`, `ContentLevel`, `ContentID`, `CapType`, and `CapSealed`.
 4. **Material-Specific Simulation Response:**
    - **Glass Bottle (`EBottleMaterialType::Glass`):** High-energy impacts reduce `EventData.Strength`; crack intensity rises on `Slot 3`. No plastic body bending occurs (`bCanCrack = true`, `bCanBend = false`, `bCanDent = false`).
@@ -44,7 +44,7 @@ Whenever a player interacts with a resting bottle or an external physical impact
    - **Thermal Exposure:** Hot or freezing zones step `Temperature`, `LastUpdatedTime`, and extreme-temperature `Strength` drain (`< LowTempDamageThreshold` or `> HighTempDamageThreshold`).
 
 > [!IMPORTANT]
-> **Pre-Authorized Phase B Bug/Gap To Address (`Warmup` & `SafeImpulse` Clamp Swallowing Initial ISM Hit):** Currently [`APropManager::SendISMHitByICIDToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L263-L294) calls [`APropManager::SetInstanceToUnsettled`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L6198-L6307), which **(1)** clamps `HitImpulse` (`SafeImpulse`) to max size `220.0f` (`L6235-L6237`) and **(2)** promotes the actor with `WarmupFramesRemaining = 20`, during which [`AColaPropActor::HandleBottleComponentHit`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp#L611-L620) exits early. Therefore, on **Authoritative Server (`HasAuthority()`) only**, `SendISMHitByICIDToPropManager` must invoke `PromotedASM->ApplyInitialImpactFromPromotion(EffectiveImpulse, ImpactPoint, HittingActor, FreshInteractionEventID)` passing the **unclamped `EffectiveImpulse`** right after promotion (while physics velocity kick still uses `SafeImpulse`). Clients continue predicting movement locally without computing damage or spawning client-side fragment `ISID`s.
+> **Pre-Authorized Phase B Bug/Gap To Address (`Warmup` & `SafeImpulse` Clamp Swallowing Initial ISM Hit):** Currently [`APropManager::SendISMHitByICIDToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L263-L294) calls [`APropManager::SetInstanceToUnsettled`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L6198-L6307), which **(1)** clamps `HitImpulse` (`SafeImpulse`) to max size `220.0f` (`L6235-L6237`) and **(2)** promotes the actor with `WarmupFramesRemaining = 20`, during which [`AColaPropActor::HandleBottleComponentHit`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp#L611-L620) exits early. Therefore, on **Authoritative Server (`HasAuthority()`) only**, `SendISMHitByICIDToPropManager` must invoke `PromotedASM->ApplyInitialImpactFromPromotion(EffectiveImpulse, ImpactPoint, HittingActor, FreshInteractionEventID)` passing the **unclamped `EffectiveImpulse`** right after promotion (while physics velocity kick still uses `SafeImpulse`). Clients continue predicting movement locally without computing damage or spawning client-side fragment `ISID`s.
 
 ---
 
@@ -91,7 +91,7 @@ Consider a player picking up a full Glass or Plastic Cola bottle, drinking all o
 
 ### How All Conceptual Bottle Properties Persist in Zero-Copy Storage
 
-Reconciling every persistent concept required across `ASM <-> ISM` into the fixed **`48 B` Category 2 schema** (`0` wasted shared array copies; **see [`ISM_Data_Architecture.md` §2.3](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md#L170-L215)**):
+Reconciling every persistent concept required across `ASM <-> ISM` into the fixed **`48 B` Category 2 schema** (`0` wasted shared array copies; **see [`ISM_Data_Architecture.md` §2.3](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md#L170-L215)**):
 
 | Conceptual Property | Exact Persistence Mechanism Across `ASM -> ISM` | Bytes Cost |
 |---|---|---:|
@@ -147,15 +147,15 @@ sequenceDiagram
    - `InheritedUniqueData` (`Temperature`, `LastUpdatedTime`, `CreationTime`, `ContentID`, residual `ContentLevel`, `CapType`, `CapSealed`)
 3. **Transformation Request to Prop Manager:** The bottle invokes `PropManager->RequestProductTransformation(SourceISID, EPropTransformationType::BreakageFracture, ProductDef->BrokenProductID, Context)`.
 4. **Authoritative Retirement of `SourceISID`:** On the **server (`HasAuthority()` only — clients NEVER allocate fragment `ISID`s or retire records locally)**, `APropManager` executes:
-   - [`ReleaseInstanceToEmpty(SourceISID)`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L2232-L2262) (returns `BottleASM` to pool after `ResetTransientPoolState()`, unregisters `ISID`, returns the ISM slot to `EmptyInstances`, queues `PendingReleasedToEmptyISIDs`, and appends `SourceISID` to `WorldSaveData.DestroyedISIDs`), so the intact original bottle **can never return** via pooled reuse, late network replication, or save-game reload.
+   - [`ReleaseInstanceToEmpty(SourceISID)`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L2232-L2262) (returns `BottleASM` to pool after `ResetTransientPoolState()`, unregisters `ISID`, returns the ISM slot to `EmptyInstances`, queues `PendingReleasedToEmptyISIDs`, and appends `SourceISID` to `WorldSaveData.DestroyedISIDs`), so the intact original bottle **can never return** via pooled reuse, late network replication, or save-game reload.
 5. **Acquire `Broken Glass Bottle` Orchestrator ASM:** `APropManager` acquires an ASM representing `BrokenProductID` (`ABrokenBottlePropActor`) at `Context.WorldTransform` and injects `Context`.
 6. **Initialize Fracture Recipe:** `ABrokenBottlePropActor` reads `FractureFragments` (`TArray<FPropFractureFragmentEntry>`) from `ProductDefinitions[SourcePID]` (or `[BrokenPID]` fallback):
    - Computes exact shard world transforms via **`Context.WorldTransform * Entry.LocalSpawnTransform`** using `FractureSeed` deterministic angular/positional jitter for identical scatter trajectories.
    - Computes per-shard launch impulses (`Context.LinearVelocity * Entry.VelocityInheritance + ScatterDir * Speed` + radial torque).
 7. **Apply Fragment Properties, Base-Pool Reuse & `MaxASMCount` Saturation Fallback:** Server invokes `SpawnActiveFragmentInstance(...)` per entry:
    - Each fragment receives its own `ProductID` (`Glass Fragment 1..5`), inherited thermal/age history (`CreationTime`, `Temperature`, `LastUpdatedTime`), `bIsGrabbable`, and clean fragment `Strength` (`100.0f` or `FragDef->DefaultUniqueData.EventData.Strength`) — never born already broken at `0`.
-   - **Zero Class-Swap Hitch:** Fragment definitions leave `CustomActiveActorClass = nullptr`, so `UASMComponent` reuses pre-warmed base [`AActivePropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractableProp.h#L32) slots directly without actor destroy/respawn churn.
-   - **Pool Saturation Guard (`MaxASMCount = 500`):** If bulk breakage (e.g., dropping a crate of 20 glass bottles = 100 shards at once) approaches [`MaxASMCount = 500`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/ASMComponent.h#L41-L43), excess shards trace directly down to the floor and spawn straight into `AtRest` ISM slots (`bFallbackToRestingISMIfPoolFull = true`), preventing silent shard loss.
+   - **Zero Class-Swap Hitch:** Fragment definitions leave `CustomActiveActorClass = nullptr`, so `UASMComponent` reuses pre-warmed base [`AActivePropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractableProp.h#L32) slots directly without actor destroy/respawn churn.
+   - **Pool Saturation Guard (`MaxASMCount = 500`):** If bulk breakage (e.g., dropping a crate of 20 glass bottles = 100 shards at once) approaches [`MaxASMCount = 500`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/ASMComponent.h#L41-L43), excess shards trace directly down to the floor and spawn straight into `AtRest` ISM slots (`bFallbackToRestingISMIfPoolFull = true`), preventing silent shard loss.
 8. **Fragment Simulation Until Settle:** Active fragment ASMs simulate physics via `PhysicsSimComponent` until linear/angular velocities drop below tolerance for `UnsettledDelay`.
 9. **Conversion to Independent ISM Instances:** As **each** fragment reaches rest and passes `CanDemoteToISM()`, it demotes via `ConvertASMToISM` into **`UInteractableISMComponent`** belonging to its own `ProductID` (`Glass Fragment 1` batch, `Glass Fragment 2` batch, etc.), reusing `EmptyInstances` first and writing its 4-float GPU CPD (`Slot 1 = ExpiryAge`, `Slot 2 = Temperature`, `Slot 3 = FragmentStrength`).
 10. **Orchestrator Completion (`bPersistBrokenHullAfterFracture`):** Once fracture spawning finishes:
@@ -218,7 +218,7 @@ The exact same transformation pipeline handles all bottle failure outcomes by re
 
 ## 8. Proposed C++ Contracts (`[Needs Approval]` vs `[Pre-Authorized]`)
 
-### 8.1 Database & Product Transformation Structs (`[Needs Approval]` — [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h))
+### 8.1 Database & Product Transformation Structs (`[Needs Approval]` — [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h))
 
 ```cpp
 UENUM(BlueprintType)
@@ -231,7 +231,7 @@ enum class EPropTransformationType : uint8
 };
 
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropFractureFragmentEntry
+struct COLOSSALFIZZCO_API FPropFractureFragmentEntry
 {
     GENERATED_BODY()
 
@@ -255,7 +255,7 @@ struct MARRYBYMIDNIGHT_API FPropFractureFragmentEntry
 };
 
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropTransformationContext
+struct COLOSSALFIZZCO_API FPropTransformationContext
 {
     GENERATED_BODY()
 
@@ -284,7 +284,7 @@ Additional fields on **`FPropProductDefinition`** (`[Needs Approval]`):
 Packing addition inside **`FPropEventUpdateData`** (`[Needs Approval]` — **0 extra bytes**, fits inside existing `bool` padding):
 - `uint8 CapType = 0;` *(maps to `EBottleCapType` alongside `float CapSealed`)*
 
-### 8.2 Prop Manager Transformation API (`[Needs Approval]` — [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropManager.h))
+### 8.2 Prop Manager Transformation API (`[Needs Approval]` — [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropManager.h))
 
 ```cpp
 // Executes 1-to-1 product transformation OR retires SourceISID and launches 1-to-Many fracture orchestrator ASM
@@ -319,7 +319,7 @@ virtual void ApplyInitialImpactFromPromotion(
 
 // Derived AActivePropActor class referenced by BrokenProductID's CustomActiveActorClass
 UCLASS(Blueprintable)
-class MARRYBYMIDNIGHT_API ABrokenBottlePropActor : public AActivePropActor
+class COLOSSALFIZZCO_API ABrokenBottlePropActor : public AActivePropActor
 {
     GENERATED_BODY()
 public:
@@ -332,7 +332,7 @@ public:
 
 ## 9. Open Edge-Case Decisions (Added to Pre-Phase-B Sign-Off)
 
-In addition to Decisions 1–4 in [`ISM_Data_Architecture.md` §2.7](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md#L367-L375), please confirm these **2 fracture-specific choices**:
+In addition to Decisions 1–4 in [`ISM_Data_Architecture.md` §2.7](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md#L367-L375), please confirm these **2 fracture-specific choices**:
 
 5. **Fragment `ISID` Allocation Timing (`At Spawn` vs. `At Settle`):** Should `Broken Glass Bottle` allocate each fragment's permanent `ISID` **immediately at spawn** (`SpawnActiveFragmentInstance` — supports grabbing/sweeping shards mid-slide and mid-flight saves) or **only upon settling**? *(Recommended: Allocate `ISID` at spawn.)*
 6. **Broken Bottle Orchestrator Lifecycle (`Pure Fragments` vs. `Broken Hull + Fragments`):** When `Glass Fragment 1..5` finish spawning, should `Broken Glass Bottle` despawn/pool completely (`100%` fragments on floor) OR also stay as a resting base/neck `Broken Glass Bottle` product alongside fragments `1..5` *(and if the bottle was capped before breaking, spawn the detached cap mesh/product separately)*?

@@ -1,11 +1,11 @@
 # BP_Cola & AColaPropActor — Technical Architecture & Gameplay Specification
 
-**Project:** Midnight Fizz: Giant Thirst (*MarryByMidnight*)  
-**Source Location:** [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/ColaPropActor.h) & [`ColaPropActor.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp)  
-**Blueprint Class:** `/Game/Props/Colas/BP_Cola` (derives from [`AColaPropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/ColaPropActor.h#L26))  
-**Parent C++ Class:** [`AActivePropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractableProp.h#L32) : `AActor`, `IWorldAffordanceInterface`  
+**Project:** Midnight Fizz: Giant Thirst (*ColossalFizzCo*)  
+**Source Location:** [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/ColaPropActor.h) & [`ColaPropActor.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp)  
+**Blueprint Class:** `/Game/Props/Colas/BP_Cola` (derives from [`AColaPropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/ColaPropActor.h#L26))  
+**Parent C++ Class:** [`AActivePropActor`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractableProp.h#L32) : `AActor`, `IWorldAffordanceInterface`  
 **Interface Implementations:** `IWorldAffordanceInterface`, `BPI_World_Intractions_System`  
-**Companion Docs:** [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md) | [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md) | [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md) | [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md)
+**Companion Docs:** [`ISM_Data_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md) | [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ActivePropActor_ASM_Architecture.md) | [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/PropManager_ISM_ASM_Architecture.md) | [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md)
 
 ---
 
@@ -15,7 +15,7 @@
 
 1. **Fractional Liquid Volume, Content Identity & Morph Targets:** Continuous fill tracking via `ContentLevel` (`0.0` empty, `1.0` normal capacity, up to `MaxOverfillLevel = 1.7` by default), paired with central `ContentID` lookups, driving `"EmptyLevel"` / `"OverfullLevel"` morph targets, 4-float Custom Primitive Data, and velocity-reactive Slot `1` liquid shaders (`UpdateBottleMaterial`).
 2. **Separated Base vs. Interaction Pressure & Structural Integrity (`Strength`):** Resting `BasePressure = ContentLevel`, interaction agitation (`AccumulatedInteractionPressure`) scaled by `Content.PressureStrengthMultiplier / Product.PressureResistanceMultiplier` with `InteractionEventID` deduplication, plus monotonic persistent `Strength` (`0.0 .. MaxStrength`) separating permanent dents/cracks from recoverable `TemporaryDeformation`.
-3. **Dual Thermal Solver & Equilibration Gate:** Multi-source exponential heat transfer solving both bottle shell (`CurrentTemperature`) and liquid (`ContentTemperature`), draining `Strength` above/below thermal thresholds, and gating ASM -> ISM demotion via [`CanDemoteToISM()`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md#L103) until shell and content equilibrate.
+3. **Dual Thermal Solver & Equilibration Gate:** Multi-source exponential heat transfer solving both bottle shell (`CurrentTemperature`) and liquid (`ContentTemperature`), draining `Strength` above/below thermal thresholds, and gating ASM -> ISM demotion via [`CanDemoteToISM()`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ActivePropActor_ASM_Architecture.md#L103) until shell and content equilibrate.
 4. **Centralized Containment Failure Manager & Catastrophic Rocket Flight:** Prioritized server-authoritative failure handling (`BottleBreakage > OverpressureBurst > ThermalFailure > PressureRelease > CapFailure`), duplicate `FailureEventID` protection, erratic 3D zig-zag `URocketProjectileComponent` launches, hazard spawning, and PID conversion to `BurstBrokenProductID`.
 5. **4-Stage Capping & 5-Mode Uncapping Lifecycle:** `AddCap` (`Validate -> Attach -> Close & Seal -> Auto/Event Validation` updating float `CapSealed` `0.0 .. 1.0`) and `RemoveCap` (`Twist`, `Pop`, `Break`, `Pull`, `Cut`) with `SafeOpenPressureThreshold` containment checks and `PoolGeneration`-safe cleanup timers.
 6. **Precision Filling (`FillBottle(FillStrength, DeltaSeconds)`) & Decoupled Failures:** Frame-rate-independent flow with `FillSlowdownCurve`, `OverfillWarningThreshold`, strict return of exact accepted fractional portions, and decoupled `OverpressureBurst` vs. optional `bEnableOverfillFailure`.
@@ -59,7 +59,7 @@ flowchart TD
 
 Every bottle separates its **physical container product (`ProductID`)** from its **liquid flavor (`ContentID`)**:
 - `ContentID == 0`: Empty container (no liquid shader parameters ticked, Slot `1` liquid material cleared).
-- `ContentID > 0`: Looks up shared `FPropContentDefinition` from [`APropManager::ContentDefinitions`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md#L146-L167) (`LiquidMaterial`, `LiquidColor`, `PressureStrengthMultiplier`, `BasePortionPrice`, `IdealServingTemperature`, taste/stimuli/expiry).
+- `ContentID > 0`: Looks up shared `FPropContentDefinition` from [`APropManager::ContentDefinitions`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md#L146-L167) (`LiquidMaterial`, `LiquidColor`, `PressureStrengthMultiplier`, `BasePortionPrice`, `IdealServingTemperature`, taste/stimuli/expiry).
 
 Liquid volume is tracked natively as continuous `EventData.ContentLevel` (mirrored to replicated `ColaLevel` in ASM — **never** floored to integers inside active gameplay):
 - `0.0`: Empty (`RemainingPortions = 0`).
@@ -110,7 +110,7 @@ $$P_{\text{base}} = \text{ContentLevel}$$
 $$P_{\text{total}} = P_{\text{base}} + P_{\text{interaction}}$$
 
 #### 1. Continuous Agitation & Drop Impulse Generation (`UpdateFoamPressure` / `HandleBottleComponentHit`)
-- **Warmup, Transit & Teleport Guards (plus ISM Hit Bypass):** Normal `HandleBottleComponentHit` bypasses agitation during `WarmupFramesRemaining` (`20`), `HeldGracePeriod` (`0.5s`), rest interpolation, or jumps $> 200^2\text{ cm}^2$ / $Z < -50,000$. When promoted by an external ISM collision via [`SendISMHitByICIDToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L263-L294) -> [`SetInstanceToUnsettled`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L6198-L6307), the **authoritative server (`HasAuthority()`)** invokes `ApplyInitialImpactFromPromotion(EffectiveImpulse, ...)` passing the **unclamped `EffectiveImpulse`** (bypassing both warmup and the `220.0f` `SafeImpulse` velocity clamp) so heavy impacts crack or shatter resting glass bottles reliably. *(Additional Phase B Fix: [`ColaPropActor.cpp#L163`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp#L163) zeros local finite-difference velocities without overwriting replicated `FoamPressure` on clients, and [`ColaPropActor.cpp#L236-L237`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp#L236-L237) removes the stray `bWasHeldLastFrame = true` overwrite.)*
+- **Warmup, Transit & Teleport Guards (plus ISM Hit Bypass):** Normal `HandleBottleComponentHit` bypasses agitation during `WarmupFramesRemaining` (`20`), `HeldGracePeriod` (`0.5s`), rest interpolation, or jumps $> 200^2\text{ cm}^2$ / $Z < -50,000$. When promoted by an external ISM collision via [`SendISMHitByICIDToPropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L263-L294) -> [`SetInstanceToUnsettled`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L6198-L6307), the **authoritative server (`HasAuthority()`)** invokes `ApplyInitialImpactFromPromotion(EffectiveImpulse, ...)` passing the **unclamped `EffectiveImpulse`** (bypassing both warmup and the `220.0f` `SafeImpulse` velocity clamp) so heavy impacts crack or shatter resting glass bottles reliably. *(Additional Phase B Fix: [`ColaPropActor.cpp#L163`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp#L163) zeros local finite-difference velocities without overwriting replicated `FoamPressure` on clients, and [`ColaPropActor.cpp#L236-L237`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp#L236-L237) removes the stray `bWasHeldLastFrame = true` overwrite.)*
 - **Continuous Pressure Generation (when `Abs(DeltaJerk) > AgitationJerkThreshold` while held & attached):**
   $$\Delta P = \frac{\text{PressureGenerationRate} \times \Delta t \times \text{Content.PressureStrengthMultiplier}}{\text{Product.PressureResistanceMultiplier}}$$
 - **One-Time Impulse (`HandleBottleComponentHit` / `ApplyInitialImpactFromPromotion`) with Server Deduplication:**
@@ -167,7 +167,7 @@ flowchart LR
   1. **Cap Detonation:** `RemoveCap(EBottleCapRemovalType::Pop, 1.0f, ECapRemovalOperation::EjectPhysics)` detaches/ejects the cap (`+Up * 1500` impulse) and clears `CapType = 0`, `CapSealed = 0.0f`.
   2. **Flight Trajectory Setup:** `bEnableErraticPath = true`, `ZigZagMode = ERocketZigZagMode::Random3D`, `Min/MaxWaypointSpacing = 350..650 cm`, `Min/MaxPathDeviation = 35..90 deg`, `8` flight ricochets, `4` falling bounces.
   3. **Impulse Cone:** $25^\circ$ cone around local `UpVector`; Speed `Clamp(ContentLevel * 3500.0, 1500.0, 4500.0) cm/s`; Distance `Clamp(ContentLevel * 6000.0, 2000.0, 8000.0) cm`.
-  4. **Hazard & Product Transformation ([`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md)):** Spawns variant hazard puddles/clouds/jets (and ejects attached cap debris on shatter), then executes either:
+  4. **Hazard & Product Transformation ([`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md)):** Spawns variant hazard puddles/clouds/jets (and ejects attached cap debris on shatter), then executes either:
      - **1-to-1 (`OverpressureBurst` / `ThermalFailure`):** Calls `ChangePropProductWithMode(BurstBrokenProductID / MeltedProductID, EPropProductResetMode::PreserveUniqueState)` keeping `ISID`, `CreationTime`, `Temperature`, and `ContentID`.
      - **1-to-Many (`BottleBreakage` on Glass):** Guards `BrokenProductID != ProductID`, retires `SourceISID` via `ReleaseInstanceToEmpty`, and invokes `RequestProductTransformation` -> `Broken Glass Bottle` (`ABrokenBottlePropActor`) -> `Glass Fragment 1..N` independent `FragISID` lifecycles.
 
@@ -185,7 +185,7 @@ Capping state in ISM/ASM is persisted cleanly via **`CapType` (`uint8` `EBottleC
 - **`RemoveCap(EBottleCapRemovalType RemovalType, float RemovingStrength)` — 5 Modes (`Twist`, `Pop`, `Break`, `Pull`, `Cut`):**
   1. Checks `CapMeshComponent` is attached and `RemovalType` matches cap hardware (`Twist`, `Pop`, `Break`, `Pull`, `Cut`).
   2. **Containment Gate:** If `ContentLevel <= KINDA_SMALL_NUMBER`, skips containment check and removes cleanly. If `ContentLevel > 0.0f`, tests `bIsInSuitableContainmentEnvironment` AND `TotalPressure <= SafeOpenPressureThreshold`.
-  3. Unsafe removal submits **`PressureRelease`** to `ContainmentFailureManager`; safe removal sets `CapType = 0`, `CapSealed = 0.0f`, emits Event Delta, and cleans up the ejected cap cleanly using **`PoolGeneration`-guarded timers** or standalone temporary debris *(fixing [`ColaPropActor.cpp#L423-L431`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp#L423-L431) so pooled bottle reuse within 5 seconds never destroys the next bottle's cap)*.
+  3. Unsafe removal submits **`PressureRelease`** to `ContainmentFailureManager`; safe removal sets `CapType = 0`, `CapSealed = 0.0f`, emits Event Delta, and cleans up the ejected cap cleanly using **`PoolGeneration`-guarded timers** or standalone temporary debris *(fixing [`ColaPropActor.cpp#L423-L431`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp#L423-L431) so pooled bottle reuse within 5 seconds never destroys the next bottle's cap)*.
 
 ---
 
@@ -249,7 +249,7 @@ sequenceDiagram
 
 ## 5. Network Replication Breakdown
 
-Under the split zero-copy architecture, persistent ISM/ASM fields sync through [`APropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md#L72-L91) (`Registry`, `Event` ordered by `EventSequence`, and `Continuous`), while live ASM gameplay variables replicate for active presentation:
+Under the split zero-copy architecture, persistent ISM/ASM fields sync through [`APropManager`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/PropManager_ISM_ASM_Architecture.md#L72-L91) (`Registry`, `Event` ordered by `EventSequence`, and `Continuous`), while live ASM gameplay variables replicate for active presentation:
 
 | Property / Channel / RPC | Net Mode | Description |
 | :--- | :--- | :--- |
@@ -281,14 +281,14 @@ Under the split zero-copy architecture, persistent ISM/ASM fields sync through [
 
 ## 7. C++ Header, Implementation Reference & Revision History
 
-- Header File: [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/ColaPropActor.h)
-- Implementation File: [`ColaPropActor.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp)
-- Base Class: [`InteractableProp.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractableProp.h)
-- Rocket Component: [`RocketProjectileComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/RocketProjectileComponent.h)
+- Header File: [`ColaPropActor.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/ColaPropActor.h)
+- Implementation File: [`ColaPropActor.cpp`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp)
+- Base Class: [`InteractableProp.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractableProp.h)
+- Rocket Component: [`RocketProjectileComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/RocketProjectileComponent.h)
 
 | Iteration | Focus Completed |
 |---|---|
 | **Iteration 1** | Aligned `BP_Cola` / `AColaPropActor` documentation with the zero-copy ISM <-> ASM architecture (`ContentLevel`, `ContentID`, `CapSealed`, `Strength`, 4-float CPD, split Event/Continuous channels) and full `Bottle_Containment_&_Failure_System.txt` specification (`AddCap` 4 stages, `RemoveCap` 5 modes, `FillBottle` fractional return, `ContainmentFailureManager`, `BurstBrokenProductID`). |
 | **Iteration 2** | Audited pricing formulas, KaTeX `$` escaping (`\$` in tables), `CanDemoteToISM()` equilibration conditions, and exact Phase B bug fixes (`ColaPropActor.cpp#L163`, `L236-L237`, `L423-L431`, `L547-L609`). |
 | **Iteration 3** | Replaced ASCII pooling/hierarchy diagrams with Mermaid diagrams and verified all clickable `file:///` links against source headers/implementations. |
-| **Iteration 4** | Integrated [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md): specified Glass crack `Lerp` vs Plastic WPO Vertex Texture in `Slot 3`, added server-only `ApplyInitialImpactFromPromotion` bypass (`WarmupFramesRemaining` + unclamped `EffectiveImpulse`), separated 1-to-1 (`Burst`/`Melted`) vs 1-to-Many (`Broken Glass -> Glass Fragment 1..N`) transformations with recursion guard, and unified `CapType` / `SupportedCapMask` / `EBottleCapRemovalType`. |
+| **Iteration 4** | Integrated [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md): specified Glass crack `Lerp` vs Plastic WPO Vertex Texture in `Slot 3`, added server-only `ApplyInitialImpactFromPromotion` bypass (`WarmupFramesRemaining` + unclamped `EffectiveImpulse`), separated 1-to-1 (`Burst`/`Melted`) vs 1-to-Many (`Broken Glass -> Glass Fragment 1..N`) transformations with recursion guard, and unified `CapType` / `SupportedCapMask` / `EBottleCapRemovalType`. |

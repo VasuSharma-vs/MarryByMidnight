@@ -1,21 +1,21 @@
 # ISM Data Architecture & Zero-Copy Shared / Unique Split
 
-**Project:** Midnight Fizz: Giant Thirst (*MarryByMidnight*)  
+**Project:** Midnight Fizz: Giant Thirst (*ColossalFizzCo*)  
 **Primary C++ Sources (Read-Only Reference — C++ Edits Gated Pending Doc Approval):**  
-- [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h)
-- [`InteractableInstancedStaticMeshComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h)
-- [`InteractablePropDataAsset.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h)
-- [`PropBatchUpdateComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/PropBatchUpdateComponent.h)
-- [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropManager.h)
+- [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h)
+- [`InteractableInstancedStaticMeshComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h)
+- [`InteractablePropDataAsset.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h)
+- [`PropBatchUpdateComponent.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/PropBatchUpdateComponent.h)
+- [`InteractablePropManager.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropManager.h)
 
 This document is organized into two clearly separated parts:
 - **Part 1: Current ISM Data (As Implemented Today)** — Baseline audit of all 17 members of `FPropProductDefinition` / `IISMDB`, legacy per-slot duplication (`PropDatabase` + `IISMDB`), 64-bit `FPropPackedRuntimeData`, replication/save structs, and 3-float GPU Custom Data.
 - **Part 2: Target Architecture (Zero-Copy Shared Registries & Split Unique Data)** — Eliminates shared-data duplication across ISM/ASM instances, splits per-instance unique data into **Continuous Update Data** vs **Event Update Data**, integrates the Bottle Containment & Failure System, expands GPU Custom Data to 4 floats, and defines SaveGame `SchemaVersion = 2`.
 
 **Related Architecture Docs:**
-- [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md) — `AActivePropActor` & `AColaPropActor` runtime mirror, transient ASM physics, and Containment Failure Manager.
-- [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md) — `APropManager`, `UASMComponent`, `UInteractableISMComponent`, and `UPropBatchUpdateComponent` orchestration.
-- [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md) — GPU-driven damage (`Glass` Crack `Lerp` vs `Plastic` WPO), `Broken Glass -> Glass Fragment 1..N` 1-to-Many fracture pipeline, and `Melted`/`Burst` transformations.
+- [`ActivePropActor_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ActivePropActor_ASM_Architecture.md) — `AActivePropActor` & `AColaPropActor` runtime mirror, transient ASM physics, and Containment Failure Manager.
+- [`PropManager_ISM_ASM_Architecture.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/PropManager_ISM_ASM_Architecture.md) — `APropManager`, `UASMComponent`, `UInteractableISMComponent`, and `UPropBatchUpdateComponent` orchestration.
+- [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md) — GPU-driven damage (`Glass` Crack `Lerp` vs `Plastic` WPO), `Broken Glass -> Glass Fragment 1..N` 1-to-Many fracture pipeline, and `Melted`/`Burst` transformations.
 
 ---
 
@@ -23,7 +23,7 @@ This document is organized into two clearly separated parts:
 
 In the current codebase, ISM data lives across four layers, three of which currently duplicate shared configuration data:
 
-1. **Shared Product Definition (`FPropProductDefinition` / `IISMDB`)** — The 17-member struct stored in [`APropManager::ProductDefinitions`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropManager.h#L87) and redundantly mirrored into [`UInteractableISMComponent::IISMDB`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h#L52).
+1. **Shared Product Definition (`FPropProductDefinition` / `IISMDB`)** — The 17-member struct stored in [`APropManager::ProductDefinitions`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropManager.h#L87) and redundantly mirrored into [`UInteractableISMComponent::IISMDB`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h#L52).
 2. **Batch Component State (`UInteractableISMComponent`)** — Bidirectional `ISIDToISMI` / `ISMIToISID` maps, `PackedInstanceData`, and legacy replicated `PropDatabase` (`TArray<FInteractablePropData>`).
 3. **Authoritative Per-Instance Record (`FISIDRuntimeIndex` / `PIIDB`)** — Master record keyed by permanent `ISID`, plus `FPropInstanceDelta`, `FPropRuntimeFieldDelta`, and `FPropSerializedInstance`.
 4. **GPU Per-Instance Custom Data (`PerInstanceSMCustomData`)** — 3 float channels (`NumCustomDataFloats = 3`) pushed to ISM shaders.
@@ -32,7 +32,7 @@ In the current codebase, ISM data lives across four layers, three of which curre
 
 ## 1.1 `FPropProductDefinition` (`IISMDB`) — All 17 Members from Editor Panel
 
-Defined in [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L753-L830). Every entry currently contains **17 members**:
+Defined in [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L753-L830). Every entry currently contains **17 members**:
 
 | # | Editor Display Name | C++ Field Name | C++ Type | Default Value | Current Role |
 |---:|---|---|---|---|---|
@@ -70,15 +70,15 @@ Defined in [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%2
 ## 1.2 Current Per-ISM Component, Network, Save & GPU Audit (Known Issues)
 
 * **`UInteractableISMComponent` Redundancy:**
-  * Replicates `IISMDB` ([`InteractableInstancedStaticMeshComponent.h#L51-L52`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h#L51-L52)), copying the entire shared product struct onto every ISM component.
-  * Replicates `PropDatabase` (`TArray<FInteractablePropData>`, [`L101-L102`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h#L101-L102)), duplicating `ItemDisplayName`, `StaticMesh`, `DataAsset`, `Price`, `NumOfPortions`, `ExpiryStimulusProfile`, `StimuliPerPortion`, `TasteProfile`, etc. on every single ISM slot ([`AddInstanceWithISID`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L296-L314), [`ReuseOrAddInstanceWithISID`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L387-L405), [`SyncDatabaseWithInstanceCount`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L1456-L1490)).
+  * Replicates `IISMDB` ([`InteractableInstancedStaticMeshComponent.h#L51-L52`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h#L51-L52)), copying the entire shared product struct onto every ISM component.
+  * Replicates `PropDatabase` (`TArray<FInteractablePropData>`, [`L101-L102`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h#L101-L102)), duplicating `ItemDisplayName`, `StaticMesh`, `DataAsset`, `Price`, `NumOfPortions`, `ExpiryStimulusProfile`, `StimuliPerPortion`, `TasteProfile`, etc. on every single ISM slot ([`AddInstanceWithISID`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L296-L314), [`ReuseOrAddInstanceWithISID`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L387-L405), [`SyncDatabaseWithInstanceCount`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L1456-L1490)).
 * **Replication Waste:**
-  * [`FPropBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L1020) embeds `TArray<FPropProductDefinition> ProductDefinitions` into every delta batch ([`BuildBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L7083), [`SendInstanceDelta`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L7120)) instead of sending product/content definitions once per join or registration.
+  * [`FPropBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L1020) embeds `TArray<FPropProductDefinition> ProductDefinitions` into every delta batch ([`BuildBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L7083), [`SendInstanceDelta`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L7120)) instead of sending product/content definitions once per join or registration.
 * **64-Bit `FPropPackedRuntimeData` Bottleneck:**
-  * [`InteractablePropDatabase.h#L421-L465`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L421-L465) packs only `CreationMinute` (`uint16`), `LastUpdatedMinute` (`uint16`), `RemainingPortions` (`uint8`), quantized `Temperature`, `bIsGrabbable`, and `SchemaFlags`, leaving only 3 unused bits (`53..55`). It cannot carry fractional `ContentLevel`, `ContentID`, float `CapSealed`, `Strength`, or double-precision timestamps required by the thermal solver.
-  * [`GetCurrentWorldMinutes()`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L326-L333) truncates world seconds to `uint16` minutes and resets to `0` on level load.
+  * [`InteractablePropDatabase.h#L421-L465`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L421-L465) packs only `CreationMinute` (`uint16`), `LastUpdatedMinute` (`uint16`), `RemainingPortions` (`uint8`), quantized `Temperature`, `bIsGrabbable`, and `SchemaFlags`, leaving only 3 unused bits (`53..55`). It cannot carry fractional `ContentLevel`, `ContentID`, float `CapSealed`, `Strength`, or double-precision timestamps required by the thermal solver.
+  * [`GetCurrentWorldMinutes()`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L326-L333) truncates world seconds to `uint16` minutes and resets to `0` on level load.
 * **Current 3-Float GPU Custom Data (`NumCustomDataFloats = 3`):**
-  * [`UpdateInstanceCustomData`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L807-L865) sets Slot `0 = PortionRatio`, Slot `1 = FrostFactor`, Slot `2 = ExpiryAge`. Because temperature is pre-converted into clamped `FrostFactor` (`0..1`), shaders cannot react to overheating/hot drinks, `Strength` (cracks/dents) is invisible, and `ContentLevel` is quantized or derived from `RemainingPortions`.
+  * [`UpdateInstanceCustomData`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L807-L865) sets Slot `0 = PortionRatio`, Slot `1 = FrostFactor`, Slot `2 = ExpiryAge`. Because temperature is pre-converted into clamped `FrostFactor` (`0..1`), shaders cannot react to overheating/hot drinks, `Strength` (cracks/dents) is invisible, and `ContentLevel` is quantized or derived from `RemainingPortions`.
 
 ---
 ---
@@ -124,7 +124,7 @@ APropManager (Single Source of Truth for Shared & Unique Instance State)
 
 ## 2.2 Category 1 — Shared Data (Dual Central Registries, Zero Per-Instance Copy)
 
-> **Refactor Rule (`[Needs Approval]`):** Remove [`UInteractableISMComponent::PropDatabase`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h#L102) (`TArray<FInteractablePropData>`), remove [`UInteractableISMComponent::IISMDB`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Components/InteractableInstancedStaticMeshComponent.h#L52) replication, and remove `TArray<FPropProductDefinition> ProductDefinitions` from recurring [`FPropBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L1020) packets. Legacy query helpers such as [`APropManager::CanInteractWithMesh`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp#L8102-L8150) and [`UInteractableISMComponent::GetPropDataForInstance`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L1191-L1199) assemble an ephemeral `FInteractablePropData` on stack memory from `FindProductDefinition(PID)` + `FindContentDefinition(CID)` + `FindUniqueData(ISID)` without storing arrays per ISM slot or ASM actor.
+> **Refactor Rule (`[Needs Approval]`):** Remove [`UInteractableISMComponent::PropDatabase`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h#L102) (`TArray<FInteractablePropData>`), remove [`UInteractableISMComponent::IISMDB`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Components/InteractableInstancedStaticMeshComponent.h#L52) replication, and remove `TArray<FPropProductDefinition> ProductDefinitions` from recurring [`FPropBulkUpdateBatch`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L1020) packets. Legacy query helpers such as [`APropManager::CanInteractWithMesh`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp#L8102-L8150) and [`UInteractableISMComponent::GetPropDataForInstance`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/InteractableInstancedStaticMeshComponent.cpp#L1191-L1199) assemble an ephemeral `FInteractablePropData` on stack memory from `FindProductDefinition(PID)` + `FindContentDefinition(CID)` + `FindUniqueData(ISID)` without storing arrays per ISM slot or ASM actor.
 
 ### 2.2.1 Shared Product Registry (`FPropProductDefinition` Keyed by `ProductID`)
 
@@ -211,7 +211,7 @@ Mutated **only** at spawn or on discrete gameplay events (Fill, Empty/Pour, Cons
 | `BasePressure` & `AccumulatedInteractionPressure` | Resting $P_{\text{base}} = \text{ContentLevel}$; transient $P_{\text{interaction}}$ lives only on ASM and `CanDemoteToISM()` blocks demotion until interaction pressure decays back to zero (or vents). |
 | `PermanentDeformation`, `CrackProgression`, `ThermalDamageLevel` | Consolidated into single scalar **`Strength`** (`0..MaxStrength`) fed to **GPU `Slot 3`**. Glass materials drive Crack Progression via **`Lerp(1 - Slot3)`**; Plastic materials drive Permanent Deformation via **WPO Vertex Texture (`1 - Slot3`)**. |
 | `bIsCapSealed` & `SealIntegrity` | Consolidated into **`CapSealed`** (`float 0.0 .. 1.0`) paired with zero-padding `uint8 CapType`. |
-| `FailureType` & `bFailureTriggered` | Represented via **Product Transformation** ([`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md)): 1-to-1 `ChangePropProductWithMode` (`BurstBrokenProductID`, `MeltedProductID`) or 1-to-Many `RequestProductTransformation` (`BrokenProductID -> Glass Fragment 1..N`). |
+| `FailureType` & `bFailureTriggered` | Represented via **Product Transformation** ([`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md)): 1-to-1 `ChangePropProductWithMode` (`BurstBrokenProductID`, `MeltedProductID`) or 1-to-Many `RequestProductTransformation` (`BrokenProductID -> Glass Fragment 1..N`). |
 
 ---
 
@@ -234,7 +234,7 @@ Expanded from `3` floats (`InteractableInstancedStaticMeshComponent.cpp#L23`) to
 
 1. **`FPropWorldSaveData` (`SchemaVersion = 2`):**
    - Stores `double WorldElapsedSeconds` so `CreationTime` and `LastUpdatedTime` remain continuous across save/load sessions.
-   - [`FPropSerializedInstance`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L1175-L1226) conditionally serializes `FPropInstanceUniqueData` only if `ProductDef.bEnableInstanceUniqueData == true`.
+   - [`FPropSerializedInstance`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L1175-L1226) conditionally serializes `FPropInstanceUniqueData` only if `ProductDef.bEnableInstanceUniqueData == true`.
    - **Backward Migration (`SchemaVersion == 1 -> 2`):** Legacy saves containing `FPropPackedRuntimeData` (`CreationMinute`, `LastUpdatedMinute`, `RemainingPortions`, `Temperature`, `bIsGrabbable`) convert deterministically on load *(if legacy save compatibility is retained; see Section 2.7)*:
      - `ContentLevel = RemainingPortions / Max(1, NumOfPortions)`
      - `CreationTime = CreationMinute * 60.0`, `LastUpdatedTime = LastUpdatedMinute * 60.0`
@@ -247,12 +247,12 @@ Expanded from `3` floats (`InteractableInstancedStaticMeshComponent.cpp#L23`) to
 
 ## 2.6 Proposed C++ Header Contracts (`[Needs Approval]`)
 
-Targeting [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h) and [`InteractablePropDataAsset.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h) — **held pending user approval**:
+Targeting [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h) and [`InteractablePropDataAsset.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h) — **held pending user approval**:
 
 ```cpp
 // Category 2.1: Continuous Update Data (16 bytes, no CreationTime / Event fields)
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropContinuousUpdateData
+struct COLOSSALFIZZCO_API FPropContinuousUpdateData
 {
     GENERATED_BODY()
 
@@ -265,7 +265,7 @@ struct MARRYBYMIDNIGHT_API FPropContinuousUpdateData
 
 // Category 2.2: Event Update Data (32 bytes, mutated only on spawn or discrete events)
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropEventUpdateData
+struct COLOSSALFIZZCO_API FPropEventUpdateData
 {
     GENERATED_BODY()
 
@@ -295,7 +295,7 @@ struct MARRYBYMIDNIGHT_API FPropEventUpdateData
 };
 
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropInstanceUniqueData
+struct COLOSSALFIZZCO_API FPropInstanceUniqueData
 {
     GENERATED_BODY()
 
@@ -308,7 +308,7 @@ struct MARRYBYMIDNIGHT_API FPropInstanceUniqueData
 
 // Category 1B: Shared Liquid / Content Registry (Keyed by ContentID on APropManager; 0 = None)
 USTRUCT(BlueprintType)
-struct MARRYBYMIDNIGHT_API FPropContentDefinition
+struct COLOSSALFIZZCO_API FPropContentDefinition
 {
     GENERATED_BODY()
 
@@ -353,14 +353,14 @@ struct MARRYBYMIDNIGHT_API FPropContentDefinition
 };
 ```
 
-Additional Category 1 additions onto existing [`FPropProductDefinition`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h#L753-L830) and [`UInteractablePropDataAsset`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDataAsset.h#L53-L199):
+Additional Category 1 additions onto existing [`FPropProductDefinition`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h#L753-L830) and [`UInteractablePropDataAsset`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDataAsset.h#L53-L199):
 - `bool bEnableInstanceUniqueData = false;`
 - `bool bEnableContinuousUpdateData = false;` *(EditCondition = `bEnableInstanceUniqueData`)*
 - Container capacity/overfill: `float NormalCapacity = 1.0f;`, `float OverfillWarningThreshold = 1.15f;`, `float MaxOverfillLevel = 1.7f;`, `TObjectPtr<UCurveFloat> FillSlowdownCurve;`, `bool bEnableOverfillFailure = false;`
 - Shell strength & thermal physics: `float MaxStrength = 100.0f;`, `float BreakageFailureThreshold = 0.0f;`, `float PressureResistanceMultiplier = 1.0f;`, `float PressureDamageThreshold = 1.4f;`, `float PressureFailureThreshold = 2.0f;`, `float StrengthDamageRate = 12.0f;`, `float ThermalMass = 1.0f;`, `float ThermalConductivity = 0.05f;`, `float HeatingRateMultiplier = 1.0f;`, `float CoolingRateMultiplier = 1.0f;`, `float LowTempDamageThreshold = -5.0f;`, `float HighTempDamageThreshold = 55.0f;`, `float MinTemperatureThreshold = -20.0f;`, `float MaxTemperatureThreshold = 85.0f;`, `float ThermalDamageRate = 8.0f;`, `float ThermalEquilibriumEpsilon = 0.25f;`
 - Cap & transformation rules: `uint8 SupportedCapMask = 0xFF;`, `float SafeOpenPressureThreshold = 1.25f;`, `float TorqueSweetSpotMin = 0.41f;`, `float TorqueSweetSpotMax = 0.75f;`, `int32 EmptyBottleProductID = 0;`, `int32 BrokenProductID = 0;`, `int32 MeltedProductID = 0;`, `int32 BurstBrokenProductID = 0;`, `bool bPersistBrokenHullAfterFracture = false;`, `TArray<FPropFractureFragmentEntry> FractureFragments;`, `TMap<int32, int32> FilledProductIDByContentID;`, `TArray<int32> SupportedContentIDs;`
 - `FPropInstanceUniqueData DefaultUniqueData;` *(initial values for newly spawned instances)*
-- **Fracture & Transformation Contracts:** `EPropTransformationType`, `FPropFractureFragmentEntry`, and `FPropTransformationContext` (also targeting [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Source/MarryByMidnight/Public/Props/InteractablePropDatabase.h)) are specified in full inside [`Bottle_Damage_Transformation_and_Fragments.md` §8.1](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md#L221-L286).
+- **Fracture & Transformation Contracts:** `EPropTransformationType`, `FPropFractureFragmentEntry`, and `FPropTransformationContext` (also targeting [`InteractablePropDatabase.h`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Source/ColossalFizzCo/Public/Props/InteractablePropDatabase.h)) are specified in full inside [`Bottle_Damage_Transformation_and_Fragments.md` §8.1](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md#L221-L286).
 
 ---
 
@@ -370,7 +370,7 @@ Additional Category 1 additions onto existing [`FPropProductDefinition`](file://
 2. **Resting ISM Liquid Flavor Visual (`FilledProductIDByContentID` vs Generic Fill):** Using `FilledProductIDByContentID` maps `(EmptyBottle + ContentID)` to flavor-specific resting ISM components (preserving distinct liquid colors/labels at rest without adding a 5th GPU custom float), OR an uncapped generic bottle can rely on `ContentID`-agnostic resting glass.
 3. **Resting ISM Extreme-Temperature Failure (`UPropBatchUpdateComponent`):** When an ISM bottle in a freezer/heater exceeds `[MinTemperatureThreshold, MaxTemperatureThreshold]` or hits `Strength <= 0`, should `UPropBatchUpdateComponent` convert `ProductID -> BurstBrokenProductID` / `MeltedProductID` silently in ISM (zero actor overhead), OR briefly promote (`MakeISMToASM`) to play 3D glass-shatter VFX/SFX and spawn spills?
 4. **SaveGame `SchemaVersion 1 -> 2` Backward Compatibility:** Confirm whether upgrading existing `SchemaVersion == 1` saves on load is required or whether a clean break to `SchemaVersion = 2` is acceptable.
-5. **Fragment `ISID` Allocation Timing (`At Spawn` vs. `At Settle`)** *(detailed in [`Bottle_Damage_Transformation_and_Fragments.md` §9](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md#L333-L338))*: Should `Broken Glass Bottle` allocate each fragment's permanent `ISID` immediately at spawn (allows grabbing/sweeping shards mid-slide & mid-flight saves) or only after all shards settle?
+5. **Fragment `ISID` Allocation Timing (`At Spawn` vs. `At Settle`)** *(detailed in [`Bottle_Damage_Transformation_and_Fragments.md` §9](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md#L333-L338))*: Should `Broken Glass Bottle` allocate each fragment's permanent `ISID` immediately at spawn (allows grabbing/sweeping shards mid-slide & mid-flight saves) or only after all shards settle?
 6. **Broken Bottle Orchestrator Lifecycle (`Pure Fragments` vs. `Broken Hull + Fragments`)**: Should `Broken Glass Bottle` despawn/pool completely once `Glass Fragment 1..5` spawn (`100%` floor shards) OR optionally persist a resting base/neck hull (`bPersistBrokenHullAfterFracture`) alongside detached cap debris?
 
 ---
@@ -382,4 +382,4 @@ Additional Category 1 additions onto existing [`FPropProductDefinition`](file://
 | **Iteration 1** | Separated baseline Part 1 audit (all 17 `FPropProductDefinition` members) from Part 2 target architecture: dual central shared registries (`ProductDefinitions` + `ContentDefinitions`), two enable toggles, `Continuous` vs `Event` split, omitted-fields rationale, and 4-float GPU pipeline. |
 | **Iteration 2** | Audited sparse per-ISID `UniqueDataByISID` storage (`0 B` for static props, exact `16 B + 32 B = 48 B` for mutable props), corrected net-serialized packet sizes (`12–16 B`), unified `EPropProductResetMode` names across all docs, added on-demand stack synthesis rules (`CanInteractWithMesh` / `GetPropDataForInstance`), and surfaced 4 open edge-case decisions. |
 | **Iteration 3** | Added full `[Needs Approval]` C++ `USTRUCT` contracts (`FPropContinuousUpdateData`, `FPropEventUpdateData`, `FPropInstanceUniqueData`, `FPropContentDefinition`, and `FPropProductDefinition` extensions) and verified all clickable source line links against `InteractablePropDatabase.h`, `InteractablePropDataAsset.h`, `InteractableInstancedStaticMeshComponent.h/.cpp`, and `InteractablePropManager.cpp`. |
-| **Iteration 4** | Integrated [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md): added zero-byte `uint8 CapType` packing into `FPropEventUpdateData` (preserving exact `32 B` alignment), added `BreakageFailureThreshold`, `BrokenProductID`, `MeltedProductID`, `bPersistBrokenHullAfterFracture`, and `FractureFragments` onto `FPropProductDefinition`, documented Glass crack `Lerp` vs Plastic WPO Vertex Texture in `Slot 3`, and linked Decisions 5–6. |
+| **Iteration 4** | Integrated [`Bottle_Damage_Transformation_and_Fragments.md`](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md): added zero-byte `uint8 CapType` packing into `FPropEventUpdateData` (preserving exact `32 B` alignment), added `BreakageFailureThreshold`, `BrokenProductID`, `MeltedProductID`, `bPersistBrokenHullAfterFracture`, and `FractureFragments` onto `FPropProductDefinition`, documented Glass crack `Lerp` vs Plastic WPO Vertex Texture in `Slot 3`, and linked Decisions 5–6. |

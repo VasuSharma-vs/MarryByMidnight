@@ -10,7 +10,7 @@ The next useful implementation is customer checkout lifecycle integration and co
 
 ## Read first and preserve
 
-Project root: `C:/Users/PC/Documents/Unreal Projects/MarryByMidnight`, UE 5.8.
+Project root: `C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo`, UE 5.8.
 
 Read these files relative to that root, in this order:
 
@@ -49,7 +49,7 @@ Inspect all paths below before editing; names describe existing code, not propos
 
 | Existing class/file | Reuse |
 | --- | --- |
-| `Source/MarryByMidnight/Public/Shop/ShopCustomerCashComponent.h` and private counterpart | `CustomerID`, `JoinScanner`, `PlacePayment`, budget and issued-payment bookkeeping. |
+| `Source/ColossalFizzCo/Public/Shop/ShopCustomerCashComponent.h` and private counterpart | `CustomerID`, `JoinScanner`, `PlacePayment`, budget and issued-payment bookkeeping. |
 | `Shop/ShopInteractionLibrary.h/.cpp` | `RegisterCustomerAtCounter`; currently chooses a scanner near the counter and calls `JoinScanner`. |
 | `Shop/ShopScannerComponent.h/.cpp` | `AssignCustomer`, `BeginCheckout`, `CompleteCheckout`, `ClearCart`, `SaveProducts`, replicated `FShopScannerState`, `OnScannerStateChanged`. |
 | `Shop/ShopCheckoutComponent.h/.cpp` | Native sale/cash/stock services, `OnSaleCompleted`, `OnCheckoutsChanged`, `OnAdjustmentsChanged`, immutable receipts, expiry cases, reservation release and committed save state. |
@@ -58,7 +58,7 @@ Inspect all paths below before editing; names describe existing code, not propos
 | `Shop/ShopATMComponent.h/.cpp` | `Withdraw`, `CollectDeposits`, configured deposit/output components. |
 | `UI/ShopTerminalWidget.h/.cpp` | Existing terminal presentation and player action requests. |
 
-These header/private paths are under `Source/MarryByMidnight/Public` and `Source/MarryByMidnight/Private` respectively. Reuse `APropManager`, `USharedTeamWalletComponent`, cash/checkout types and canonical scan/pricing queries.
+These header/private paths are under `Source/ColossalFizzCo/Public` and `Source/ColossalFizzCo/Private` respectively. Reuse `APropManager`, `USharedTeamWalletComponent`, cash/checkout types and canonical scan/pricing queries.
 
 Inspect the production `BP_ProductSceaner`, `BP_CheckoutCounter`, `BP_Bucket`, customer/controller assets, `Content/AI/BasicNPC/BT_ShopingCloas.uasset`, `BB_BasicNPC`, and `TempColaShoes/BTTask_MoveInCheckOutLine.uasset`. The current active counter/scanner are identified by the existing integration and `ShopActiveCheckout` tag. Confirm asset references and actual graph bindings in Unreal; filenames/text searches cannot establish all Blueprint behavior.
 
@@ -120,15 +120,15 @@ Save dirty user work and close/restart UE normally when changing native reflecte
 Example PowerShell (11134 is illustrative; confirm it is unused first):
 
 ```powershell
-$projectRoot = 'C:/Users/PC/Documents/Unreal Projects/MarryByMidnight'
+$projectRoot = 'C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo'
 $ueRoot = 'C:/Program Files/Epic Games/UE_5.8'
-& "$ueRoot/Engine/Build/BatchFiles/Build.bat" MarryByMidnightEditor Win64 Development "-Project=$projectRoot/MarryByMidnight.uproject" -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=2 '-ModuleWithSuffix=MarryByMidnight,11134'
+& "$ueRoot/Engine/Build/BatchFiles/Build.bat" ColossalFizzCoEditor Win64 Development "-Project=$projectRoot/ColossalFizzCo.uproject" -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=2 '-ModuleWithSuffix=ColossalFizzCo,11134'
 ```
 
 After a successful build, run tests in a separate headless process, with its MCP auto-start disabled to avoid confusing it with the interactive editor:
 
 ```powershell
-& "$ueRoot/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "$projectRoot/MarryByMidnight.uproject" /Engine/Maps/Entry -Unattended -NullRHI -NoSound -NoSplash -NoLiveCoding -stdout '-ini:EditorPerProjectUserSettings:[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]:bAutoStartServer=False' '-ExecCmds=Automation RunTests MarryByMidnight' '-TestExit=Automation Test Queue Empty' "-ReportExportPath=$projectRoot/Saved/Automation/GeminiCheckoutLifecycle" "-abslog=$projectRoot/Saved/Logs/GeminiCheckoutLifecycle.log"
+& "$ueRoot/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "$projectRoot/ColossalFizzCo.uproject" /Engine/Maps/Entry -Unattended -NullRHI -NoSound -NoSplash -NoLiveCoding -stdout '-ini:EditorPerProjectUserSettings:[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]:bAutoStartServer=False' '-ExecCmds=Automation RunTests ColossalFizzCo' '-TestExit=Automation Test Queue Empty' "-ReportExportPath=$projectRoot/Saved/Automation/GeminiCheckoutLifecycle" "-abslog=$projectRoot/Saved/Logs/GeminiCheckoutLifecycle.log"
 $lifecycleReport = Get-Content -LiteralPath "$projectRoot/Saved/Automation/GeminiCheckoutLifecycle/index.json" -Raw | ConvertFrom-Json
 $lifecycleReport | Select-Object succeeded, succeededWithWarnings, failed, notRun
 ```

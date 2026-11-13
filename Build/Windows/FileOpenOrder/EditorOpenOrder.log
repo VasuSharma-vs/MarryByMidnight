@@ -1,5 +1,5 @@
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/MarryByMidnight.uproject" 1
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Binaries/Win64/UnrealEditor.modules" 2
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/ColossalFizzCo.uproject" 1
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Binaries/Win64/UnrealEditor.modules" 2
 "../../../Engine/Plugins/BlueprintFileUtils/BlueprintFileUtils.uplugin" 3
 "../../../Engine/Plugins/Bridge/Bridge.uplugin" 4
 "../../../Engine/Plugins/ChaosInsights/ChaosInsights.uplugin" 5
@@ -925,21 +925,21 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/5.8/Saved/Config/WindowsEditor/Manifest.ini" 925
 "../../../Engine/Config/BaseEngine.ini" 926
 "../../../Engine/Config/Windows/BaseWindowsEngine.ini" 927
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Config/DefaultEngine.ini" 928
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/Engine.ini" 929
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Config/DefaultEngine.ini" 928
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/Engine.ini" 929
 "../../../Engine/Config/BaseGame.ini" 930
 "../../../Engine/Config/Windows/BaseWindowsGame.ini" 931
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Config/DefaultGame.ini" 932
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Config/DefaultGame.ini" 932
 "../../../Engine/Config/Windows/WindowsGame.ini" 933
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/Game.ini" 934
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/Game.ini" 934
 "../../../Engine/Config/BaseInput.ini" 935
 "../../../Engine/Config/Windows/BaseWindowsInput.ini" 936
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Config/DefaultInput.ini" 937
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Config/DefaultInput.ini" 937
 "../../../Engine/Config/Windows/WindowsInput.ini" 938
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/Input.ini" 939
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/Input.ini" 939
 "../../../Engine/Config/BaseDeviceProfiles.ini" 940
 "../../../Engine/Config/BaseGameUserSettings.ini" 941
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/GameUserSettings.ini" 942
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/GameUserSettings.ini" 942
 "../../../Engine/Config/BaseScalability.ini" 943
 "../../../Engine/Config/BaseRuntimeOptions.ini" 944
 "../../../Engine/Config/BaseInstallBundle.ini" 945
@@ -947,13 +947,13 @@
 "../../../Engine/Config/BaseCompat.ini" 947
 "../../../Engine/Config/BaseLightmass.ini" 948
 "../../../Engine/Config/BaseEditor.ini" 949
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Config/DefaultEditor.ini" 950
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/Editor.ini" 951
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Config/DefaultEditor.ini" 950
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/Editor.ini" 951
 "../../../Engine/Config/BaseMaterialExpressions.ini" 952
 "../../../Engine/Config/BaseEditorPerProjectUserSettings.ini" 953
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Config/DefaultEditorPerProjectUserSettings.ini" 954
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Config/DefaultEditorPerProjectUserSettings.ini" 954
 "../../../Engine/Config/Windows/WindowsEditorPerProjectUserSettings.ini" 955
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini" 956
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini" 956
 "../../../Engine/Config/BaseEditorSettings.ini" 957
 "../../../Engine/Config/Windows/WindowsEditorSettings.ini" 958
 "C:/Users/PC/AppData/Local/UnrealEngine/5.8/Saved/Config/WindowsEditor/EditorSettings.ini" 959
@@ -982,12 +982,12 @@
 "../../../Engine/Config/IOS/IOSScalability.ini" 982
 "../../../Engine/Config/Android/AndroidScalability.ini" 983
 "../../../Engine/Config/IOS/BaseIOSInstallBundle.ini" 984
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0.ref" 985
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/CachedAssetRegistryDiscovery.bin" 986
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0.ref" 985
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/CachedAssetRegistryDiscovery.bin" 986
 "../../../Engine/Config/Android/BaseAndroidInstallBundle.ini" 987
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_DB1269294817FEB54CF1D58DA65BAC3F.bin" 988
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Binaries/Win64/MarryByMidnight.target" 989
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Binaries/Win64/MarryByMidnightEditor.target" 990
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_DB1269294817FEB54CF1D58DA65BAC3F.bin" 988
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Binaries/Win64/ColossalFizzCo.target" 989
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Binaries/Win64/ColossalFizzCoEditor.target" 990
 "../../../Engine/Config/PluginBase.ini" 991
 "../../../Engine/Plugins/ChaosVD/Config/DefaultChaosVD.ini" 992
 "../../../Engine/Plugins/EnhancedInput/Config/DefaultEnhancedInput.ini" 993
@@ -1005,7 +1005,7 @@
 "../../../Engine/Plugins/Animation/RigLogic/Config/DefaultRigLogic.ini" 1005
 "../../../Engine/Plugins/Compositing/CompositeCore/Config/DefaultCompositeCore.ini" 1006
 "../../../Engine/Plugins/FX/Niagara/Config/DefaultNiagara.ini" 1007
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Config/WindowsEditor/Niagara.ini" 1008
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Config/WindowsEditor/Niagara.ini" 1008
 "../../../Engine/Plugins/FX/NiagaraFluids/Config/DefaultNiagaraFluids.ini" 1009
 "../../../Engine/Plugins/Interchange/Runtime/Config/DefaultInterchange.ini" 1010
 "../../../Engine/Plugins/Interchange/Assets/Config/DefaultInterchangeAssets.ini" 1011
@@ -1291,7 +1291,7 @@
 "../../../Engine/Content/Internationalization/icudt64l/curr/en.res" 1291
 "../../../Engine/Content/Internationalization/icudt64l/curr/root.res" 1292
 "../../../Engine/Config/ConsoleVariables.ini" 1293
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Logs/AutoSDKInfo.txt" 1294
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Logs/AutoSDKInfo.txt" 1294
 "../../../Engine/Binaries/Win64/Android/UnrealEditor.modules" 1295
 "../../../Engine/Binaries/Win64/IOS/UnrealEditor.modules" 1296
 "../../../Engine/Binaries/Win64/Linux/UnrealEditor.modules" 1297
@@ -2189,7 +2189,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/TestData/0/TestData_256kb.dat" 2189
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/TestData/1/TestData_256kb.dat" 2190
 "C:/Users/PC/AppData/Roaming/Unreal Engine/UnrealBuildTool/BuildConfiguration.xml" 2191
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush" 2192
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush" 2192
 "../../../Engine/Shaders/Private/HairStrands/HairStrandsVertexFactory.ush" 2193
 "../../../Engine/Shaders/Private/VertexFactoryCommon.ush" 2194
 "../../../Engine/Shaders/Private/Common.ush" 2195
@@ -2267,7 +2267,7 @@
 "../../../Engine/Shaders/Private/MonteCarlo.ush" 2267
 "../../../Engine/Shaders/Private/GBufferHelpers.ush" 2268
 "../../../Engine/Shaders/Private/SceneTextureParameters.ush" 2269
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush" 2270
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush" 2270
 "../../../Engine/Shaders/Private/ParticipatingMediaCommon.ush" 2271
 "../../../Engine/Shaders/Private/ThinFilmBSDF.ush" 2272
 "../../../Engine/Shaders/Private/MortonCode.ush" 2273
@@ -3625,7 +3625,7 @@
 "../../Plugins/Experimental/Water/Content/Meshes/RiverMesh.uasset" 3625
 "/Water/Icons/WaterBodyExclusionVolumeSprite" 3626
 "../../Plugins/Experimental/Water/Content/Icons/WaterBodyExclusionVolumeSprite.uasset" 3627
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush" 3628
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush" 3628
 "../../../Engine/Plugins/Runtime/IOSDeviceProfileSelector/Config/DeviceModelsInfo.ini" 3629
 "/ACLPlugin/ACLAnimBoneCompressionSettings" 3630
 "../../Plugins/Animation/ACLPlugin/Content/ACLAnimBoneCompressionSettings.uasset" 3631
@@ -3838,7 +3838,7 @@
 "../../../Engine/Content/EngineMaterials/DefaultPhysicalMaterial.uasset" 3838
 "/Engine/EngineMaterials/DefaultDestructiblePhysicalMaterial" 3839
 "../../../Engine/Content/EngineMaterials/DefaultDestructiblePhysicalMaterial.uasset" 3840
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/SaveGames/NPC_CulturalKnowledge.sav" 3841
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/SaveGames/NPC_CulturalKnowledge.sav" 3841
 "/Water/Materials/MPC/MPC_Water" 3842
 "../../Plugins/Experimental/Water/Content/Materials/MPC/MPC_Water.uasset" 3843
 "/Niagara/ParameterDefinitions/CoreParameters" 3844
@@ -3978,8 +3978,8 @@
 "../../../Engine/Plugins/FX/Niagara/Shaders/Private/NiagaraDataInterfaceVolumeCache.ush" 3978
 "../../../Engine/Plugins/FX/Niagara/Shaders/Private/NiagaraDataInterfaceVolumeTextureTemplate.ush" 3979
 "/Game/ExampleContent/Niagara/PBD/NPC_MassParticle" 3980
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/ExampleContent/Niagara/PBD/NPC_MassParticle.uasset" 3981
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Cooked/Windows/ue.projectstore" 3982
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/ExampleContent/Niagara/PBD/NPC_MassParticle.uasset" 3981
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Cooked/Windows/ue.projectstore" 3982
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/ce/fb/43ef54a8c390136ffa7500ccdd74bf25e7e3.udd" 3983
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/3f/e8/c926abf8f4dffe945a5843b32f90951e318b.udd" 3984
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/59/24/074092ffa381aec02fa9f175cac7c9fe5755.udd" 3985
@@ -4036,7 +4036,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/70/44/c3a96727ccdb1ee678e49d36dbf2bfa8312a.udd" 4036
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/2d/37/6a641823a6b1a0c2c332f1ba400b7d254206.udd" 4037
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/22/c2/6e48324d14c0adb8687141c983c2d3fe511b.udd" 4038
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush" 4039
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush" 4039
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/e8/b3/f6c8b424cb280e20c2edd78436358d0f95f6.udd" 4040
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/67/d9/a3bc68512dda25513b67ab336bddda7bd4a6.udd" 4041
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/08/ba/bac7de74a99299df0e1014db34256b514d75.udd" 4042
@@ -4400,89 +4400,89 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0a/ee/941da680b38ace57c464bc1d0abb9bb9b749.udd" 4400
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d1/65/35ce60a1e5849a51dbb0a74baf2ca1802427.udd" 4401
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/a7/c7/3c8baeb733cc61576444e36e42155bf00a05.udd" 4402
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_SpicyCola.uasset" 4403
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_NormalCola.uasset" 4404
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/Liquied/M_SweetColaLiquid.uasset" 4405
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalMint.uasset" 4406
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_SweetCola.uasset" 4407
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalZeroCalorie.uasset" 4408
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalSweet.uasset" 4409
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/Normals.uasset" 4410
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_SpicyCola.uasset" 4403
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_NormalCola.uasset" 4404
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/Liquied/M_SweetColaLiquid.uasset" 4405
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalMint.uasset" 4406
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_SweetCola.uasset" 4407
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalZeroCalorie.uasset" 4408
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalSweet.uasset" 4409
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/Normals.uasset" 4410
 "../../../Engine/Plugins/Interchange/Assets/Content/Functions/MF_PhongToMetalRoughness.uasset" 4411
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/SM_BottelCap.uasset" 4412
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/Liquied/M_SpicyColaLiquid.uasset" 4413
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/Cola_BaseColor.uasset" 4414
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/SM_BottelCap.uasset" 4412
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/Liquied/M_SpicyColaLiquid.uasset" 4413
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/Cola_BaseColor.uasset" 4414
 "../../../Engine/Content/Functions/Engine_MaterialFunctions02/Texturing/CustomRotator.uasset" 4415
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_GoodCola.uasset" 4416
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_GoodCola.uasset" 4416
 "../../../Engine/Content/Functions/Engine_MaterialFunctions01/Gradient/SphereGradient-2D.uasset" 4417
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalLemonade.uasset" 4418
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalLemonade.uasset" 4418
 "../../../Engine/Plugins/Interchange/Assets/Content/Materials/FBXLegacyPhongSurfaceMaterial.uasset" 4419
 "../../../Engine/Plugins/Runtime/AudioWidgets/Content/AudioMaterialSlate/Functions/MF_AngleGradient.uasset" 4420
 "../../../Engine/Content/EngineMaterials/DefaultNormal.uasset" 4421
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalSpicy.uasset" 4422
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/Cola_001.uasset" 4423
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/widgets/Materials/WM_Circlebar.uasset" 4424
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/widgets/Status/WBP_StatusBar_Circular1.uasset" 4425
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_09.uasset" 4426
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_09.uasset" 4427
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.uasset" 4428
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_011.uasset" 4429
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.uasset" 4430
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_010.uasset" 4431
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.uasset" 4432
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.uasset" 4433
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_008.uasset" 4434
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalSpicy.uasset" 4422
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/Cola_001.uasset" 4423
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/widgets/Materials/WM_Circlebar.uasset" 4424
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/widgets/Status/WBP_StatusBar_Circular1.uasset" 4425
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_09.uasset" 4426
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_09.uasset" 4427
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.uasset" 4428
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_011.uasset" 4429
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.uasset" 4430
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_010.uasset" 4431
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.uasset" 4432
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.uasset" 4433
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_008.uasset" 4434
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/ac/6c/3a2ba904b23a9f8a0c001e86789c84137749.udd" 4435
 "/Game/Assest/Materials/ColaMaterials/M_NormalCola" 4436
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/M_BaseGlass.uasset" 4437
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/M_BaseGlass.uasset" 4437
 "../../../Engine/Content/Functions/Engine_MaterialFunctions01/Lighting/BlinnPhongSpecular.uasset" 4438
 "../../../Engine/Content/Functions/Engine_MaterialFunctions01/Lighting/GGXSpecular.uasset" 4439
 "../../../Engine/Content/Functions/Engine_MaterialFunctions02/Fresnel_Function.uasset" 4440
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/TextureDraw/BrushMask/White1.uasset" 4441
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/TextureDraw/BrushMask/White1.uasset" 4441
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/18/1a/e6fe519ebba99a97848733c3ac8e5daebc93.udd" 4442
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d9/d0/bb547929642f2094d98b754dfd6bf5eb752b.udd" 4443
 "/Game/NormalColaPrototype/DA_NormalZeroCalorie" 4444
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/b9/be/71dfa7f9d17c15299b07b5fa3ea41d147d06.udd" 4445
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/Colas/BP_Cola.uasset" 4446
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Cola1.uasset" 4447
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/SKM_ColaBottel_N.uasset" 4448
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/Colas/BP_Cola.uasset" 4446
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Cola1.uasset" 4447
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/SKM_ColaBottel_N.uasset" 4448
 "../../../Engine/Content/EditorBlueprintResources/StandardMacros.uasset" 4449
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/3e/9f/10c200b41c289f0bf717278078cc9aea587a.udd" 4450
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Blueprints/BP_FirstPersonCharacter.uasset" 4451
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/WorldInteractionSystem/BPI_World_Intractions_System.uasset" 4452
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/DA_Cola.uasset" 4453
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Blueprints/BP_FirstPersonCharacter.uasset" 4451
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/WorldInteractionSystem/BPI_World_Intractions_System.uasset" 4452
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/DA_Cola.uasset" 4453
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/86/96/4cde4d188294ae5cccde75c780b700010038.udd" 4454
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/Liquied/M_BaseLiquid.uasset" 4455
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_BasicCola.uasset" 4456
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/SKM_ColaBottel_PhysicsAsset.uasset" 4457
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SKM/SKM_ColaBottel_Skeleton.uasset" 4458
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.uasset" 4459
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/Liquied/M_BaseLiquid.uasset" 4455
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_BasicCola.uasset" 4456
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/SKM_ColaBottel_PhysicsAsset.uasset" 4457
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SKM/SKM_ColaBottel_Skeleton.uasset" 4458
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.uasset" 4459
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/39/da/116b3dd32dabf91248684cf0906766a8f63c.udd" 4460
 "../../../Engine/Content/EditorBlueprintResources/ActorMacros.uasset" 4461
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/BlurprintInterFace/BPI_CharatorInterFace.uasset" 4462
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Touch/BPI_TouchInterface.uasset" 4463
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/BIP_PropIntraction.uasset" 4464
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/BlurprintInterFace/BPI_CharatorInterFace.uasset" 4462
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Touch/BPI_TouchInterface.uasset" 4463
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/BIP_PropIntraction.uasset" 4464
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/f8/d5/64273857b121d6d96fb7e7a02db1e8fdf1b3.udd" 4465
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/BP_PropManager.uasset" 4466
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Attack.uasset" 4467
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Grab.uasset" 4468
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Intract.uasset" 4469
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Jump.uasset" 4470
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/BP_PropManager.uasset" 4466
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Attack.uasset" 4467
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Grab.uasset" 4468
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Intract.uasset" 4469
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Jump.uasset" 4470
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/26/85/7d3e552310af7b5f1613d512d57e418a973e.udd" 4471
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Look.uasset" 4472
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_MouseLook.uasset" 4473
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Actions/IA_Move.uasset" 4474
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Meshes/CustomQuene.uasset" 4475
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Enums/Enu_HoldingState.uasset" 4476
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Look.uasset" 4472
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_MouseLook.uasset" 4473
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Actions/IA_Move.uasset" 4474
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Meshes/CustomQuene.uasset" 4475
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Enums/Enu_HoldingState.uasset" 4476
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/52/da/bb5d8381e689f3a751bda4f6bfa7a5287312.udd" 4477
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Enums/Enu_PunchAttackState.uasset" 4478
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Touch/UI_TouchSimple.uasset" 4479
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragmentAssembly.uasset" 4480
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/Liquied/M_GoodColaLiquid.uasset" 4481
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/ColaMaterials/M_ColaBase.uasset" 4482
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Enums/Enu_PunchAttackState.uasset" 4478
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Touch/UI_TouchSimple.uasset" 4479
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragmentAssembly.uasset" 4480
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/Liquied/M_GoodColaLiquid.uasset" 4481
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/ColaMaterials/M_ColaBase.uasset" 4482
 "../../../Engine/Content/Functions/Engine_MaterialFunctions03/Math/RemapValueRange.uasset" 4483
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Textures/Gemini_Generated_Image_ml38kfml38kfml38.uasset" 4484
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Textures/Gemini_Generated_Image_s418tns418tns418.uasset" 4485
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Textures/Gemini_Generated_Image_ml38kfml38kfml38.uasset" 4484
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Textures/Gemini_Generated_Image_s418tns418tns418.uasset" 4485
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c3/ba/13b9e76b1848027348ffae43ad168c6b1914.udd" 4486
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/e1/70/422848163211bbcc5d3eac712fcb3641499c.udd" 4487
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/5e/12/b05c74cf289aeccf66a8c0b7e6809485953c.udd" 4488
@@ -4495,50 +4495,50 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/8a/bd/3176e84c2b38806414af3edd604055eeb0b0.udd" 4495
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/a9/74/b372d6661688b068858a0f0a4530e7c114b8.udd" 4496
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/93/70/d6734784593577a0b32b1f9acf654e654d3e.udd" 4497
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Idle/Fight01_Idle01.uasset" 4498
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch01.uasset" 4499
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch02.uasset" 4500
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch03.uasset" 4501
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Idle/Fight01_Idle01.uasset" 4498
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch01.uasset" 4499
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch02.uasset" 4500
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch03.uasset" 4501
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/4b/18/41d540d568cfc46eb09955a2545b4078daef.udd" 4502
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch04.uasset" 4503
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch05.uasset" 4504
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch06.uasset" 4505
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch07.uasset" 4506
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch08.uasset" 4507
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch09.uasset" 4508
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch04.uasset" 4503
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch05.uasset" 4504
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch06.uasset" 4505
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch07.uasset" 4506
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch08.uasset" 4507
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Fight/Punch/Fight01_Punch09.uasset" 4508
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/2d/4c/5d998860c06b91c5c8a936122f2ec303420e.udd" 4509
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.uasset" 4510
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Jump.uasset" 4511
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Land.uasset" 4512
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/MM_Idle.uasset" 4513
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.uasset" 4510
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Jump.uasset" 4511
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jump/MM_Land.uasset" 4512
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/MM_Idle.uasset" 4513
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/46/01/12ecf40038a9a5fd9be25a1567581e405f9c.udd" 4514
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run.uasset" 4515
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/BP_Basic_NPC.uasset" 4516
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BP_NPC.uasset" 4517
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run.uasset" 4515
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/BP_Basic_NPC.uasset" 4516
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BP_NPC.uasset" 4517
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/3f/88/901c1a31b81d55e2243de8b7cae3080b636b.udd" 4518
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Blueprints/BP_Check_In_Counter.uasset" 4519
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Rigs/CR_Mannequin_FootIK.uasset" 4520
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Blueprints/BP_Check_In_Counter.uasset" 4519
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Rigs/CR_Mannequin_FootIK.uasset" 4520
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/7a/ed/5a2e07d9d66490aa3398c2325d545fece038.udd" 4521
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Meshes/CR_HandIK.uasset" 4522
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Enu/ENU_NPC_Task.uasset" 4523
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Enu/ENU_NPC_TaskStatus.uasset" 4524
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Meshes/SK_Mannequin.uasset" 4525
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/BP_ASM_Actor.uasset" 4526
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Meshes/CR_HandIK.uasset" 4522
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Enu/ENU_NPC_Task.uasset" 4523
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Enu/ENU_NPC_TaskStatus.uasset" 4524
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Meshes/SK_Mannequin.uasset" 4525
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/BP_ASM_Actor.uasset" 4526
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/f9/4e/c86b39b3635319dc66ea07bc64301ccc590b.udd" 4527
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Materials/NewMaterial.uasset" 4528
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Rigs/PA_Mannequin.uasset" 4529
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Materials/NewMaterial.uasset" 4528
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Rigs/PA_Mannequin.uasset" 4529
 "../../../Engine/Content/MobileResources/HUD/VirtualJoystick_Thumb.uasset" 4530
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/Touch/UI_Thumbstick.uasset" 4531
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_001.uasset" 4532
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_002.uasset" 4533
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/Touch/UI_Thumbstick.uasset" 4531
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_001.uasset" 4532
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_002.uasset" 4533
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/14/e8/850911bb6d9dda910772e3ec60fa98e8c4a2.udd" 4534
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_003.uasset" 4535
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_004.uasset" 4536
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_005.uasset" 4537
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_006.uasset" 4538
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_007.uasset" 4539
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_008.uasset" 4540
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_010.uasset" 4541
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_003.uasset" 4535
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_004.uasset" 4536
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_005.uasset" 4537
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_006.uasset" 4538
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_007.uasset" 4539
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_008.uasset" 4540
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/DataAssets/BottleFragments/DA_GlassBottleFragment_010.uasset" 4541
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c7/7b/71b4276194acbca44b90b4114fed51558ae3.udd" 4542
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/e0/14/ae1899e17767e0f760dc3df7be4f795992b0.udd" 4543
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/6a/73/54e4aff1b4096ded3f3d5272f20cbf577443.udd" 4544
@@ -4546,48 +4546,48 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/08/81/67c7ac9ac2e724fecd9434ffdbab3f06dc6f.udd" 4546
 "../../../Engine/Content/Animation/DefaultAnimBoneCompressionSettings.uasset" 4547
 "../../../Engine/Content/Animation/DefaultAnimCurveCompressionSettings.uasset" 4548
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd.uasset" 4549
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd_Left.uasset" 4550
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd_Right.uasset" 4551
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.uasset" 4552
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd_Left.uasset" 4553
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd_Right.uasset" 4554
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd.uasset" 4549
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd_Left.uasset" 4550
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Bwd_Right.uasset" 4551
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.uasset" 4552
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd_Left.uasset" 4553
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd_Right.uasset" 4554
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/8e/60/6d910d139e13c43772e475e7bc81262ca6bb.udd" 4555
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Left.uasset" 4556
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Right.uasset" 4557
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd.uasset" 4558
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Left.uasset" 4556
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Right.uasset" 4557
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd.uasset" 4558
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/09/c8/1c706d5ee2966d43f5cebbd480f7df6cb59a.udd" 4559
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd_Left.uasset" 4560
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd_Right.uasset" 4561
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.uasset" 4562
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd_Left.uasset" 4563
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd_Right.uasset" 4564
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd_Left.uasset" 4560
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Bwd_Right.uasset" 4561
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.uasset" 4562
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd_Left.uasset" 4563
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd_Right.uasset" 4564
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ce/c9/b5a0f7a0721187ab71a17f2dc5a5a0083ef7.udd" 4565
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Left.uasset" 4566
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Right.uasset" 4567
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed6.uasset" 4568
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/BPC_BasicNPC.uasset" 4569
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Left.uasset" 4566
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Right.uasset" 4567
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed6.uasset" 4568
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/BPC_BasicNPC.uasset" 4569
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/8c/a3/c5a7d6da9ff0b2645e308eb48bc6aae5fed5.udd" 4570
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EQS_GetClosesetBucket.uasset" 4571
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/Str_Shopping_List_Data.uasset" 4572
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BPI_AI_InterFace.uasset" 4573
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/NPCManager.uasset" 4574
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Enu/ENU_NPC_State.uasset" 4575
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/AI_IntractAssets/Str_AI_CroundPositionsData.uasset" 4576
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EQS_GetClosesetBucket.uasset" 4571
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/Str_Shopping_List_Data.uasset" 4572
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BPI_AI_InterFace.uasset" 4573
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/NPCManager.uasset" 4574
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Enu/ENU_NPC_State.uasset" 4575
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/AI_IntractAssets/Str_AI_CroundPositionsData.uasset" 4576
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/78/2a/89342cd716214ea31b1a64df058783112b8a.udd" 4577
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/Str_ISMIs.uasset" 4578
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/Str_ISMIs.uasset" 4578
 "../../../Engine/Content/MobileResources/HUD/VirtualJoystick_Background.uasset" 4579
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_001.uasset" 4580
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_002.uasset" 4581
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_003.uasset" 4582
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_004.uasset" 4583
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_005.uasset" 4584
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_006.uasset" 4585
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.uasset" 4586
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_001.uasset" 4580
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_002.uasset" 4581
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_003.uasset" 4582
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_004.uasset" 4583
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_005.uasset" 4584
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_006.uasset" 4585
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_007.uasset" 4586
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/e7/ef/2276839b3cdaaa0daac8c1f5016ec39f4f29.udd" 4587
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.uasset" 4588
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.uasset" 4589
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.uasset" 4590
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_008.uasset" 4588
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_010.uasset" 4589
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Bottle_Fragments_Mesh/SM_Fragments_011.uasset" 4590
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c6/b3/d1c17c3b755a0bd44e5b26bed0e6119602f5.udd" 4591
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/97/33/7b9ce1d97b23cedf85e66ca8944d5873e060.udd" 4592
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/39/31/94dbaed8647c917670e0bd4358cff98c1260.udd" 4593
@@ -4609,13 +4609,13 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/74/94/6911a5f96231b9ef00cfc6b7615198e74878.udd" 4609
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/28/bc/fe763c1d9d1c523e3bc6c0bc223c370a96d2.udd" 4610
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/c8/a4/7e2529b14fc00a617b82b3187a265c009c5f.udd" 4611
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run_6.uasset" 4612
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run_6.uasset" 4612
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/35/3a/86c4a0e133b371db2de5159c903f18fb2c3f.udd" 4613
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/34/49/732b52d49fc0c598372c371ba8c0f4d59824.udd" 4614
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/BT_ShopingCloas.uasset" 4615
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EQS_Get_PathDistance.uasset" 4616
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/ENU_gettingProductState.uasset" 4617
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/DirtyActors/BP_Bucket.uasset" 4618
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/BT_ShopingCloas.uasset" 4615
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EQS_Get_PathDistance.uasset" 4616
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/ENU_gettingProductState.uasset" 4617
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/DirtyActors/BP_Bucket.uasset" 4618
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/a5/bb/c37d0226533840ecd63873215b09192d3041.udd" 4619
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/14/0e/154814aff44dd8a285ba3a0f8715e0e6d5c6.udd" 4620
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/14/58/5e81048302181b9ab4f0c7db2fbf6d856954.udd" 4621
@@ -4638,17 +4638,17 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/fb/ff/72965c3e4afdae94a07f29a080148a219c96.udd" 4638
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d8/bd/147c86b2eaff535b0adb5da7cd02e220f654.udd" 4639
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/92/73/4ea9c59a4b23a567febd6f45ff138c5796e0.udd" 4640
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BB_NPC.uasset" 4641
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/TempColaShoes/BTTask_GetBucket.uasset" 4642
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/TempColaShoes/BTTask_GetProduct.uasset" 4643
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine.uasset" 4644
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/TempColaShoes/BTTask_MoveToColaShop.uasset" 4645
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Tesks/BTT_ClearBlackboardKey.uasset" 4646
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Tesks/BTTask_MoveToActor.uasset" 4647
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/Tesks/BTTask_MoveToRandomLocation.uasset" 4648
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BB_NPC.uasset" 4641
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/TempColaShoes/BTTask_GetBucket.uasset" 4642
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/TempColaShoes/BTTask_GetProduct.uasset" 4643
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine.uasset" 4644
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/TempColaShoes/BTTask_MoveToColaShop.uasset" 4645
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Tesks/BTT_ClearBlackboardKey.uasset" 4646
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Tesks/BTTask_MoveToActor.uasset" 4647
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/Tesks/BTTask_MoveToRandomLocation.uasset" 4648
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/8d/c4/77b187960a4644a799959cffdc612acb2b6f.udd" 4649
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/f1/39/d38ff02a2d73d0bc8a42c701d67ec13dbe61.udd" 4650
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SM_Bucket.uasset" 4651
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SM_Bucket.uasset" 4651
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ef/2f/611418e3205909276d5ff999da764b460d74.udd" 4652
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/b3/c6/7ae2dc4ecc4a14b588e3f716e74900f85315.udd" 4653
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/03/40/2554278b9e5df799c93889d68f5763c392b4.udd" 4654
@@ -4659,20 +4659,20 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/91/e5/988c1c9ddc30de0176da8d1f27c619aa69d5.udd" 4659
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/72/7c/56b26d2539916c0a8366211ba5a771d17b90.udd" 4660
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/f6/10/0ef2704cd1e5ed1d8860aea5279b34c2ac98.udd" 4661
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/BasicNPC/BB_BasicNPC.uasset" 4662
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_Location.uasset" 4663
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/NewEnvQuery.uasset" 4664
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/DirtyActors/BP_CheckoutCounter.uasset" 4665
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EQS_GetClosestCheckOutLinePosition.uasset" 4666
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/DirtyActors/ClaShopGate.uasset" 4667
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/AI_IntractAssets/BP_CheckInStandPosition.uasset" 4668
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_BP_BascNPC.uasset" 4669
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_querier_Projected_DownLocation.uasset" 4670
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_BP_FakeShell.uasset" 4671
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_CounterActor.uasset" 4672
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/AI/EQS/EnvQueryContext_InLineArea.uasset" 4673
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/DirtyActors/FakeShell.uasset" 4674
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/DirtyActors/BP_CheckooutLine.uasset" 4675
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/BasicNPC/BB_BasicNPC.uasset" 4662
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_Location.uasset" 4663
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/NewEnvQuery.uasset" 4664
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/DirtyActors/BP_CheckoutCounter.uasset" 4665
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EQS_GetClosestCheckOutLinePosition.uasset" 4666
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/DirtyActors/ClaShopGate.uasset" 4667
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/AI_IntractAssets/BP_CheckInStandPosition.uasset" 4668
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_BP_BascNPC.uasset" 4669
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_querier_Projected_DownLocation.uasset" 4670
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_BP_FakeShell.uasset" 4671
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_CounterActor.uasset" 4672
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/AI/EQS/EnvQueryContext_InLineArea.uasset" 4673
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/DirtyActors/FakeShell.uasset" 4674
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/DirtyActors/BP_CheckooutLine.uasset" 4675
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/7a/59/0eea37886dabf3e490c80eec0fce216516b4.udd" 4676
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d3/e1/880a89982f0c0d04ce00b1b0e995125aab80.udd" 4677
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0d/f7/dd00db52a434719f86a141d3525655540890.udd" 4678
@@ -4990,34 +4990,34 @@
 "/Game/Assest/Materials/ColaMaterials/M_GoodCola" 4990
 "/Game/NormalColaPrototype/DA_NormalMint" 4991
 "/Game/NormalColaPrototype/DA_NormalLemonade" 4992
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalEmptyBottle.uasset" 4993
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalShoppingBucket.uasset" 4994
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalColaWorkbench.uasset" 4995
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SM_HevyMetalDesk.uasset" 4996
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalEmptyBottle.uasset" 4993
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalShoppingBucket.uasset" 4994
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalColaWorkbench.uasset" 4995
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SM_HevyMetalDesk.uasset" 4996
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/bc/ae/fd1e1d7b7c35a8fc8abad2c15155ff1cb4fd.udd" 4997
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Handbrake.uasset" 4998
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Blueprints/BP_ShopGameState.uasset" 4999
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalColaGameMode.uasset" 5000
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalColaCustomer.uasset" 5001
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalColaCheckout.uasset" 5002
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SM_ATM.uasset" 5003
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/BP_NormalColaATM.uasset" 5004
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Handbrake.uasset" 4998
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Blueprints/BP_ShopGameState.uasset" 4999
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalColaGameMode.uasset" 5000
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalColaCustomer.uasset" 5001
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalColaCheckout.uasset" 5002
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SM_ATM.uasset" 5003
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/BP_NormalColaATM.uasset" 5004
 "/Game/NormalColaPrototype/DA_NormalEmptyBottle" 5005
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/Lvl_NormalColaPrototype.umap" 5006
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/Lvl_NormalColaPrototype.umap" 5006
 "/Game/NormalColaPrototype/BP_NormalShoppingBucket" 5007
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/IMC_Vehicle_Default.uasset" 5008
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_ToggleCamera.uasset" 5009
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Throttle.uasset" 5010
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/IMC_MouseLook.uasset" 5011
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Reset.uasset" 5012
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_UnpossesVehicle.uasset" 5013
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Headlights.uasset" 5014
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Blueprints/BP_FirstPersonCameraManager.uasset" 5015
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_LookAround.uasset" 5016
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Steering.uasset" 5017
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Input/IMC_Default.uasset" 5018
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/VehicleTemplate/Input/Actions/IA_Brake.uasset" 5019
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/FirstPerson/Blueprints/BP_FirstPersonPlayerController.uasset" 5020
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/IMC_Vehicle_Default.uasset" 5008
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_ToggleCamera.uasset" 5009
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Throttle.uasset" 5010
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/IMC_MouseLook.uasset" 5011
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Reset.uasset" 5012
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_UnpossesVehicle.uasset" 5013
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Headlights.uasset" 5014
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Blueprints/BP_FirstPersonCameraManager.uasset" 5015
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_LookAround.uasset" 5016
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Steering.uasset" 5017
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Input/IMC_Default.uasset" 5018
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/VehicleTemplate/Input/Actions/IA_Brake.uasset" 5019
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/FirstPerson/Blueprints/BP_FirstPersonPlayerController.uasset" 5020
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ab/d8/c4db10b438039a4bda07d534aedca53cf396.udd" 5021
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/96/1f/3dea4b9247d3a6d971573c51472d6abe65f3.udd" 5022
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c0/63/0a0723ddea95446ec7700daa2ddcf1d04eb3.udd" 5023
@@ -5057,15 +5057,15 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/51/e6/5456e6cf80ef841930cb2e80da9c627ea647.udd" 5057
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d2/46/0a77ab904022d29cb82f70fe55bcc87c9a41.udd" 5058
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/03/8d/70677d4655e4586d4250195d74c05a90a823.udd" 5059
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/Lvl_NormalColaPrototype_Validation.umap" 5060
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_1.uasset" 5061
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_10.uasset" 5062
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_100.uasset" 5063
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_100DCoin.uasset" 5064
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_1DCoin.uasset" 5065
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Props/Currency/BP_Coin.uasset" 5066
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_2DCoin.uasset" 5067
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_10DCoin.uasset" 5068
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/Lvl_NormalColaPrototype_Validation.umap" 5060
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_1.uasset" 5061
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_10.uasset" 5062
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_100.uasset" 5063
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_100DCoin.uasset" 5064
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_1DCoin.uasset" 5065
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Props/Currency/BP_Coin.uasset" 5066
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_2DCoin.uasset" 5067
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_10DCoin.uasset" 5068
 "/Game/Assest/meshs/SM_HevyMetalDesk" 5069
 "/Game/NormalColaPrototype/BP_NormalColaWorkbench" 5070
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/27/6a/8905d733156eac0f287400ebe665d2395916.udd" 5071
@@ -5132,7 +5132,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0b/72/b49b0089fb23efcba7cb0dcc1dfab0eb3d52.udd" 5132
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/35/2d/48e75ca999ec2eb32bc27ecc8be55e5d12fe.udd" 5133
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/f4/2d/43830f85470c7c6c51c50602818c55b9fd8b.udd" 5134
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/Lvl_NormalColaPrototype_Validation.umap" 5135
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/Lvl_NormalColaPrototype_Validation.umap" 5135
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/63/99/67c4e44a951a34ded5813b70583657084089.udd" 5136
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/5d/4a/6c4643bf3d55474b80b87e9931dc468bece5.udd" 5137
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/92/ab/90cafa498f530d83f029d5797e60eefea314.udd" 5138
@@ -5231,26 +5231,26 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c6/39/ec0ccb98cc8a5c258943104ef96101c3577a.udd" 5231
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0f/c1/bc841482582c67fc77104bf9b8760c498fec.udd" 5232
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/7d/22/35f96d409b3fe07f0da775f279f711766526.udd" 5233
-"../../../../../../Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/Lvl_NormalColaPrototype.umap" 5234
+"../../../../../../Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/Lvl_NormalColaPrototype.umap" 5234
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/8f/8d/37313b1981619079efb5f4061b88195566be.udd" 5235
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/27/87/f2cab92e799928f644f660cbdc75d996ed72.udd" 5236
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/a7/b7/6e5e73f6a622108885ea6cc0557c9d5f4ce5.udd" 5237
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_2.uasset" 5238
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_20.uasset" 5239
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_5.uasset" 5240
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalCoin_50.uasset" 5241
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_5DCoin.uasset" 5242
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_50DCoin.uasset" 5243
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/Coins/SM_20DCoin.uasset" 5244
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/M_GasCylender.uasset" 5245
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_CylinderLemonade.uasset" 5246
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/Materials/M_BaseMaterial.uasset" 5247
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_CylinderMint.uasset" 5248
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_CylinderSweet.uasset" 5249
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalTwistCap.uasset" 5250
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_CylinderSpicy.uasset" 5251
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_CylinderZeroCalorie.uasset" 5252
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Assest/meshs/SM_GasSylender.uasset" 5253
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_2.uasset" 5238
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_20.uasset" 5239
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_5.uasset" 5240
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalCoin_50.uasset" 5241
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_5DCoin.uasset" 5242
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_50DCoin.uasset" 5243
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/Coins/SM_20DCoin.uasset" 5244
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/M_GasCylender.uasset" 5245
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_CylinderLemonade.uasset" 5246
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/Materials/M_BaseMaterial.uasset" 5247
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_CylinderMint.uasset" 5248
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_CylinderSweet.uasset" 5249
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalTwistCap.uasset" 5250
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_CylinderSpicy.uasset" 5251
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_CylinderZeroCalorie.uasset" 5252
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Assest/meshs/SM_GasSylender.uasset" 5253
 "/Game/Assest/meshs/Coins/SM_2DCoin" 5254
 "/Game/NormalColaPrototype/DA_NormalCoin_100" 5255
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/StaticMesh/c8/f8/8bd89d5e64aba35e05a2d45f36c17e71ebe0.udd" 5256
@@ -5462,13 +5462,13 @@
 "../../../Engine/Content/Functions/Engine_MaterialFunctions02/Math/AddComponents.uasset" 5462
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Blend.uasset" 5463
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/M_SpecularGlossiness.uasset" 5464
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_BN.uasset" 5465
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_BN.uasset" 5465
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Opaque.uasset" 5466
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialFunctions/MF_DiffuseSpecGloss.uasset" 5467
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Blend_DS.uasset" 5468
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Mask_DS.uasset" 5469
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_MRA.uasset" 5470
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_D.uasset" 5471
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_MRA.uasset" 5470
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_02_D.uasset" 5471
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Opaque_DS.uasset" 5472
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_SpecularGlossiness_Mask.uasset" 5473
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/20/e2/687394a57a3137315d2eeb21d999e4b23523.udd" 5474
@@ -5579,22 +5579,22 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/MaterialShaderMap/d2/8b/9823e5db77b5a14d9d9c95a307d127ce6c76.udd" 5579
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/MaterialShaderMap/47/c1/ffb3fad3b625c99ffc9e5fe022618cf91839.udd" 5580
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/4f/cf/73c3a45fcc73852ad22d61f35633ae6b87a7.udd" 5581
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Materials/Manny/MI_Manny_01_New.uasset" 5582
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Materials/Manny/MI_Manny_02_New.uasset" 5583
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_D.uasset" 5584
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Materials/Manny/MI_Manny_01_New.uasset" 5582
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Materials/Manny/MI_Manny_02_New.uasset" 5583
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_D.uasset" 5584
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/M_Unlit.uasset" 5585
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialBodies/MF_Unlit_Body.uasset" 5586
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Shared/T_UE_Logo_M.uasset" 5587
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_MRA.uasset" 5588
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Materials/M_Mannequin.uasset" 5589
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Shared/T_UE_Logo_M.uasset" 5587
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_MRA.uasset" 5588
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Materials/M_Mannequin.uasset" 5589
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Opaque.uasset" 5590
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Opaque_DS.uasset" 5591
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Blend.uasset" 5592
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Mask.uasset" 5593
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Mask_DS.uasset" 5594
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ef/ba/402505725d807c387005191b7744cb371bca.udd" 5595
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Meshes/SKM_Manny_Simple.uasset" 5596
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_BN.uasset" 5597
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Meshes/SKM_Manny_Simple.uasset" 5596
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/Characters/Mannequins/Textures/Manny/T_Manny_01_BN.uasset" 5597
 "../../../Engine/Plugins/Interchange/Assets/Content/gltf/MaterialInstances/MI_Unlit_Blend_DS.uasset" 5598
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/MaterialShaderMap/e7/68/bdc4ae2d2bcf34e38bef5ee2d36d46eb8a74.udd" 5599
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/MaterialShaderMap/27/1d/72c732f2774b6a108d073f06c096708a3717.udd" 5600
@@ -7638,16 +7638,16 @@
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0004" 7638
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0005" 7639
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0006" 7640
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNKD2DAB16BFF152507817E734DBB935160EA97A322" 7641
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNKD2DAB16BFF152507817E734DBB935160EA97A322" 7641
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0007" 7642
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/08/4f/145eb63ac1db8a6a8a5763734f68bead14ed.udd" 7643
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0008" 7644
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/53/ec/9c70b4bfa6cd0f46782d3fae093f0c76547c.udd" 7645
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK38740DBD4108040D6985AA56705D97D46F27920C" 7646
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK38740DBD4108040D6985AA56705D97D46F27920C" 7646
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0d/66/ce26a5b5287d7ee12d5ef281870a660c6e55.udd" 7647
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0009" 7648
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0010" 7649
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK84C05FFC339C0CEFE446DED1628C0AFB5362331E" 7650
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK84C05FFC339C0CEFE446DED1628C0AFB5362331E" 7650
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0011" 7651
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0012" 7652
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/00/76/e4198484f6c30813e017c2dd625d7576c3bc.udd" 7653
@@ -7656,7 +7656,7 @@
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0039_0015" 7656
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0040_0000" 7657
 "/Engine/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0040_0001" 7658
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK02D4C3BCAD7DFA48AB32B8281FB06B8B83DB6275" 7659
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNK02D4C3BCAD7DFA48AB32B8281FB06B8B83DB6275" 7659
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/48/66/2c95b099a7e044e3ebae4cd223158eba7f26.udd" 7660
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/6d/17/c1d99485745061b2c14bf4afaf09b8d93348.udd" 7661
 "../../../Engine/Content/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0038_0001.uasset" 7662
@@ -7697,7 +7697,7 @@
 "../../../Engine/Content/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0036_0007.uasset" 7697
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/50/b7/88b325f6b661122d33b49eade1382e57882e.udd" 7698
 "../../../Engine/Content/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0036_0006.uasset" 7699
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNKC0393DE8C5B4673D99D1BECB92AA8C1F72FEB491" 7700
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/DerivedDataCache/VT/TEXTURE_7C16439390E24F1F9468894FB4D4BC55_VTCHUNKC0393DE8C5B4673D99D1BECB92AA8C1F72FEB491" 7700
 "../../../Engine/Content/EngineMaterials/Substrate/GLints/dict_16_192_64_0p5_0p02_0036_0002.uasset" 7701
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/f0/9a/9bab0129c3cfb36c63996876eba84ba7317d.udd" 7702
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/2c/2e/9bcd36318016eca2a27408b247b101bf19c9.udd" 7703
@@ -13709,7 +13709,7 @@
 "../../../Engine/Content/EngineMaterials/Substrate/Glints2/AGlintTex2dArray2.uasset" 13709
 "/Engine/EngineMaterials/Substrate/Glints2/dict_0000_0005" 13710
 "/Engine/EngineMaterials/Substrate/Glints2/dict_0000_0006" 13711
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Content/NormalColaPrototype/DA_NormalColaSupplyCatalog.uasset" 13712
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Content/NormalColaPrototype/DA_NormalColaSupplyCatalog.uasset" 13712
 "/Engine/EngineMaterials/Substrate/Volume/SubstrateSimpleVolumeLUT3D" 13713
 "/Engine/EngineMaterials/Hair/Hair_DirectionalAlbedo" 13714
 "/Engine/EngineMaterials/Hair/Hair_DualScattering" 13715
@@ -14034,7 +14034,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/bb/52/96663f653adb7c55bd69677921c0cd8f5450.udd" 14034
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/e5/cc/7763b5a8c0634f9874ec3d33ae4a3d78206f.udd" 14035
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/94/8b/363f30cd73c340593296b2d058a1f22dcf20.udd" 14036
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized788DD46D43B319D4D0DE6CAF99E6E180.onnx" 14037
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized788DD46D43B319D4D0DE6CAF99E6E180.onnx" 14037
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/85/a2/f5c2d99d6f52e6dce72a745450ee56ce5d2a.udd" 14038
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/40/05/e7f927c0c09cec4c4a2efeeafcc228acc143.udd" 14039
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/b4/61/cddc0662a50f68d41dafe563135518520aab.udd" 14040
@@ -14058,7 +14058,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/61/ec/0aa01c896bf57c7bb02cb82a5a56ba6c40a3.udd" 14058
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/cb/f8/40c40e829046b04c4cea945bab522cf32247.udd" 14059
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0c/eb/c3785d6fb5a5323abe959c03e19881bab540.udd" 14060
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_OptimizedBC2A6EAF42FE9B272AAD28921C8A3710.onnx" 14061
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_OptimizedBC2A6EAF42FE9B272AAD28921C8A3710.onnx" 14061
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/80/6d/a1381319bae6a2cf2d68dfd076bbabef14d3.udd" 14062
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/a8/bb/08da476e5293b45dda4ba73fb1f41d5e7874.udd" 14063
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/60/7a/6296959e7d27404496ede1beee01f8125394.udd" 14064
@@ -14286,7 +14286,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/25/e7/0cf02915e0cd004a312b894ee597cf77cdde.udd" 14286
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/bf/37/1af9788d59696ab21385f236ee4745fffdee.udd" 14287
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/f8/2d/8a5b5ad57f1a80b87b8bff6895f8b676f22e.udd" 14288
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized07015C374B0CBD2E318DA79511D32E29.onnx" 14289
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized07015C374B0CBD2E318DA79511D32E29.onnx" 14289
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/91/f6/e4b437f8a884dab0a5d750465709f0963786.udd" 14290
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/27/10/c9301b814e5904f7d6a4fdae7bf477c41629.udd" 14291
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/06/ec/9abcb73d209a18f9f1032b427d93a2a8981f.udd" 14292
@@ -14386,7 +14386,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/a8/65/e104d2e31ced0c58966eddf2ca38230ebe46.udd" 14386
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/cc/da/178dd76663e8c841f93057c9b493443385fe.udd" 14387
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/88/c0/a7e33ba499d136632e13918f5d6e1d5ba628.udd" 14388
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_OptimizedB39D39724E563F8AC7DE0C9FF268724E.onnx" 14389
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_OptimizedB39D39724E563F8AC7DE0C9FF268724E.onnx" 14389
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/cd/a6/6ae4ee05dc19f0bb8749daeb32424889a192.udd" 14390
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/dc/4c/b2ec7ce540c2f70a3aacdabff375933fd20a.udd" 14391
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ef/f1/76ca8972a63e87165cf5c4e42aa0cf39163b.udd" 14392
@@ -14548,7 +14548,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/a6/46/bb8b17f45d8be676a0a21449262bf727b6c7.udd" 14548
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/0b/c4/3323f9403f88e80453c3fd83c96b1d0126e1.udd" 14549
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/52/29/b8dab3ab56922b900ded779d7df6c89601a4.udd" 14550
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized85CE7CC14C6456C8F9D6709FD4605BBD.onnx" 14551
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized85CE7CC14C6456C8F9D6709FD4605BBD.onnx" 14551
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/54/f7/43745200543593cac60a2726e00ebc064681.udd" 14552
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/05/89/e57939fbc9764950efc2a12cb6632954ad1b.udd" 14553
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/51/ca/0fd80ad9a9d8404f482fb06aec4b3b704d8a.udd" 14554
@@ -14679,7 +14679,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/ae/34/6ee45d73b070fb3f9ea3d261f9cf46578066.udd" 14679
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/db/f0/e7988c76277f80fe31c1cb5a492d1238e37f.udd" 14680
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/54/3f/a9cd88c5ac5da3863d7148d8befc1957d186.udd" 14681
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized71A4180B4B03650F22A2EFBDC83492B0.onnx" 14682
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized71A4180B4B03650F22A2EFBDC83492B0.onnx" 14682
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/b1/f7/72951a28fd9e4b888d41e602e13d599ccd36.udd" 14683
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/c3/4a/5cd2a97d81d59c6788ed1cfff51ff8788069.udd" 14684
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d1/73/dc925bb318d0ed7cd423e6a3983f931a3494.udd" 14685
@@ -14772,7 +14772,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/7f/7b/70ebed6e2d80140ea430792e78f116105881.udd" 14772
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/bc/60/2c0b7ce3edc3db40f54c6eb08bae585da0f5.udd" 14773
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/63/b4/15653bd10892929bf6818efa97afbbeccc90.udd" 14774
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized96A3BA514A70112D222BCCAEBC3D95C0.onnx" 14775
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized96A3BA514A70112D222BCCAEBC3D95C0.onnx" 14775
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/37/41/4508ecf0fcd4a86625c9400927894eff0f44.udd" 14776
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/da/36/c5b77ec820565e1e9c137157aeca97747a0e.udd" 14777
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/70/c4/66bc4bd853b911eb7c7118cff079c367fac4.udd" 14778
@@ -14796,7 +14796,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/a7/72/6f9a503b2a4a1fa5b5437e593fced3d76745.udd" 14796
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/65/89/b204fe5a7dbaa9894f1a3c7474473818910c.udd" 14797
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/51/c8/b5599a908622aa197673bd0568a31653ea1c.udd" 14798
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized5AD0DEDA47FF7BF0546BA0A461D3CDAF.onnx" 14799
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized5AD0DEDA47FF7BF0546BA0A461D3CDAF.onnx" 14799
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/a1/43/889885e946632c16054016ce2c41e2222e3d.udd" 14800
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/c1/29/76b38fdd23fb29818daa594ae2e2faa18071.udd" 14801
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/9d/52/25a7ffb8d9e63634723916afa28751a13bd0.udd" 14802
@@ -14830,7 +14830,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/65/ce/94f3576e7931a034c95b0d3b3831ac053308.udd" 14830
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/fb/2b/01a3cda8a3a212aab28be98ac9b7432408f7.udd" 14831
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/37/14/3b1f8f6cf91092b7ed6bbcb941ff7f404ead.udd" 14832
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized29FCC8504050D8A078065FAF69301E26.onnx" 14833
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized29FCC8504050D8A078065FAF69301E26.onnx" 14833
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/88/fc/bc9e1ad3a67b54696a1c4ff1648e60685b4b.udd" 14834
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/56/b9/2edf993025528a6ee58fefb1a5b5a19af6df.udd" 14835
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/66/ef/c5888f71703801b2794bef5cb706cf687a31.udd" 14836
@@ -14863,7 +14863,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/66/f1/922734a8d322e85955d8d12c534212b5ebf9.udd" 14863
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/4b/c8/ee4b0a3b794731d0c6ce0c45a7a90bc63803.udd" 14864
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/98/b2/6674db090102b36a991917c8e8b5554fa8f4.udd" 14865
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized157C57194A15C234377354A53B996F8D.onnx" 14866
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized157C57194A15C234377354A53B996F8D.onnx" 14866
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/99/81/67b697496f86cd7f7733521684630661d641.udd" 14867
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/5b/69/7c79e2afcfa764317a8bb1b2278cbab9eda1.udd" 14868
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/25/34/42c949853bbfe50694cab206abce1ccb8547.udd" 14869
@@ -14892,7 +14892,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/5d/75/694cbd8e301fdcf7f192d3b8ec81a623a121.udd" 14892
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/69/ec/91a9510ed2135b5a938d1f1cf33378216502.udd" 14893
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/18/36/3289ae52911535ece272b4a593a962bb3974.udd" 14894
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized57A7263D4D8B1ACA94BCD8B09DBD823E.onnx" 14895
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized57A7263D4D8B1ACA94BCD8B09DBD823E.onnx" 14895
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/8b/bc/b706079e5f62b6e725953e707baa3c0ec8ed.udd" 14896
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/d9/cb/9b85cae917bbcd86649c7c7a520a46e98d45.udd" 14897
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/87/e2/c1c5efa6e40fa709cef02bb39d212cceab2d.udd" 14898
@@ -14913,7 +14913,7 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/fa/71/49146ec11514427938b3ee1123a10dbf5d59.udd" 14913
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/94/ae/716eb88dcb8e673cab1914cb9669f6300c5c.udd" 14914
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/27/ed/2dd689bd48301f7c2941d8b9e2f4da0a6992.udd" 14915
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Intermediate/ORTOptimizerPass_Optimized2A1E47304007B75B07B1828AEF3D8BD7.onnx" 14916
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Intermediate/ORTOptimizerPass_Optimized2A1E47304007B75B07B1828AEF3D8BD7.onnx" 14916
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/f8/82/7612438b67989fbeb7b7f0b09558761f51f1.udd" 14917
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/BulkDataList/3e/bc/dc320b7ebbd41590033b7736cbad37ba2402.udd" 14918
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/e8/c4/93cdaf1baa8b6e542663820dbb426d7de057.udd" 14919
@@ -23505,4 +23505,4 @@
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Content/59/13/2796c438fc54c3345d38a587db6f0847321c.udd" 23505
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/9a/0a/858a0655c5575ee8e3e483b2aced357dd929.udd" 23506
 "C:/Users/PC/AppData/Local/UnrealEngine/Common/DerivedDataCache/Buckets/GlobalShaderMap/0d/6f/afb2c8f39fd16d0a8cccde2a085f3b662af4.udd" 23507
-"C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Cooked/Windows/MarryByMidnight/Metadata/CookedSettings.txt" 23508
+"C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Cooked/Windows/ColossalFizzCo/Metadata/CookedSettings.txt" 23508

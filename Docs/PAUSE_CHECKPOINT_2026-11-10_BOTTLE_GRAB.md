@@ -4,7 +4,7 @@
 
 The user explicitly requested documentation, a comprehensive checkpoint and a safe pause. **Do not continue development until the user resumes it.** This checkpoint supersedes earlier resume directions. The current bug investigation has made **no production code or Blueprint changes**; it remains unfixed.
 
-Workspace: `C:/Users/PC/Documents/Unreal Projects/MarryByMidnight`. Branch: `codex/shop-checkout-integration`; last known HEAD `e99fdb3`. Work remains local and uncommitted. Do not discard user changes. The editor was last opened on native module **11124**. No PIE session, build, test or background development task was started during this bug investigation. The last inspected PIE state was false. Leave the user's editor open; closing it is not required to pause.
+Workspace: `C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo`. Branch: `codex/shop-checkout-integration`; last known HEAD `e99fdb3`. Work remains local and uncommitted. Do not discard user changes. The editor was last opened on native module **11124**. No PIE session, build, test or background development task was started during this bug investigation. The last inspected PIE state was false. Leave the user's editor open; closing it is not required to pause.
 
 ## Completed implementation before this bug report
 
@@ -20,7 +20,7 @@ Detailed record: [scanner/checkout continuation](Scanner_Checkout_Integration_Co
 - Tagged one active checkout lane, moved its scanner within range, cached counter identity before docking, and wired native customer/scanner registration after bucket attachment with detachment on failure.
 - Fixed bucket attachment reporting false after success, cleared stale attached-actor references on detach, added counter occupied/free events, replicated counter occupancy, and corrected incompatible collision modes on the bucket template and five placed overrides.
 - World amount readout now reads native totals and the last scanned quote. Cents convert to double before division; compiled graph readback caught and corrected integer truncation. This is read-only presentation, not an independent wallet/calculation system.
-- Saved assets/packages and restarted UE normally. Last module inspection confirmed `UnrealEditor-MarryByMidnight-11124.dll`.
+- Saved assets/packages and restarted UE normally. Last module inspection confirmed `UnrealEditor-ColossalFizzCo-11124.dll`.
 
 ## Verified tests and limits
 

@@ -1,6 +1,6 @@
 # Cola Types, Supernatural Hazards & Customer Compendium
 
-**Project:** Midnight Fizz: Giant Thirst (*MarryByMidnight*)  
+**Project:** Midnight Fizz: Giant Thirst (*ColossalFizzCo*)  
 **Document Purpose:** Dedicated specification for standard colas, supernatural/hazardous beverages, failure mechanics, sanitation tools, and fantasy customer archetypes.
 
 **Content authority — 11 November 2026:** Use [the current 21-type Bottle Contents Catalog](Bottle_Contents_Catalog.md). The demo contains only the five Normal Colas, with `Lemonade < Mint < Sweet < Spicy = Zero Calories`. This document's older formula names, numeric prices and type-specific effect descriptions are historical proposals, not approvals or additional demo requirements. Generic mechanics with separate approval remain governed by their approved specifications.

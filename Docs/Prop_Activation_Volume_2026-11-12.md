@@ -72,7 +72,7 @@ fragment settlement reliably and were replaced in the test fixture. No fragment
 behavior was relaxed to make the test pass.
 
 The sole suite failure is the pre-existing
-`MarryByMidnight.Props.LiquidRepresentationContinuity` assertion requiring the
+`ColossalFizzCo.Props.LiquidRepresentationContinuity` assertion requiring the
 authored container height to equal exactly `186.58856`, at
 `ColaLiquidIntegrationTests.cpp:69`. Liquid materials/dimensions and that test
 were not changed by this feature. Full evidence is in

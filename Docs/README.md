@@ -40,9 +40,9 @@ saves restored. This mode decision supersedes older powered-flight wording below
 
 The user requested a Gemini handoff. [Next-task implementation and test instructions](Gemini_Next_Task_2026-11-11.md) cover bottle multiplayer acceptance and completion of the existing customer checkout/departure loop, with approved rules, current APIs and pass criteria.
 
-Welcome to the central design repository for **Midnight Fizz: Giant Thirst** (Working Title / Project `MarryByMidnight`).
+Welcome to the central design repository for **Midnight Fizz: Giant Thirst** (Working Title / Project `ColossalFizzCo`).
 
-Current review: [Development progress report — 10 November 2026](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Progress_Report_2026-11-10.md>), with a [native class and Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md>) and [audit evidence](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Audit_Evidence_2026-11-10.json>). This review distinguishes implemented code, production integration and tested behavior; earlier audit/progress documents remain historical records.
+Current review: [Development progress report — 10 November 2026](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Development_Progress_Report_2026-11-10.md>), with a [native class and Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md>) and [audit evidence](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Development_Audit_Evidence_2026-11-10.json>). This review distinguishes implemented code, production integration and tested behavior; earlier audit/progress documents remain historical records.
 
 This documentation suite serves as the authoritative blueprint for all gameplay systems, artistic specifications, mechanics design, item databases, and technical implementation tasks in Unreal Engine 5.
 
@@ -52,9 +52,9 @@ This documentation suite serves as the authoritative blueprint for all gameplay 
 
 [Browser-chat decisions and conflicts — 11 November 2026](Chat_Design_Decisions_2026-11-11.md) records direct designer decisions separately from assistant recaps, superseded requirements and open questions. [GDD Section 2](GDD_Master.md#2-the-core-gameplay-loop) is the active demo loop. No old capping countdown, 125% detonation rule, PSI table, quadratic bottle rebate, plastic-disposable assumption or food migration plan overrides these decisions. The current request authorizes documentation reconciliation; it does not establish runtime implementation or acceptance of the new requirements.
 
-[Scanner/checkout design update](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Scanner_Checkout_Design_Update_2026-11-10.md>) records the latest approved live/saved scanning, locked invoices, post-sale expiry penalties, physical cash and rounding rules. It supersedes earlier expired-sale rejection, zero expired invoice value, and proportional overfill pricing/penalties.
+[Scanner/checkout design update](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Scanner_Checkout_Design_Update_2026-11-10.md>) records the latest approved live/saved scanning, locked invoices, post-sale expiry penalties, physical cash and rounding rules. It supersedes earlier expired-sale rejection, zero expired invoice value, and proportional overfill pricing/penalties.
 
-[Current development scope](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Current_Development_Scope.md>) records the user's exclusion of eleven legacy PSO assets. Their repair and food-container migration are deferred; older resume instructions do not override this scope.
+[Current development scope](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Current_Development_Scope.md>) records the user's exclusion of eleven legacy PSO assets. Their repair and food-container migration are deferred; older resume instructions do not override this scope.
 
 [Core Design Decisions — Update of 10 November 2026](Core_Design_Decisions_Update_2026-11-10.md) contains the latest decisions on the shared wallet, fixed pricing, refill expiry, reuse, autosaving and pool expansion. It takes precedence over conflicting earlier documents.
 
@@ -68,13 +68,13 @@ The user subsequently approved the temporary initial-component fragment represen
 
 ## 📚 Document Index
 
-1. [**Master Game Design Document (GDD_Master.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/GDD_Master.md)
+1. [**Master Game Design Document (GDD_Master.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/GDD_Master.md)
    - High Concept, Game Pillars & The Scale Twist (Tiny Bartenders vs. Giant Customers).
    - Core Demo Loop (Buy → Fill → Seal/Cool → Stock → NPC Shop/Queue → Scan/Pay/Change → ATM Deposit → Reinvest).
    - Co-op Multiplayer Architecture (Shared Shop, Shared Wallet, Shared Inventory).
    - Day & Shift Cycles, Customer Satisfaction, and Shop Progression.
 
-2. [**Mechanics, Tools & Stations (Mechanics_and_Tools.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Mechanics_and_Tools.md)
+2. [**Mechanics, Tools & Stations (Mechanics_and_Tools.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Mechanics_and_Tools.md)
    - **Station 1: Normal Bulk Cola Container & Filling Equipment** (Hot high-pressure supply → hose/dispenser → equipment → bottle; final tuning open; no demo electricity/self-heating).
    - **Station 2: Manual Wheel Rotator** (Demo: two-player downward hold/rotation on Normal twist caps and plastic bottles; other closures/F1 gun remain full-game reference).
    - **Station 3: Temperature & Chilling System** (Consumable temperature, thermal decay, ice baths).
@@ -82,39 +82,39 @@ The user subsequently approved the temporary initial-component fragment represen
    - **Station 5: Bottle Cleaning & Decontamination Station** (Reusability conditions, brush scrubbers, hazard sanitation).
    - **Station 6: Shop Vehicles & Heavy Machinery** (Fizz-Mule flatbed, Micro-Forklift cylinder hoister, Mobile Capper Buggy for drive-by bottle capping).
 
-3. [**Items, Colas & Hazards Catalog (Items_Catalog_and_Hazards.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Items_Catalog_and_Hazards.md)
+3. [**Items, Colas & Hazards Catalog (Items_Catalog_and_Hazards.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Items_Catalog_and_Hazards.md)
    - **Current Material/Cap Authority:** Core decisions and chat reconciliation; tables with PSI/disposable plastic/indestructible metal/Crown Cork/Bolt-Lock/Rune Seal are marked historical proposals.
    - **Current Contents:** Five Normal demo flavors from the 21-type working catalog; legacy formula names/effects do not expand scope.
    - **Shaking & Agitation Mishaps:** Rocket launches, Fragile shatter, Toxic gas clouds, Spider swarms, Dizziness.
    - **Customer Demographics:** Giants, Golems, Witches, Goblins (height differences, scale challenges, preferences).
    - **Vehicle Fleet & Logistics Catalog:** Fizz-Mule Flatbed, Micro-Forklift, Mobile Capper Buggy (specs, fuel/battery, and roll-over hazards).
 
-4. [**Technical Implementation & Unreal Engine 5 Architecture (Technical_Implementation_Plan.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Technical_Implementation_Plan.md)
+4. [**Technical Implementation & Unreal Engine 5 Architecture (Technical_Implementation_Plan.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Technical_Implementation_Plan.md)
    - Integration map between workstation blueprints (`BP_ColaTank`, `BP_CappingStation`, `BP_Chiller`, `BP_CheckoutScanner`), `AShopVehiclePawn`, and UI/HUD specs *(legacy 64-bit packing details superseded by item 6 below)*.
 
-5. [**Cola Types, Supernatural Hazards & Customer Compendium (Cola_Types_and_Patrons.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Cola_Types_and_Patrons.md)
+5. [**Cola Types, Supernatural Hazards & Customer Compendium (Cola_Types_and_Patrons.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Cola_Types_and_Patrons.md)
    - Dedicated encyclopedia for standard & supernatural colas (Poison, Spider, Radioactive, Ghost, Blood).
    - Catastrophic disaster reactions (Poison clouds, spider swarms, ionizing radiation contagion, sensory hallucinations).
    - Player countermeasure tools & safety gear (Gas masks, air-scrubbing blowers, bug swatters, lead barrels, holy salt, exorcism bell).
    - Supernatural patron roster (Golems, Werewolves, Witches, Vampires, Mountain Giants, Banshees) and wrath tantrums.
    - Standardized developer data templates for easily authoring new colas and monster patrons.
 
-6. [**ISM Data Architecture & Zero-Copy Shared / Unique Split (ISM_Data_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ISM_Data_Architecture.md)
+6. [**ISM Data Architecture & Zero-Copy Shared / Unique Split (ISM_Data_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ISM_Data_Architecture.md)
    - Part 1 baseline audit of all 17 `FPropProductDefinition` members, legacy `PropDatabase` / `IISMDB` duplication, 64-bit `FPropPackedRuntimeData`, and 3-float GPU data.
    - Part 2 zero-copy Category 1 dual shared registries (`ProductDefinitions` + `ContentDefinitions`), Category 2 split (`Continuous` vs `Event`), feature flags (`bEnableInstanceUniqueData`, `bEnableContinuousUpdateData`), 4-float GPU pipeline, `SchemaVersion = 2`, and proposed C++ header contracts (`[Needs Approval]`).
 
-7. [**Active Prop Actor & Cola ASM Runtime Architecture (ActivePropActor_ASM_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/ActivePropActor_ASM_Architecture.md)
+7. [**Active Prop Actor & Cola ASM Runtime Architecture (ActivePropActor_ASM_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/ActivePropActor_ASM_Architecture.md)
    - 3-tier ASM state separation (Persistent Event mirror, Persistent Continuous mirror, Transient ASM-only state) eliminating per-actor shared-array copies.
    - Complete mapping of the Bottle Containment & Failure System onto `AActivePropActor` and `AColaPropActor`, `CanDemoteToISM()` gates, `PoolGeneration` timer safety, verified Phase B bug fixes, and `[Pre-Authorized]` C++ contracts.
 
-8. [**Prop Manager & ISM <-> ASM Subsystem Architecture (PropManager_ISM_ASM_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/PropManager_ISM_ASM_Architecture.md)
+8. [**Prop Manager & ISM <-> ASM Subsystem Architecture (PropManager_ISM_ASM_Architecture.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/PropManager_ISM_ASM_Architecture.md)
    - Orchestration across `APropManager`, `UASMComponent`, `UInteractableISMComponent`, and unified `UPropBatchUpdateComponent`.
    - Split replication channels (`Registry`, `Event` ordered by `EventSequence`, hot `Continuous`), monotonic `double WorldElapsedSeconds` clock, `EPropProductResetMode` conversions, safe `CustomActiveActorClass` swap, and `[Needs Approval]` C++ contracts.
 
-9. [**BP_Cola & AColaPropActor Technical Documentation (BP_Cola_Technical_Documentation.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/BP_Cola_Technical_Documentation.md)
+9. [**BP_Cola & AColaPropActor Technical Documentation (BP_Cola_Technical_Documentation.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/BP_Cola_Technical_Documentation.md)
    - Bottle simulation and pooling reference; newer core/scanner decisions supersede its quadratic underfill economy and any conflicting closure/pressure claims. Existing source/tests establish implementation separately from this design reference.
 
-10. [**Bottle Damage, Product Transformation & Fragment Lifecycle (Bottle_Damage_Transformation_and_Fragments.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/MarryByMidnight/Docs/Bottle_Damage_Transformation_and_Fragments.md)
+10. [**Bottle Damage, Product Transformation & Fragment Lifecycle (Bottle_Damage_Transformation_and_Fragments.md)**](file:///c:/Users/PC/Documents/Unreal%20Projects/ColossalFizzCo/Docs/Bottle_Damage_Transformation_and_Fragments.md)
     - GPU-driven damage visuals (Glass crack `Lerp` vs Plastic WPO Vertex Texture via `Slot 3`), ASM <-> ISM persistence (`CapType` + `CapSealed` + `Strength`), 1-to-Many `Broken Glass Bottle` -> `Glass Fragment 1..N` independent lifecycles, `Melted Glass` / `Burst Bottle` transformations, and property inheritance matrix.
 
 ---

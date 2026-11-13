@@ -8,7 +8,7 @@ from editor_toolset.toolsets.blueprint import BlueprintTools as BP
 root='/Game/NormalColaPrototype'
 # This engine version exposes the inherited Python wrapper name, not a module attribute
 # matching the native subclass. Resolve the reflected type rather than relying on that alias.
-navigation_class=unreal.load_class(None,'/Script/MarryByMidnight.NormalColaNavigationConfig')
+navigation_class=unreal.load_class(None,'/Script/ColossalFizzCo.NormalColaNavigationConfig')
 if not navigation_class: raise RuntimeError('Native Normal Cola navigation class is unavailable')
 npc=unreal.load_asset(root+'/BP_NormalColaCustomer')
 parts=ActorTools.get_components(unreal.get_default_object(npc.generated_class()))
@@ -54,7 +54,7 @@ for path in [root+'/Lvl_NormalColaPrototype',root+'/Lvl_NormalColaPrototype_Vali
             actor.set_actor_scale3d(unreal.Vector(30,.2,12) if label=='Back wall' else unreal.Vector(.2,28,12))
     if not unreal.EditorLoadingAndSavingUtils.save_map(world,path): raise RuntimeError('Save failed: '+path)
     records.append(path)
-report={'maps':records,'navigation_config':'/Script/MarryByMidnight.NormalColaNavigationConfig','customer_radius_cm':radius,'customer_height_cm':half*2,
+report={'maps':records,'navigation_config':'/Script/ColossalFizzCo.NormalColaNavigationConfig','customer_radius_cm':radius,'customer_height_cm':half*2,
     'character_sizes_preserved':True,'original_map_unchanged':True,'tender_round_up_dollars':10,'rounding_requires_physical_change':True}
 (Path(unreal.Paths.project_saved_dir())/'NormalColaPrototype_20261111/GiantNavigationProfile.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 unreal.log('NORMAL_COLA_GIANT_PROFILE_SAVED')

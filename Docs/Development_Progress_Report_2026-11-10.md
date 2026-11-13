@@ -2,7 +2,7 @@
 
 ## Current position
 
-**Scope update after the audit:** the user excluded eleven legacy PSO assets from the current game. See [Current development scope](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Current_Development_Scope.md>) for the exact list. Their repair/migration is deferred, including PSO_FoodContainer. Raw compile findings below are retained, but these assets are not active gameplay blockers or remaining implementation tasks. The filtered existing audit has 97 non-excluded Blueprints: 96 clean, one animation warning, zero recorded compile errors. No test was rerun for this scope update, and deferred work is not counted as completed.
+**Scope update after the audit:** the user excluded eleven legacy PSO assets from the current game. See [Current development scope](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Current_Development_Scope.md>) for the exact list. Their repair/migration is deferred, including PSO_FoodContainer. Raw compile findings below are retained, but these assets are not active gameplay blockers or remaining implementation tasks. The filtered existing audit has 97 non-excluded Blueprints: 96 clean, one animation warning, zero recorded compile errors. No test was rerun for this scope update, and deferred work is not counted as completed.
 
 **The project is an early gameplay integration build with a substantial native prop framework. It has not yet reached a complete, validated shop vertical slice.** The strongest completed work is the product/instance infrastructure, monetary ledger and transaction services, fractional liquid transfer, and the supplied eleven-piece glass fragment lifecycle. The largest remaining work is connecting those services to production Blueprints and completing the business/customer/production loop.
 
@@ -22,7 +22,7 @@ The source review covers the single runtime module, its public classes, implemen
 
 The authoritative requirements are the latest core design update, underlying core decisions, recorded approvals, and subsequently approved fragment architecture. Older master/technical documents remain applicable where they do not conflict. In particular, quadratic pricing, authoritative PSI, mandatory uncapped eruption countdowns, eight-fragment examples, old Strength units, and old schema/byte-size assumptions are superseded. Concrete fragment recipes are intentionally configurable until the user supplies meshes. The temporary initial-fragment representation and modern food-container migration are already approved; those decisions do not require another approval.
 
-See the [evidence inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Audit_Evidence_2026-11-10.json>) for exact source hashes, Blueprint results, test summaries and package-preservation checks, and the [class/Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md>) for every public derived class and saved Blueprint checked. Detailed working exports and commandlet logs are under the project's Saved directory.
+See the [evidence inventory](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Development_Audit_Evidence_2026-11-10.json>) for exact source hashes, Blueprint results, test summaries and package-preservation checks, and the [class/Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Development_Class_and_Blueprint_Inventory_2026-11-10.md>) for every public derived class and saved Blueprint checked. Detailed working exports and commandlet logs are under the project's Saved directory.
 
 ## Major system assessment
 
@@ -104,7 +104,7 @@ Other structural observations: `APropManager.cpp` is 8,619 lines and mixes regis
 
 ### Existing acceptance evidence
 
-The portable fragment validation record identifies module `UnrealEditor-MarryByMidnight-11110.dll` and **15 successful native tests: 14 clean successes, one success with an animation warning, zero failures**:
+The portable fragment validation record identifies module `UnrealEditor-ColossalFizzCo-11110.dll` and **15 successful native tests: 14 clean successes, one success with an animation warning, zero failures**:
 
 | Test group | Verified behavior | Limits |
 |---|---|---|
@@ -128,7 +128,7 @@ The new audit indexed **108 source/build files**: 46 headers, 59 C++ implementat
 
 The read-only Unreal pass checked **2,111 on-disk Unreal packages** and **108 Blueprint-family assets**: **106 clean compile statuses, one compile status with warnings (`ABP_Unarmed`), and one failure (`PSO_FoodContainer`)**. It exported **540 graphs**. Three Windows path-length export failures were recovered using short filenames, leaving zero outstanding graph-export errors. The failing orphan also triggered Unreal reflection ensures; the broad commandlet exited 1, so this is not a wholly successful project compile. The follow-up inspection exited 0. All package hashes remained identical to the audit baseline, including the forty-two differences from Git.
 
-The audit then ran the existing native suite against **`UnrealEditor-MarryByMidnight-11111.dll`**, confirmed by the module load log. **15 succeeded, zero failed, zero unrun; process exit 0.** Individual tests recorded zero warnings, but `ABP_Unarmed` emitted its known warning during startup outside those test scopes. This is a passing general suite, not a warning-free process or a completed placed-food migration test. The prior four-player acceptance run on module 11110 was inspected, not rerun.
+The audit then ran the existing native suite against **`UnrealEditor-ColossalFizzCo-11111.dll`**, confirmed by the module load log. **15 succeeded, zero failed, zero unrun; process exit 0.** Individual tests recorded zero warnings, but `ABP_Unarmed` emitted its known warning during startup outside those test scopes. This is a passing general suite, not a warning-free process or a completed placed-food migration test. The prior four-player acceptance run on module 11110 was inspected, not rerun.
 
 Saved Blueprint composition confirms **no production Blueprint attaches `UShopScannerComponent` or `UBottleFillingComponent`**. None of the exported graphs calls `ScanProduct`, `BeginCheckout`, `RegisterShopStock`, `StartFilling` or `TransferLiquid`. The production scanner has `bReplicates=false`. `BP_NPC` is a native NPCCharacter child but overrides its controller to generic AIController; the placed Basic NPC instead derives directly from Engine.Character and uses its separate Blueprint shopping controller. Those are concrete integration gaps, not an absence of all NPC code.
 
@@ -196,36 +196,36 @@ Remaining inputs are concrete content and acceptance choices: concrete fragment/
 
 ## Source/evidence navigation
 
-- [Prop manager: components, initialization, placed quantity, interactions, networking and snapshots](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp:43>)
-- [Save/load and destructive restore order](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp:7806>)
-- [Canonical event/continuous state and product conversion](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/PropManagerState.cpp:98>)
-- [Actor mirrors, demotion and absent thermal-source implementation](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ActivePropState.cpp:74>)
-- [Integer-cent wallet ledger](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/SharedWalletTypes.cpp:3>)
-- [Server wallet replication and commit](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/SharedTeamWalletComponent.cpp:25>)
-- [Checkout, tender/change, ownership and cancellation](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/ShopCheckoutComponent.cpp:75>)
-- [Scanner/cart adapter](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/ShopScannerComponent.cpp:77>)
-- [Canonical scan quote](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/ShopProductQuery.cpp:3>)
-- [Filling equipment adapter](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Shop/BottleFillingComponent.cpp:28>)
-- [Supply-backed liquid transfer](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/PropLiquidTransfer.cpp:1>)
-- [Containment, impact and fracture dispatch](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaContainment.cpp:73>)
-- [Pricing, expiry compensation quote and reuse predicate](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPricingLibrary.cpp:3>)
-- [Original multi-component fragment lifecycle](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/FragmentDestructionActor.cpp:1>)
-- [Fragment registry/pooling/promotion integration](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/PropFragmentLifecycle.cpp:1>)
-- [Released-liquid accounting](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/PropLiquidRelease.cpp:3>)
-- [Legacy cap prototype](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/ColaPropActor.cpp:366>)
-- [NPC cash mutation](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/NPCPersonalityComponent.cpp:48>)
-- [NPC offering affordability and operation order](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Environment/NPCOperableObject.cpp:155>)
-- [Planner advancement and recorded goal](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/NPCPlannerComponent.cpp:216>)
-- [Native NPC goal/resource/consumption paths](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/AI/NPCAIController.cpp:333>)
-- [NPC component composition and inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Characters/NPCCharacter.cpp:28>)
-- [Knowledge persistence/world lifecycle](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Subsystems/NPCKnowledgeSubsystem.cpp:6>)
-- [Thermal batch evaluator](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Components/PropBatchUpdateComponent.cpp:43>)
-- [Product feature flag combination](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Props/InteractablePropDatabase.cpp:222>)
-- [Configured refill test and its current assertions](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Source/MarryByMidnight/Private/Tests/ConfiguredBottleAssetTests.cpp:10>)
-- [Fresh native test report](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Automation/ProjectAudit_2026-11-10/index.json:1>)
-- [Fresh native module/test log](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/Logs/ProjectAuditNativeTests.runner.log:1>)
-- [Raw current asset/Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/ProjectAudit_2026-11-10/AssetAudit.json:1>)
-- [Current scanner graph with direct legacy money writes](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Saved/ProjectAudit_2026-11-10/BlueprintGraphs/DirtyActors_BP_ProductSceaner__EventGraph.dsl:38>)
-- [Retained four-player fragment evidence](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Fragment_Validation_2026-11-10.json:1>)
-- [Earlier wallet convergence evidence](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/Four_Player_Wallet_Evidence_2026-11-10.json:1>)
-- [Paused implementation/migration checkpoint](<C:/Users/PC/Documents/Unreal Projects/MarryByMidnight/Docs/PAUSE_CHECKPOINT_2026-11-10.md:1>)
+- [Prop manager: components, initialization, placed quantity, interactions, networking and snapshots](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp:43>)
+- [Save/load and destructive restore order](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp:7806>)
+- [Canonical event/continuous state and product conversion](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/PropManagerState.cpp:98>)
+- [Actor mirrors, demotion and absent thermal-source implementation](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ActivePropState.cpp:74>)
+- [Integer-cent wallet ledger](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/SharedWalletTypes.cpp:3>)
+- [Server wallet replication and commit](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/SharedTeamWalletComponent.cpp:25>)
+- [Checkout, tender/change, ownership and cancellation](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/ShopCheckoutComponent.cpp:75>)
+- [Scanner/cart adapter](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/ShopScannerComponent.cpp:77>)
+- [Canonical scan quote](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/ShopProductQuery.cpp:3>)
+- [Filling equipment adapter](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Shop/BottleFillingComponent.cpp:28>)
+- [Supply-backed liquid transfer](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/PropLiquidTransfer.cpp:1>)
+- [Containment, impact and fracture dispatch](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaContainment.cpp:73>)
+- [Pricing, expiry compensation quote and reuse predicate](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPricingLibrary.cpp:3>)
+- [Original multi-component fragment lifecycle](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/FragmentDestructionActor.cpp:1>)
+- [Fragment registry/pooling/promotion integration](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/PropFragmentLifecycle.cpp:1>)
+- [Released-liquid accounting](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/PropLiquidRelease.cpp:3>)
+- [Legacy cap prototype](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp:366>)
+- [NPC cash mutation](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/NPCPersonalityComponent.cpp:48>)
+- [NPC offering affordability and operation order](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Environment/NPCOperableObject.cpp:155>)
+- [Planner advancement and recorded goal](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/NPCPlannerComponent.cpp:216>)
+- [Native NPC goal/resource/consumption paths](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/AI/NPCAIController.cpp:333>)
+- [NPC component composition and inventory](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Characters/NPCCharacter.cpp:28>)
+- [Knowledge persistence/world lifecycle](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Subsystems/NPCKnowledgeSubsystem.cpp:6>)
+- [Thermal batch evaluator](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Components/PropBatchUpdateComponent.cpp:43>)
+- [Product feature flag combination](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Props/InteractablePropDatabase.cpp:222>)
+- [Configured refill test and its current assertions](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Source/ColossalFizzCo/Private/Tests/ConfiguredBottleAssetTests.cpp:10>)
+- [Fresh native test report](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Automation/ProjectAudit_2026-11-10/index.json:1>)
+- [Fresh native module/test log](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/Logs/ProjectAuditNativeTests.runner.log:1>)
+- [Raw current asset/Blueprint inventory](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/ProjectAudit_2026-11-10/AssetAudit.json:1>)
+- [Current scanner graph with direct legacy money writes](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Saved/ProjectAudit_2026-11-10/BlueprintGraphs/DirtyActors_BP_ProductSceaner__EventGraph.dsl:38>)
+- [Retained four-player fragment evidence](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Fragment_Validation_2026-11-10.json:1>)
+- [Earlier wallet convergence evidence](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/Four_Player_Wallet_Evidence_2026-11-10.json:1>)
+- [Paused implementation/migration checkpoint](<C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo/Docs/PAUSE_CHECKPOINT_2026-11-10.md:1>)

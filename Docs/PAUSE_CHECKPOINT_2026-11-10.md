@@ -4,7 +4,7 @@ The user explicitly asked to log everything and pause. Implementation has stoppe
 
 ## Repository and user work
 
-- Workspace: C:/Users/PC/Documents/Unreal Projects/MarryByMidnight; UE 5.8; PowerShell.
+- Workspace: C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo; UE 5.8; PowerShell.
 - Branch: codex/shop-checkout-integration. Earlier main checkpoint e3be512c2a780904ce409f361f2676bda10a2a3d was pushed before this resumed work.
 - Preserve all user assets: eleven supplied bottle fragment meshes, BP_bottel_Fragments_Visioul_Socase, scanner changes, splash/icon assets and the new external level actor package.
 - Scanner SHA-256 is unchanged from resume: 6F883206717F374BC2A59D80260DFC7658A52000516EC6693A719E53AEAA8452.
@@ -24,7 +24,7 @@ Read Implementation_Continuation_2026-11-10.md and Fragment_Validation_2026-11-1
 - Exact component reset transforms; sleeping-body settlement fix; successful-operation diagnostics moved to verbose logging.
 - Historical NPCConsumableProp class redirect restores nine legacy prop Blueprints. Save schema is 4; no legacy save migration is required by the approved plan.
 
-Last fully validated module: UnrealEditor-MarryByMidnight-11110.dll.
+Last fully validated module: UnrealEditor-ColossalFizzCo-11110.dll.
 
 - Native tests: 15 passed, 0 failed. One test loads the existing ABP_Unarmed and reports its Get Punching State thread-safety warning; do not report a warning-free final suite.
 - Four-player listen-server acceptance: all seven phases passed. All four worlds had eleven visible originals; only the server simulated them. Dedicated Fragment ASM actors were visible in every world; stable slots and settled positions within 0.5 cm were verified. A second destruction preserved earlier pieces, and all worlds agreed on 270 released portions. The initial stronger-test failure exposed the shared settling wake problem; the timeout was not relaxed to obtain a pass.
@@ -55,7 +55,7 @@ Latest native additions (compiled successfully in module 11111, not fully tested
 - Private/Props/ActivePropState.cpp: default implementation returns the product default.
 - Private/Props/InteractablePropManager.cpp: initial placed conversion calls that hook, validates nonnegative finite output, and refreshes canonical unique state/packed/GPU data after assigning the initial level.
 
-Latest build: Saved/Logs/FoodMigrationBuild.log; Result Succeeded; output UnrealEditor-MarryByMidnight-11111.dll. The interactive editor has NOT reloaded this module; it still holds 11110.
+Latest build: Saved/Logs/FoodMigrationBuild.log; Result Succeeded; output UnrealEditor-ColossalFizzCo-11111.dll. The interactive editor has NOT reloaded this module; it still holds 11110.
 
 Scripts/MigrateLegacyFoodContainer.py is work in progress. It defaults to preview and was run WITHOUT -ApplyFoodMigration. The preview failed, so no production migration or Rice definition change was saved. No accepted preview asset exists on disk.
 

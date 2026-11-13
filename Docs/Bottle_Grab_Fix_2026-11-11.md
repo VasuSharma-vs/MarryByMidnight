@@ -20,15 +20,15 @@ The bottle's interface attachment/detachment bypassed the native Prop Manager ca
 
 ## Validation and evidence
 
-Final results are parsed from `Saved/Automation/BottleGrabFull_11133/index.json`, not inferred from the runner's exit code. The selected module is `UnrealEditor-MarryByMidnight-11133.dll` in `Binaries/Win64/UnrealEditor.modules`. The editor is closed; no claim is made that an interactive editor loaded it.
+Final results are parsed from `Saved/Automation/BottleGrabFull_11133/index.json`, not inferred from the runner's exit code. The selected module is `UnrealEditor-ColossalFizzCo-11133.dll` in `Binaries/Win64/UnrealEditor.modules`. The editor is closed; no claim is made that an interactive editor loaded it.
 
 Three new tests extend the previous 29-test suite:
 
 | Test | What it verifies |
 | --- | --- |
-| `MarryByMidnight.Props.GrabGesture` | Hold pickup/place, GG release, no repeated action from Ongoing/Triggered/Completed, no dropping a different identity with an old tap, release fallback when Ongoing is missed. |
-| `MarryByMidnight.Props.AuthoredBottleGrabRelease` | Loads the real cola definition and `BP_Cola`; invokes its saved interfaces; verifies native ownership, repeat attachment, release flags/physics/gravity, placement at the requested location, unchanged scale/ISID, and rejection of invalid/range/occluded/stale placement. Over twelve engine frames the released body falls from Z 250.00 to 229.09 cm, velocity Z -191.805 cm/s, gravity -980 cm/s². |
-| `MarryByMidnight.Props.AuthoredGrabInputRouting` | Loads the saved `BP_FirstPersonCharacter` and its native SCS component, with an 800×600 windowless viewport. Confirms successful, nonzero screen-center deprojection and a real pickup hit on `BP_Cola`. Dispatches the exact compiled callbacks bound to IA_Grab: hold G picks up that bottle, GG clears carry state and restores physics, and hold G places at the production camera trace location and releases without a repeated action on completion. Invokes the actual server carry callbacks to verify another player's bottle cannot be stolen/released or retained as a false carry reference. |
+| `ColossalFizzCo.Props.GrabGesture` | Hold pickup/place, GG release, no repeated action from Ongoing/Triggered/Completed, no dropping a different identity with an old tap, release fallback when Ongoing is missed. |
+| `ColossalFizzCo.Props.AuthoredBottleGrabRelease` | Loads the real cola definition and `BP_Cola`; invokes its saved interfaces; verifies native ownership, repeat attachment, release flags/physics/gravity, placement at the requested location, unchanged scale/ISID, and rejection of invalid/range/occluded/stale placement. Over twelve engine frames the released body falls from Z 250.00 to 229.09 cm, velocity Z -191.805 cm/s, gravity -980 cm/s². |
+| `ColossalFizzCo.Props.AuthoredGrabInputRouting` | Loads the saved `BP_FirstPersonCharacter` and its native SCS component, with an 800×600 windowless viewport. Confirms successful, nonzero screen-center deprojection and a real pickup hit on `BP_Cola`. Dispatches the exact compiled callbacks bound to IA_Grab: hold G picks up that bottle, GG clears carry state and restores physics, and hold G places at the production camera trace location and releases without a repeated action on completion. Invokes the actual server carry callbacks to verify another player's bottle cannot be stolen/released or retained as a false carry reference. |
 
 The input test isolates callbacks from the player's HUD/BeginPlay/Tick setup; its normal cached hit is seeded from the actual camera ray. Its viewport has no Slate window and does not take desktop focus. In the final run the placement destination is `(169.484, 2.521, 165.234)` cm, and the subsequent pickup ray hits the production bottle at `(93.909, 2.521, 165.234)` cm. This is not a zero-vector commandlet trace. The test does not inject physical keyboard events, evaluate Enhanced Input hardware timing, create a remote connection or prove RPC transport. The callback ownership checks run in an authoritative standalone test world.
 
@@ -47,12 +47,12 @@ Historical evidence is retained:
 
 ## Modified files
 
-- `Source/MarryByMidnight/Public/Components/PropGrabInputComponent.h` (new)
-- `Source/MarryByMidnight/Private/Components/PropGrabInputComponent.cpp` (new)
-- `Source/MarryByMidnight/Public/Props/InteractableProp.h`
-- `Source/MarryByMidnight/Private/Props/InteractableProp.cpp`
-- `Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp` (normal diagnostic severity only)
-- `Source/MarryByMidnight/Private/Tests/PropGrabTests.cpp` (new)
+- `Source/ColossalFizzCo/Public/Components/PropGrabInputComponent.h` (new)
+- `Source/ColossalFizzCo/Private/Components/PropGrabInputComponent.cpp` (new)
+- `Source/ColossalFizzCo/Public/Props/InteractableProp.h`
+- `Source/ColossalFizzCo/Private/Props/InteractableProp.cpp`
+- `Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp` (normal diagnostic severity only)
+- `Source/ColossalFizzCo/Private/Tests/PropGrabTests.cpp` (new)
 - `Content/Props/Colas/BP_Cola.uasset`
 - `Content/FirstPerson/Blueprints/BP_FirstPersonCharacter.uasset`
 - This record, its validation JSON, and the current-direction sections of `Docs/README.md` / `Docs/IMPLEMENTATION_HANDOFF.md`.

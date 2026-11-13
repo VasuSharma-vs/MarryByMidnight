@@ -32,7 +32,7 @@ route. Hold/release, grab and other original event connections were preserved.
 The player Blueprint compiles and is saved.
 
 Editor module **11205 builds successfully** with build acceleration disabled.
-`MarryByMidnight.Shop.CheckoutViewInteraction` reproduces the 150 cm miss using
+`ColossalFizzCo.Shop.CheckoutViewInteraction` reproduces the 150 cm miss using
 giant counter collision, then checks the new query, looking away, invalid direction,
 distant corners, an obstructing object and lost possession. This test passes.
 
@@ -41,7 +41,7 @@ distant corners, an obstructing object and lost possession. This test passes.
 - Editor module **11205** built successfully; the saved player Blueprint compiles.
 - The full native suite completed: **49 clean passes, 3 warning-bearing passes,
   1 failure, 0 not run** (52/53 passed). The checkout view regression passes.
-- The failure is `MarryByMidnight.Props.LiquidRepresentationContinuity`, at the
+- The failure is `ColossalFizzCo.Props.LiquidRepresentationContinuity`, at the
   assertion requiring the artist-configurable body height to equal exactly
   `186.58856`. No liquid material, body dimensions or liquid test was changed
   for this checkout repair. Investigate the authored dimensions and that assertion

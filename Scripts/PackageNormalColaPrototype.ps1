@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $prototypeProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$prototypeProjectFile = Join-Path $prototypeProjectRoot 'MarryByMidnight.uproject'
+$prototypeProjectFile = Join-Path $prototypeProjectRoot 'ColossalFizzCo.uproject'
 $prototypeSavedRoot = [IO.Path]::GetFullPath((Join-Path $prototypeProjectRoot 'Saved/'))
 if (-not [IO.Path]::IsPathRooted($OutputRoot)) { $OutputRoot = Join-Path $prototypeProjectRoot $OutputRoot }
 $OutputRoot = [IO.Path]::GetFullPath($OutputRoot)
@@ -26,7 +26,7 @@ $prototypeStamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 Push-Location -LiteralPath $prototypeProjectRoot
 try {
     if (-not $SkipNativeBuild) {
-        foreach ($prototypeTarget in @('MarryByMidnightEditor','MarryByMidnight')) {
+        foreach ($prototypeTarget in @('ColossalFizzCoEditor','ColossalFizzCo')) {
             $prototypeNativeLog = Join-Path $prototypeLogRoot ('PrototypePackageBuild_'+$prototypeTarget+'_'+$prototypeStamp+'.log')
             & $prototypeBuild $prototypeTarget Win64 Development ('-Project='+$prototypeProjectFile) -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=2 *> $prototypeNativeLog
             if ($LASTEXITCODE -ne 0) { throw ('Native build failed. See '+$prototypeNativeLog) }

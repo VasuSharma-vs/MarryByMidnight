@@ -13,19 +13,19 @@
   },
   "newTests": [
     {
-      "fullTestPath": "MarryByMidnight.Props.AuthoredBottleGrabRelease",
+      "fullTestPath": "ColossalFizzCo.Props.AuthoredBottleGrabRelease",
       "state": "Success",
       "warnings": 1,
       "errors": 0
     },
     {
-      "fullTestPath": "MarryByMidnight.Props.AuthoredGrabInputRouting",
+      "fullTestPath": "ColossalFizzCo.Props.AuthoredGrabInputRouting",
       "state": "Success",
       "warnings": 0,
       "errors": 0
     },
     {
-      "fullTestPath": "MarryByMidnight.Props.GrabGesture",
+      "fullTestPath": "ColossalFizzCo.Props.GrabGesture",
       "state": "Success",
       "warnings": 0,
       "errors": 0
@@ -37,7 +37,7 @@
     "Pickup ray hit BP_Cola_C_0 at X=93.909 Y=2.521 Z=165.234; target bounds X=99.484 Y=2.521 Z=165.234 extent X=9.808 Y=8.441 Z=15.084"
   ],
   "warnings": [
-    "LogBlueprint: [AssetLog] C:\\Users\\PC\\Documents\\Unreal Projects\\MarryByMidnight\\Content\\Characters\\Mannequins\\Anims\\Unarmed\\ABP_Unarmed.uasset: [Compiler] Node  Two Way Blend  uses potentially thread-unsafe call Get Punching State. Disable threaded update or use a thread-safe call. Function may need BlueprintThreadSafe metadata adding."
+    "LogBlueprint: [AssetLog] C:\\Users\\PC\\Documents\\Unreal Projects\\ColossalFizzCo\\Content\\Characters\\Mannequins\\Anims\\Unarmed\\ABP_Unarmed.uasset: [Compiler] Node  Two Way Blend  uses potentially thread-unsafe call Get Punching State. Disable threaded update or use a thread-safe call. Function may need BlueprintThreadSafe metadata adding."
   ],
   "validationLimits": [
     "Real 800x600 windowless viewport and compiled callbacks run in authoritative standalone test worlds; no hardware keyboard input injection.",
@@ -60,27 +60,27 @@
   "commitOrPushPerformed": false,
   "files": [
     {
-      "path": "Source/MarryByMidnight/Public/Components/PropGrabInputComponent.h",
+      "path": "Source/ColossalFizzCo/Public/Components/PropGrabInputComponent.h",
       "sha256": "21D367A281847E53EAA83562B9AD33AC78EED31EE09630208AEEB4B251B519E1"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Components/PropGrabInputComponent.cpp",
+      "path": "Source/ColossalFizzCo/Private/Components/PropGrabInputComponent.cpp",
       "sha256": "956D4794265FE1678B6B11B3D4BBBD8E99BDC348C2818CDABF9B435B796AB484"
     },
     {
-      "path": "Source/MarryByMidnight/Public/Props/InteractableProp.h",
+      "path": "Source/ColossalFizzCo/Public/Props/InteractableProp.h",
       "sha256": "CD5217024976BEE636A2A3E3248A054A138FCD59A8D16B8A5F3E113D38C204C7"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractableProp.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractableProp.cpp",
       "sha256": "B5A2F7B97925E621E8A9185B7F6B681FDBA8470370C0AFA70F453925A8F4BEDD"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Props/InteractablePropManager.cpp",
+      "path": "Source/ColossalFizzCo/Private/Props/InteractablePropManager.cpp",
       "sha256": "4AF683B923AA58B2E7F97C6B29108A08847AE77EA18FFF95141022A0D24A2F8A"
     },
     {
-      "path": "Source/MarryByMidnight/Private/Tests/PropGrabTests.cpp",
+      "path": "Source/ColossalFizzCo/Private/Tests/PropGrabTests.cpp",
       "sha256": "CBEA935A097C5F195A6219F460478852C9BFAEC3C46592CD0AEE0CF8030C3042"
     },
     {
@@ -92,7 +92,7 @@
       "sha256": "49D54DDA06E4D0D16D7371A6261A3781F774112918F7ECCA953601D36C11E22C"
     },
     {
-      "path": "Binaries/Win64/UnrealEditor-MarryByMidnight-11133.dll",
+      "path": "Binaries/Win64/UnrealEditor-ColossalFizzCo-11133.dll",
       "sha256": "C5A5BCBA68BD3DBD31B57EBC811D2133A723B3C288428CBB61BFDA35014DF565"
     },
     {

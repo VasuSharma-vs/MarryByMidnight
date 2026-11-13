@@ -4,7 +4,7 @@
 
 ## Workspace and preservation
 
-- Project: `C:/Users/PC/Documents/Unreal Projects/MarryByMidnight`, UE 5.8, Windows PowerShell.
+- Project: `C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo`, UE 5.8, Windows PowerShell.
 - Branch: `codex/shop-checkout-integration`. Git HEAD: `e99fdb3` (`Checkpoint bottle fragment integration and paused food migration`). Today's scanner/cash work is **uncommitted and not pushed**. Do not confuse the existing commit with this checkpoint.
 - All source changes are saved on disk. Source before the scanner changes is copied in `Saved/CheckoutBaseline_20261110_174616/Source`. Older audit/resume baselines also remain under `Saved`.
 - Many existing Blueprint/package changes predate this scanner implementation. Preserve the complete working tree, including untracked user reference images and coin meshes. Do not reset or wholesale overwrite assets based on Git status.
@@ -88,7 +88,7 @@ Historical four-player fragment and wallet evidence remains valid for its origin
 
 ## Files changed or added for this work
 
-All paths below are under `Source/MarryByMidnight` unless otherwise stated. The machine-readable checkpoint manifest records exact hashes and Git status, including user changes outside this list.
+All paths below are under `Source/ColossalFizzCo` unless otherwise stated. The machine-readable checkpoint manifest records exact hashes and Git status, including user changes outside this list.
 
 - Pricing/identity/save: `Public/Props/ColaPricingLibrary.h`, `Private/Props/ColaPricingLibrary.cpp`, `Public/Props/InteractablePropDatabase.h`, `Public/Props/InteractablePropManager.h`, `Private/Props/InteractablePropManager.cpp`, `Private/Shop/ShopProductQuery.cpp`.
 - Bank/atomic commit: `Public/Shop/SharedWalletTypes.h`, `Private/Shop/SharedWalletTypes.cpp`, `Public/Shop/SharedTeamWalletComponent.h`, `Private/Shop/SharedTeamWalletComponent.cpp`.
@@ -123,13 +123,13 @@ All paths below are under `Source/MarryByMidnight` unless otherwise stated. The 
 5. Create/configure the ATM, validate the native UI and physical trays, and test one full rendered cash sale plus withdrawal/deposit and both expiry-compensation choices.
 6. Run actual multiplayer acceptance and save/load interruption scenarios, then update durable evidence and the progress report. Commit/push only when requested/authorized for the intended checkpoint, clearly separating preserved user changes from implementation evidence.
 
-Build template: UE5.8 `Build.bat MarryByMidnightEditor Win64 Development -Project=<absolute uproject> -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=2 '-ModuleWithSuffix=MarryByMidnight,<fresh suffix>'`. Quote the comma-bearing module argument in PowerShell.
+Build template: UE5.8 `Build.bat ColossalFizzCoEditor Win64 Development -Project=<absolute uproject> -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=2 '-ModuleWithSuffix=ColossalFizzCo,<fresh suffix>'`. Quote the comma-bearing module argument in PowerShell.
 
-Automation template: UE5.8 `UnrealEditor-Cmd.exe <uproject> /Engine/Maps/Entry -Unattended -NullRHI -NoSound -NoSplash -NoLiveCoding -stdout -FullStdOutLogOutput` with `-ExecCmds=Automation RunTests MarryByMidnight`, `-TestExit=Automation Test Queue Empty`, unique report/log paths, and `-ini:EditorPerProjectUserSettings:[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]:bAutoStartServer=False`. The override avoids an editor MCP port conflict.
+Automation template: UE5.8 `UnrealEditor-Cmd.exe <uproject> /Engine/Maps/Entry -Unattended -NullRHI -NoSound -NoSplash -NoLiveCoding -stdout -FullStdOutLogOutput` with `-ExecCmds=Automation RunTests ColossalFizzCo`, `-TestExit=Automation Test Queue Empty`, unique report/log paths, and `-ini:EditorPerProjectUserSettings:[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]:bAutoStartServer=False`. The override avoids an editor MCP port conflict.
 
 ## Final stop-state verification
 
-The already-running build completed successfully. `Binaries/Win64/UnrealEditor.modules` selects `UnrealEditor-MarryByMidnight-11119.dll`, BuildId `55116800`. The current UI/adapters compile; they remain untested. No tests were started after the user's pause request, and UE was not reopened.
+The already-running build completed successfully. `Binaries/Win64/UnrealEditor.modules` selects `UnrealEditor-ColossalFizzCo-11119.dll`, BuildId `55116800`. The current UI/adapters compile; they remain untested. No tests were started after the user's pause request, and UE was not reopened.
 
 Durable evidence is saved in `Docs/Scanner_Cash_Checkpoint_Evidence_2026-11-10.json`. A local recovery copy is under `Saved/Checkpoints/ScannerCash_20261110_1920`, with source/docs/config/scripts, changed/untracked content, the Git diff/status and build/test evidence. Its manifest records SHA-256 hashes and the verified stop state. These are local files; no commit or push was performed.
 

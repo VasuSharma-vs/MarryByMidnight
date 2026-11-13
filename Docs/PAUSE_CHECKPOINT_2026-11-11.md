@@ -4,9 +4,9 @@
 
 The user explicitly requested to **pause work and log everything done** (`"paulse you work adn log every thing you have done."`). **Do not continue C++ edits, Blueprint edits, builds, automation runs, or PIE tests until the user explicitly resumes development.** This checkpoint supersedes [`Docs/Gemini_Next_Task_2026-11-11.md`](Gemini_Next_Task_2026-11-11.md) while development is paused.
 
-- Workspace: `C:/Users/PC/Documents/Unreal Projects/MarryByMidnight`, UE 5.8.
+- Workspace: `C:/Users/PC/Documents/Unreal Projects/ColossalFizzCo`, UE 5.8.
 - Branch: `codex/shop-checkout-integration`, HEAD `f033721`. All uncommitted pre-session work on disk is preserved; no commit or push was made.
-- Active native module on disk: `UnrealEditor-MarryByMidnight-11133.dll` (`BuildId: 55116800` in `Binaries/Win64/UnrealEditor.modules`). **No C++ code was changed, no new native build was compiled, and no automation test run was executed during this session.**
+- Active native module on disk: `UnrealEditor-ColossalFizzCo-11133.dll` (`BuildId: 55116800` in `Binaries/Win64/UnrealEditor.modules`). **No C++ code was changed, no new native build was compiled, and no automation test run was executed during this session.**
 - Running editor state left clean: `UnrealEditor` (`PID 13032`, map `/Game/FirstPerson/Lvl_FirstPerson`) and `UnrealTraceServer` (`PID 26544`) remain open with **`IsPIERunning == false`**.
 - **CRITICAL UNSAVED-MEMORY NOTE:** Zero `.uasset` files were saved to disk during this session, **but `UnrealEditor` (`PID 13032`) currently holds 15 dirty packages in memory**, including **2 intentional compiled in-memory Blueprint edits** (`BTTask_MoveInCheckOutLine` and `BP_FirstPersonCharacter`) plus `BP_ShopGameState` (pre-existing dirty user asset — never save or revert it blindly) and 12 other dirty/autosaved assets. Do **not** blindly run `SaveAll` or force-kill `UnrealEditor` on resume without reviewing the dirty-package list in Section 4 below.
 
@@ -25,7 +25,7 @@ The user explicitly requested to **pause work and log everything done** (`"pauls
 
 ### 3. Pre-PIE SaveGames backup and initial PIE compile blocker
 - Created backup `Saved/Backup_SaveGames_20261111_Session/` containing copies of `Saved/SaveGames/NPC_CulturalKnowledge.sav` and `Saved/SaveGames/ShopAutosave.sav` before starting PIE.
-- Initial 2-player `PIE_ListenServer` launch timed out (~`05:32 UTC` / `11:02 IST`) because `/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine` failed Blueprint compilation with duplicate-function errors (`Found more than one function with the same name OnQueryFinishedEvent_Event_2` and `_5` in `Saved/Logs/MarryByMidnight.log`).
+- Initial 2-player `PIE_ListenServer` launch timed out (~`05:32 UTC` / `11:02 IST`) because `/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine` failed Blueprint compilation with duplicate-function errors (`Found more than one function with the same name OnQueryFinishedEvent_Event_2` and `_5` in `Saved/Logs/ColossalFizzCo.log`).
 
 ### 4. Two unsaved in-memory Blueprint edits (compiled cleanly in `UnrealEditor`, NOT saved to disk)
 1. **`/Game/AI/BasicNPC/TempColaShoes/BTTask_MoveInCheckOutLine:EventGraph`** (~`05:37:21Z` / `11:07:37 IST`):
@@ -35,7 +35,7 @@ The user explicitly requested to **pause work and log everything done** (`"pauls
 
 ### 5. Live 2-player `PIE_ListenServer` & desktop input testing (`11:23–11:50 IST` — FAILED)
 - Configured 2-player PIE listen-server windows and exercised live keyboard/mouse controls using temporary helper DLLs (`DeskCtrl.dll`, `DeskCtrl2.dll`) in the scratch directory, capturing 38 PNG screenshots under `C:/Users/PC/.gemini/antigravity/brain/ad2670f9-53bc-4ea7-80ba-e051d5d55f00/scratch/`.
-- **Host test (`hold G`)**: crosshair offset missed bottle target; no bottle pickup occurred; `Saved/Logs/MarryByMidnight.log` logged `Warning: SetTimer passed a function (Move actor to Attach Location) that expects parameters.` (`L2769–2797`).
+- **Host test (`hold G`)**: crosshair offset missed bottle target; no bottle pickup occurred; `Saved/Logs/ColossalFizzCo.log` logged `Warning: SetTimer passed a function (Move actor to Attach Location) that expects parameters.` (`L2769–2797`).
 - **Client 1 test (`hold G` near `ISID 10180`)**: approaching/aiming near `BP_Cola_C_1` (`DA_SweetCola`, converted client-side at `L92643`) and holding `G` promoted the bottle and caused it to **prematurely shatter into `FragmentDestructionActor_0`** ~1.16s later (`L92740`), emitting `LogNetPackageMap` non-replicated object/component warnings (`FragmentDestructionActor_0.StaticMeshComponent_* NOT Supported`, `FragmentPropActor_0` unresolved GUID) and `LogMaterial` missing `MorphTargets` warnings (`M_SweetCola`, `M_SweetColaLiquid`, `Default Material` fallback, `L92667–92669`).
 - **Multiplayer acceptance outcome**: Step 1 live multiplayer bottle validation **did not pass**; Steps 2–5 (checkout lifecycle integration) were not started before pause.
 
@@ -63,7 +63,7 @@ The user explicitly requested to **pause work and log everything done** (`"pauls
 ## Verified root causes uncovered (Step 1 blockers)
 
 1. **Premature fracture & unguarded overlaps**:
-   - `Source/MarryByMidnight/Private/Props/ColaPropActor.cpp` (`HandleBottleComponentHit`, L596–603): invokes `ApplyBottleImpact(NormalImpulse, 0)` on L598 **before** checking `!bIsActive || bIsFirstActiveFrame || WarmupFramesRemaining > 0 || HeldGracePeriod > 0.0f`, and without checking `!bIsHeld`.
+   - `Source/ColossalFizzCo/Private/Props/ColaPropActor.cpp` (`HandleBottleComponentHit`, L596–603): invokes `ApplyBottleImpact(NormalImpulse, 0)` on L598 **before** checking `!bIsActive || bIsFirstActiveFrame || WarmupFramesRemaining > 0 || HeldGracePeriod > 0.0f`, and without checking `!bIsHeld`.
    - `BP_FirstPersonCharacter:EventGraph` (`CapsuleComponent` overlap, inspected in `Saved/InspectCheckoutLifecycle/bp_firstpersoncharacter__eventgraph.txt`, L86–92): calls `BPCable|ApplyHit` (`Strength = 250.0`) on overlap.
    - `BP_FirstPersonCharacter:Attack` (`LeftHandCollisionSphare.OnComponentBeginOverlap`, `Saved/InspectCheckoutLifecycle/bp_firstpersoncharacter__attack.txt`, L3–6): unconditionally calls `BPCable|HitActor` (`Force = 50000.0`) on any non-self overlapping actor without gating on an active attack state.
 2. **Grab / carry / placement / RPC bugs in `BP_FirstPersonCharacter`**:
@@ -72,7 +72,7 @@ The user explicitly requested to **pause work and log everything done** (`"pauls
    - `RequestServertoDetachActortoComponent` lacked `CastToActor` on `Target -> OwnsHeldTarget.Target` (patched **in-memory only** via `K2Node_DynamicCast_2`; `CastFailed` unwired).
    - `SendactorlocationtoServer(NewLocation)` (`bp_firstpersoncharacter__grab and intract.txt`, L35–63): rejects all held components (`IsValid(GetHoldingActor)` -> `"Actor Is Invalid"`) **and** gates placement on `AI|IsValidAILocation(NewLocation)` (NavMesh query — prints `"Input Locaion is InValid"` on shelves, counters, props, and free space).
    - `NewMacro` never moves `HoldingComponent` (`PlaceComponentOnServer` is unused) and only calls `DetachComponent` / `UngrabComponentOnClient` / `UngrabComponentOnServer`; `OnRep_HoldingComponent` leaves `Is Not Valid` unwired.
-   - Startup log `Warning: SetTimer passed a function (Move actor to Attach Location) that expects parameters.` (`MarryByMidnight.log`, L2769–2797) and client/server `RequestServertoAttachActortoComponent` / `OnRep_HoldingActor` sync still need cleanup.
+   - Startup log `Warning: SetTimer passed a function (Move actor to Attach Location) that expects parameters.` (`ColossalFizzCo.log`, L2769–2797) and client/server `RequestServertoAttachActortoComponent` / `OnRep_HoldingActor` sync still need cleanup.
 3. **`BP_Bucket` & `SM_Bucket` physics / scale / grabability**:
    - All 5 placed `BP_Bucket` instances in `/Game/FirstPerson/Lvl_FirstPerson` trigger `PIE: Warning: Trying to simulate physics on '.../BP_Bucket_C_*.StaticMesh' but it has ComplexAsSimple collision.` (`SM_Bucket:BodySetup_0` uses `CTF_UseComplexAsSimple` despite having convex hulls).
    - `BP_Bucket` inherits `/Script/Engine.Actor`, `Can grab()` returns `false` (`bp_bucket__can grab.txt`), `Request Attach to Component` sets `IsGrabable = false` (`bp_bucket__request attach to component.txt`), and placed instances have scale `(6, 6, 6)` (bounds exceed the `< 100` size limit in `Is Grabable`).

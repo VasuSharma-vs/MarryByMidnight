@@ -15,7 +15,7 @@ $EvidenceRoot = [IO.Path]::GetFullPath($EvidenceRoot)
 $prototypeSaved = [IO.Path]::GetFullPath((Join-Path $prototypeRoot 'Saved/'))
 if (-not $EvidenceRoot.StartsWith($prototypeSaved,[StringComparison]::OrdinalIgnoreCase)) { throw 'Evidence must stay inside project Saved.' }
 if ($Port -lt 1024 -or $Port -gt 65535) { throw 'Invalid test port.' }
-$prototypeExe = Join-Path $ArchiveRoot 'Windows/MarryByMidnight.exe'
+$prototypeExe = Join-Path $ArchiveRoot 'Windows/ColossalFizzCo.exe'
 if (-not (Test-Path -LiteralPath $prototypeExe)) { throw 'Packaged bootstrap missing.' }
 New-Item -ItemType Directory -Force -Path $EvidenceRoot | Out-Null
 $prototypeRun = Join-Path $EvidenceRoot (Get-Date -Format 'yyyyMMdd_HHmmss')
